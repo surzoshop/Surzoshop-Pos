@@ -46,7 +46,7 @@ export function MobileBottomNav({ onOpenMenu }: Props) {
           <div className="h-9 w-12 flex items-center justify-center rounded-xl">
             <Menu className="h-5 w-5" />
           </div>
-          <span>{t("menu" as any) || "Menu"}</span>
+          <span>Menu</span>
         </button>
       </div>
     </nav>
