@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,9 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Minus, Search, ScanLine, ShoppingCart, Trash, Receipt as ReceiptIcon, Printer, Package } from "lucide-react";
+import { Trash2, Plus, Minus, Search, ScanLine, ShoppingCart, Trash, Receipt as ReceiptIcon, Printer, Package, Smartphone, Wifi, Loader2, Link2, Copy, CheckCircle2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { Card } from "@/components/ui/card";
+import QRCode from "react-qr-code";
+import { RTC_CONFIG, encodeSignal, extractSignalValue, waitForIceGatheringComplete } from "@/lib/webrtcPairing";
 
 type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number };
 type CartItem = { product: Product; qty: number };
@@ -30,9 +33,8 @@ export default function POS() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [customerId, setCustomerId] = useState<string>("");
   const [installmentCount, setInstallmentCount] = useState(3);
-  // Loan terms
   const [downPayment, setDownPayment] = useState(0);
-  const [interestRate, setInterestRate] = useState(0); // % annual
+  const [interestRate, setInterestRate] = useState(0);
   const [lateFeePerDay, setLateFeePerDay] = useState(0);
   const [guarantors, setGuarantors] = useState<any[]>([]);
   const [guarantorId, setGuarantorId] = useState<string>("");
@@ -43,7 +45,23 @@ export default function POS() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
 
+  const [pairOpen, setPairOpen] = useState(false);
+  const [rtcPhase, setRtcPhase] = useState<"idle" | "offer-ready" | "connected">("idle");
+  const [offerText, setOfferText] = useState("");
+  const [answerInput, setAnswerInput] = useState("");
+  const [connectionState, setConnectionState] = useState("Pair শুরু করুন");
+  const [pairingBusy, setPairingBusy] = useState(false);
+  const pcRef = useRef<RTCPeerConnection | null>(null);
+  const dcRef = useRef<RTCDataChannel | null>(null);
+
   useEffect(() => { inputRef.current?.focus(); load(); }, []);
+
+  useEffect(() => {
+    return () => {
+      dcRef.current?.close();
+      pcRef.current?.close();
+    };
+  }, []);
 
   const load = async () => {
     const [{ data: p }, { data: c }, { data: g }] = await Promise.all([
@@ -56,7 +74,6 @@ export default function POS() {
     setGuarantors(g ?? []);
   };
 
-  // Auto-add by barcode scan
   useEffect(() => {
     if (!search) return;
     const id = setTimeout(() => {
@@ -67,7 +84,6 @@ export default function POS() {
   }, [search, products]);
 
   const categories = ["__all"];
-
   const visible = products.filter(p => {
     if (search && !p.name.toLowerCase().includes(search.toLowerCase()) && !p.sku?.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
@@ -92,7 +108,6 @@ export default function POS() {
   const subtotal = cart.reduce((a, i) => a + i.product.price * i.qty, 0);
   const vat = subtotal * VAT_RATE;
   const baseTotal = Math.max(0, subtotal + vat - discount);
-  // For installment: total includes interest
   const interestAmount = paymentType === "installment"
     ? (baseTotal - downPayment) * (interestRate / 100) * (installmentCount / 12)
     : 0;
@@ -101,6 +116,87 @@ export default function POS() {
   const due = paymentType === "installment" ? financed : 0;
   const paid = paymentType === "installment" ? downPayment : total;
   const emi = paymentType === "installment" && installmentCount > 0 ? financed / installmentCount : 0;
+
+  const pairLink = useMemo(() => {
+    if (!offerText) return `${window.location.origin}/scanner.html`;
+    const url = new URL(`${window.location.origin}/scanner.html`);
+    url.searchParams.set("offer", offerText);
+    return url.toString();
+  }, [offerText]);
+
+  const openPairing = async () => {
+    try {
+      setPairOpen(true);
+      setPairingBusy(true);
+      setConnectionState("Offer তৈরি হচ্ছে...");
+      const pc = new RTCPeerConnection(RTC_CONFIG);
+      const dc = pc.createDataChannel("barcode-scanner");
+      pcRef.current = pc;
+      dcRef.current = dc;
+
+      dc.onopen = () => {
+        setRtcPhase("connected");
+        setConnectionState("মোবাইল scanner connected");
+        toast({ title: "Scanner connected", description: "এখন মোবাইল থেকে scan করলে cart-এ যোগ হবে" });
+      };
+      dc.onclose = () => {
+        setRtcPhase("idle");
+        setConnectionState("সংযোগ বন্ধ হয়েছে");
+      };
+      dc.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload?.type === "barcode" && payload.code) {
+            const found = products.find(p => p.barcode === payload.code || p.sku === payload.code);
+            if (found) {
+              addToCart(found);
+              toast({ title: "মোবাইল থেকে যোগ হয়েছে", description: found.name });
+            } else {
+              toast({ title: "Product পাওয়া যায়নি", description: payload.code, variant: "destructive" });
+            }
+          }
+        } catch {
+          toast({ title: "অজানা data পাওয়া গেছে", variant: "destructive" });
+        }
+      };
+
+      pc.onconnectionstatechange = () => {
+        if (pc.connectionState === "connected") {
+          setRtcPhase("connected");
+          setConnectionState("সরাসরি P2P connection তৈরি হয়েছে");
+        } else if (["failed", "disconnected", "closed"].includes(pc.connectionState)) {
+          setConnectionState("সংযোগ বিচ্ছিন্ন");
+        }
+      };
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      await waitForIceGatheringComplete(pc);
+      if (!pc.localDescription) throw new Error("Offer তৈরি হয়নি");
+      setOfferText(encodeSignal(pc.localDescription.toJSON()));
+      setRtcPhase("offer-ready");
+      setConnectionState("Offer প্রস্তুত — মোবাইল app-এ দিন");
+    } catch (error: any) {
+      toast({ title: error?.message ?? "Pairing শুরু করা যায়নি", variant: "destructive" });
+      setConnectionState("Pairing ব্যর্থ হয়েছে");
+    } finally {
+      setPairingBusy(false);
+    }
+  };
+
+  const finalizePairing = async () => {
+    try {
+      if (!pcRef.current) throw new Error("আগে pair শুরু করুন");
+      const encoded = extractSignalValue(answerInput, "answer");
+      if (!encoded) throw new Error("Answer code দিন");
+      const answer = JSON.parse((await import("lz-string")).default.decompressFromEncodedURIComponent(encoded) || "null");
+      if (!answer) throw new Error("Answer পড়া যায়নি");
+      await pcRef.current.setRemoteDescription(answer);
+      setConnectionState("Answer গ্রহণ করা হয়েছে — connection complete হওয়ার অপেক্ষায়");
+    } catch (error: any) {
+      toast({ title: error?.message ?? "Answer গ্রহণ করা যায়নি", variant: "destructive" });
+    }
+  };
 
   const saveGuarantor = async () => {
     if (!gForm.name) return toast({ title: "Name required", variant: "destructive" });
@@ -168,10 +264,8 @@ export default function POS() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-[calc(100vh-8rem)]">
-      {/* LEFT — product browser */}
       <section className="lg:col-span-3 flex flex-col gap-4 min-h-0">
-        {/* Search + barcode */}
-        <div className="bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-4 shadow-sm">
+        <div className="bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-4 shadow-sm space-y-3">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <input
@@ -190,9 +284,18 @@ export default function POS() {
               <ScanLine className="h-5 w-5" />
             </button>
           </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button type="button" variant="outline" className="app-touch" onClick={openPairing}>
+              {pairingBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Smartphone className="h-4 w-4" />}
+              Mobile Pair
+            </Button>
+            <div className="flex items-center gap-2 rounded-xl bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+              {rtcPhase === "connected" ? <Wifi className="h-4 w-4 text-primary" /> : <Smartphone className="h-4 w-4 text-primary" />}
+              <span>{connectionState}</span>
+            </div>
+          </div>
         </div>
 
-        {/* Category chips */}
         <div className="flex gap-3 overflow-x-auto pb-2">
           {categories.map(c => (
             <button key={c} onClick={() => setActiveCat(c)}
@@ -206,7 +309,6 @@ export default function POS() {
           ))}
         </div>
 
-        {/* Product grid */}
         <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 pb-4">
           {visible.length === 0 && (
             <div className="col-span-full text-center text-muted-foreground py-16">{t("noResults")}</div>
@@ -241,7 +343,6 @@ export default function POS() {
         </div>
       </section>
 
-      {/* RIGHT — cart */}
       <section className="lg:col-span-2 flex flex-col bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-6 min-h-0 shadow-sm">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-extrabold flex items-center gap-2 text-foreground">
@@ -256,7 +357,6 @@ export default function POS() {
           )}
         </div>
 
-        {/* Items */}
         <div className="flex-1 overflow-y-auto space-y-3 mb-4">
           {cart.length === 0 && (
             <div className="text-center text-muted-foreground py-12">{t("emptyCart")}</div>
@@ -288,7 +388,6 @@ export default function POS() {
           ))}
         </div>
 
-        {/* Customer + Payment Type */}
         {cart.length > 0 && (
           <>
             <div className="grid grid-cols-2 gap-2 mb-3">
@@ -357,7 +456,6 @@ export default function POS() {
           </>
         )}
 
-        {/* Summary & payment */}
         <div className="space-y-4 pt-4 border-t border-[hsl(var(--surface-container-high))]">
           <div className="flex gap-2">
             <input
@@ -373,25 +471,12 @@ export default function POS() {
           </div>
 
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between text-muted-foreground">
-              <span>{t("subtotal")}:</span>
-              <span>{fmt(subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-muted-foreground">
-              <span>{t("vat")}:</span>
-              <span>{fmt(vat)}</span>
-            </div>
-            <div className="flex justify-between text-muted-foreground">
-              <span>{t("discount")}:</span>
-              <span className="text-destructive">-{fmt(discount)}</span>
-            </div>
-            <div className="flex justify-between text-xl font-black pt-2 border-t border-dashed border-[hsl(var(--surface-container-highest))]">
-              <span>{t("grandTotal")}:</span>
-              <span className="text-primary">{fmt(total)}</span>
-            </div>
+            <div className="flex justify-between text-muted-foreground"><span>{t("subtotal")}:</span><span>{fmt(subtotal)}</span></div>
+            <div className="flex justify-between text-muted-foreground"><span>{t("vat")}:</span><span>{fmt(vat)}</span></div>
+            <div className="flex justify-between text-muted-foreground"><span>{t("discount")}:</span><span className="text-destructive">-{fmt(discount)}</span></div>
+            <div className="flex justify-between text-xl font-black pt-2 border-t border-dashed border-[hsl(var(--surface-container-highest))]"><span>{t("grandTotal")}:</span><span className="text-primary">{fmt(total)}</span></div>
           </div>
 
-          {/* Payment methods */}
           <div className="flex flex-col gap-2">
             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t("paymentMethods")}</span>
             <div className="grid grid-cols-4 gap-2">
@@ -413,7 +498,6 @@ export default function POS() {
             </div>
           </div>
 
-          {/* Action buttons */}
           <div className="flex flex-col gap-3">
             <button onClick={completeSale} disabled={cart.length === 0}
               className="w-full h-14 gradient-primary text-primary-foreground rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.4)] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed">
@@ -424,7 +508,44 @@ export default function POS() {
         </div>
       </section>
 
-      {/* Receipt dialog */}
+      <Dialog open={pairOpen} onOpenChange={setPairOpen}>
+        <DialogContent className="max-w-xl bg-[hsl(var(--surface-container-lowest))]">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Smartphone className="h-5 w-5 text-primary" /> Mobile Pairing</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <Card className="p-4 space-y-2 bg-primary/5 border-primary/20">
+              <div className="flex items-center gap-2 text-sm font-bold"><Wifi className="h-4 w-4 text-primary" /> Step 1: মোবাইলে scanner app খুলুন</div>
+              <p className="text-xs text-muted-foreground">এই QR scan করুন অথবা link copy করে ফোনে খুলুন।</p>
+              <div className="bg-background rounded-xl p-4">
+                <QRCode value={pairLink} size={180} className="mx-auto h-auto w-full max-w-[180px]" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" onClick={() => { navigator.clipboard.writeText(pairLink); toast({ title: "Link copied" }); }}><Link2 className="h-4 w-4" /> Copy link</Button>
+                <Button variant="outline" onClick={() => { navigator.clipboard.writeText(offerText); toast({ title: "Offer copied" }); }}><Copy className="h-4 w-4" /> Copy offer</Button>
+              </div>
+            </Card>
+
+            <div className="space-y-2">
+              <Label>Step 2: Scanner app-এর answer code এখানে দিন</Label>
+              <textarea
+                value={answerInput}
+                onChange={(e) => setAnswerInput(e.target.value)}
+                placeholder="Answer code / link paste করুন"
+                className="w-full min-h-28 rounded-xl border bg-background p-3 text-xs"
+              />
+              <Button onClick={finalizePairing} className="w-full gradient-primary text-primary-foreground">Connect scanner</Button>
+            </div>
+
+            <div className="rounded-xl bg-muted/50 px-4 py-3 text-sm flex items-center gap-2">
+              {rtcPhase === "connected" ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <Smartphone className="h-4 w-4 text-primary" />}
+              <span>{connectionState}</span>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPairOpen(false)}>{t("cancel")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
         <DialogContent className="max-w-sm bg-[hsl(var(--surface-container-lowest))]">
           <DialogHeader><DialogTitle>{t("receipt")}</DialogTitle></DialogHeader>
