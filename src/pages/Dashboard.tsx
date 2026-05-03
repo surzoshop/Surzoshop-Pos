@@ -144,7 +144,7 @@ export default function Dashboard() {
             {String(stats.lowStockCount).padStart(2, "0")} {t("productsLow")}
           </h3>
           <p className="text-[10px] text-[hsl(var(--secondary-foreground))]/70 mt-2">{t("needsRefill")}</p>
-        </div>
+        </Link>
       </div>
 
       {/* Main Layout */}
