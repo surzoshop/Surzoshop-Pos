@@ -2,7 +2,7 @@ import { NavLink, useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, Package, Receipt, Warehouse, Users, ShoppingCart,
   HelpCircle, LogOut, Truck, ShoppingBag, Wallet, ClipboardList,
-  UserCog, CalendarCheck, BarChart3, Store, X,
+  UserCog, CalendarCheck, BarChart3, Store, X, Smartphone,
 } from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -93,6 +93,17 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
             </NavLink>
           );
         })}
+        <NavLink
+          to="/scanner"
+          className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-150 text-[13px] ${
+            pathname === "/scanner"
+              ? "bg-primary text-primary-foreground font-bold shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.5)]"
+              : "text-foreground/85 font-medium hover:bg-primary/10 hover:text-primary"
+          }`}
+        >
+          <Smartphone className={`h-[18px] w-[18px] shrink-0 ${pathname === "/scanner" ? "" : "text-primary"}`} />
+          <span className="truncate">Scanner App</span>
+        </NavLink>
       </nav>
 
       {/* Footer */}

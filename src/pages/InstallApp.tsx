@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Download, Smartphone, Share, Plus, CheckCircle2, Apple, Chrome } from "lucide-react";
+import { Download, Smartphone, Share, Plus, CheckCircle2, Apple, Chrome, ScanLine, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -56,6 +56,20 @@ export default function InstallApp() {
           আপনার ফোন বা ডেস্কটপে অ্যাপ ইনস্টল করুন — দ্রুত অ্যাক্সেস, ফুল-স্ক্রিন অভিজ্ঞতা
         </p>
       </div>
+
+      <Card className="p-5 md:p-6 border-primary/20 bg-primary/5">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 font-bold text-base"><ScanLine className="h-5 w-5 text-primary" /> Scanner Companion App</div>
+            <p className="text-sm text-muted-foreground">মোবাইলকে barcode scanner remote হিসেবে ব্যবহার করুন এবং সরাসরি POS-এ product পাঠান।</p>
+          </div>
+          <Button asChild className="gradient-primary text-primary-foreground">
+            <a href="/scanner?standalone=1">
+              Open Scanner App <ArrowRight className="h-4 w-4" />
+            </a>
+          </Button>
+        </div>
+      </Card>
 
       {isStandalone || installed ? (
         <Card className="p-6 flex items-center gap-4 border-primary/30 bg-primary/5">

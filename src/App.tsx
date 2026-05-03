@@ -25,6 +25,7 @@ import Staff from "./pages/Staff";
 import Attendance from "./pages/Attendance";
 import Shops from "./pages/Shops";
 import InstallApp from "./pages/InstallApp";
+import ScannerCompanion from "./pages/ScannerCompanion";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const App = () => (
                   <Route path="/attendance" element={<PageGate page="attendance"><Attendance /></PageGate>} />
                   <Route path="/shops" element={<Shops />} />
                   <Route path="/install" element={<InstallApp />} />
+                  <Route path="/scanner" element={<ScannerCompanion />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
