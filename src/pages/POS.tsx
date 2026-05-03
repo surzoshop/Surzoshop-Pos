@@ -101,85 +101,18 @@ export default function POS() {
   const paid = paymentType === "installment" ? downPayment : total;
   const emi = paymentType === "installment" && installmentCount > 0 ? financed / installmentCount : 0;
 
-  const pairLink = useMemo(() => {
-    if (!offerText) return `${window.location.origin}/scanner.html`;
-    const url = new URL(`${window.location.origin}/scanner.html`);
-    url.searchParams.set("offer", offerText);
-    return url.toString();
-  }, [offerText]);
-
-  const openPairing = async () => {
-    try {
-      setPairOpen(true);
-      setPairingBusy(true);
-      setConnectionState("Offer তৈরি হচ্ছে...");
-      const pc = new RTCPeerConnection(RTC_CONFIG);
-      const dc = pc.createDataChannel("barcode-scanner");
-      pcRef.current = pc;
-      dcRef.current = dc;
-
-      dc.onopen = () => {
-        setRtcPhase("connected");
-        setConnectionState("মোবাইল scanner connected");
-        toast({ title: "Scanner connected", description: "এখন মোবাইল থেকে scan করলে cart-এ যোগ হবে" });
-      };
-      dc.onclose = () => {
-        setRtcPhase("idle");
-        setConnectionState("সংযোগ বন্ধ হয়েছে");
-      };
-      dc.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          if (payload?.type === "barcode" && payload.code) {
-            const found = products.find(p => p.barcode === payload.code || p.sku === payload.code);
-            if (found) {
-              addToCart(found);
-              toast({ title: "মোবাইল থেকে যোগ হয়েছে", description: found.name });
-            } else {
-              toast({ title: "Product পাওয়া যায়নি", description: payload.code, variant: "destructive" });
-            }
-          }
-        } catch {
-          toast({ title: "অজানা data পাওয়া গেছে", variant: "destructive" });
-        }
-      };
-
-      pc.onconnectionstatechange = () => {
-        if (pc.connectionState === "connected") {
-          setRtcPhase("connected");
-          setConnectionState("সরাসরি P2P connection তৈরি হয়েছে");
-        } else if (["failed", "disconnected", "closed"].includes(pc.connectionState)) {
-          setConnectionState("সংযোগ বিচ্ছিন্ন");
-        }
-      };
-
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      await waitForIceGatheringComplete(pc);
-      if (!pc.localDescription) throw new Error("Offer তৈরি হয়নি");
-      setOfferText(encodeSignal(pc.localDescription.toJSON()));
-      setRtcPhase("offer-ready");
-      setConnectionState("Offer প্রস্তুত — মোবাইল app-এ দিন");
-    } catch (error: any) {
-      toast({ title: error?.message ?? "Pairing শুরু করা যায়নি", variant: "destructive" });
-      setConnectionState("Pairing ব্যর্থ হয়েছে");
-    } finally {
-      setPairingBusy(false);
-    }
-  };
-
-  const finalizePairing = async () => {
-    try {
-      if (!pcRef.current) throw new Error("আগে pair শুরু করুন");
-      const encoded = extractSignalValue(answerInput, "answer");
-      if (!encoded) throw new Error("Answer code দিন");
-      const answer = decodeSignal(encoded);
-      await pcRef.current.setRemoteDescription(answer);
-      setConnectionState("Answer গ্রহণ করা হয়েছে — connection complete হওয়ার অপেক্ষায়");
-    } catch (error: any) {
-      toast({ title: error?.message ?? "Answer গ্রহণ করা যায়নি", variant: "destructive" });
-    }
-  };
+  // Subscribe to barcodes from paired mobile scanner (managed globally)
+  useEffect(() => {
+    return mobileScanner.subscribe((code) => {
+      const found = products.find(p => p.barcode === code || p.sku === code);
+      if (found) {
+        addToCart(found);
+        toast({ title: "মোবাইল থেকে যোগ হয়েছে", description: found.name });
+      } else {
+        toast({ title: "Product পাওয়া যায়নি", description: code, variant: "destructive" });
+      }
+    });
+  }, [mobileScanner, products]);
 
   const saveGuarantor = async () => {
     if (!gForm.name) return toast({ title: "Name required", variant: "destructive" });
