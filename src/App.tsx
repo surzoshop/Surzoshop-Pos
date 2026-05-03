@@ -24,6 +24,7 @@ import StockAdjustments from "./pages/StockAdjustments";
 import Staff from "./pages/Staff";
 import Attendance from "./pages/Attendance";
 import Shops from "./pages/Shops";
+import InstallApp from "./pages/InstallApp";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
                   <Route path="/staff" element={<PageGate page="staff"><Staff /></PageGate>} />
                   <Route path="/attendance" element={<PageGate page="attendance"><Attendance /></PageGate>} />
                   <Route path="/shops" element={<Shops />} />
+                  <Route path="/install" element={<InstallApp />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>

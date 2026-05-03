@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, ShoppingCart, Wallet, BarChart3, Menu } from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Wallet, Smartphone, Menu } from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 import { useShop, PageKey } from "@/hooks/useShop";
 
@@ -16,8 +16,9 @@ export function MobileBottomNav({ onOpenMenu }: Props) {
     { url: "/", icon: LayoutDashboard, label: t("dashboard"), key: "dashboard" as PageKey },
     { url: "/pos", icon: ShoppingCart, label: t("pos"), key: "pos" as PageKey },
     { url: "/installments", icon: Wallet, label: t("installments"), key: "installments" as PageKey },
-    { url: "/reports", icon: BarChart3, label: t("reports"), key: "reports" as PageKey },
   ].filter(i => canAccess(i.key));
+  // Always show Install App entry (no permission gate)
+  items.push({ url: "/install", icon: Smartphone, label: "App", key: "dashboard" as PageKey });
 
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-background/95 backdrop-blur-xl border-t border-border shadow-[0_-10px_30px_-10px_hsl(var(--foreground)/0.15)]">
