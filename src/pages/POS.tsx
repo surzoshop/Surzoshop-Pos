@@ -188,7 +188,10 @@ export default function POS() {
       await supabase.from("installments").insert(schedule);
     }
 
-    setLastSale({ ...sale, items: cart, customer: customers.find(c => c.id === customerId) });
+    const firstDue = paymentType === "installment" && installmentCount > 0
+      ? (() => { const d = new Date(); d.setMonth(d.getMonth() + 1); return d.toISOString().slice(0, 10); })()
+      : undefined;
+    setLastSale({ ...sale, items: cart, customer: customers.find(c => c.id === customerId), payment_method: paymentMethod, first_due: firstDue });
     setShowReceipt(true);
     setCart([]); setDiscount(0); setCustomerId(""); setPaymentType("cash"); setPaymentMethod("cash");
     setDownPayment(0); setInterestRate(0); setLateFeePerDay(0); setGuarantorId("");
