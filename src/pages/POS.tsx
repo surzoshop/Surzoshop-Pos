@@ -200,16 +200,21 @@ export default function POS() {
               <ScanLine className="h-5 w-5" />
             </button>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button type="button" variant="outline" className="app-touch" onClick={openPairing}>
-              {pairingBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Smartphone className="h-4 w-4" />}
-              Mobile Pair
-            </Button>
-            <div className="flex items-center gap-2 rounded-xl bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
-              {rtcPhase === "connected" ? <Wifi className="h-4 w-4 text-primary" /> : <Smartphone className="h-4 w-4 text-primary" />}
-              <span>{connectionState}</span>
+          {mobileScanner.phase === "connected" && (
+            <div className="flex items-center gap-2 rounded-xl bg-primary/10 px-3 py-2 text-xs font-medium text-primary">
+              <Wifi className="h-4 w-4" />
+              <span>মোবাইল scanner connected — scan করলে cart-এ যোগ হবে</span>
             </div>
-          </div>
+          )}
+          {mobileScanner.phase !== "connected" && (
+            <Link
+              to="/install"
+              className="flex items-center gap-2 rounded-xl bg-muted/50 hover:bg-muted px-3 py-2 text-xs text-muted-foreground transition-colors"
+            >
+              <Smartphone className="h-4 w-4 text-primary" />
+              <span>মোবাইল ফোনকে wireless scanner বানাতে চান? Scanner App পেজে যান</span>
+            </Link>
+          )}
         </div>
 
         <div className="flex gap-3 overflow-x-auto pb-2">
