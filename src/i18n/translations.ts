@@ -3,7 +3,7 @@ export type Lang = "bn" | "en";
 
 const base = {
   bn: {
-    appName: "সুপার শপ", appTagline: "POS ও কিস্তি ম্যানেজমেন্ট",
+    appName: "সূর্য শপ", appTagline: "POS ও কিস্তি ম্যানেজমেন্ট",
     dashboard: "ড্যাশবোর্ড", pos: "POS / বিক্রয়", products: "পণ্য", customers: "ক্রেতা",
     installments: "কিস্তি", sales: "বিক্রয় তালিকা", reports: "রিপোর্ট", users: "ব্যবহারকারী",
     settings: "সেটিংস", logout: "লগআউট", login: "লগইন", signup: "নিবন্ধন",
@@ -109,7 +109,7 @@ const base = {
     upload: "আপলোড", remaining: "অবশিষ্ট",
   },
   en: {
-    appName: "Super Shop", appTagline: "POS & Installment Manager",
+    appName: "Surjo Shop", appTagline: "POS & Installment Manager",
     dashboard: "Dashboard", pos: "POS / Sale", products: "Products", customers: "Customers",
     installments: "Installments", sales: "Sales", reports: "Reports", users: "Users",
     settings: "Settings", logout: "Logout", login: "Login", signup: "Sign up",
