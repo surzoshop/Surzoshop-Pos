@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Wallet, Calendar, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { PageHeader, StatusPill, SurfaceCard } from "@/components/PageHeader";
+import { Wallet, Calendar, AlertTriangle, CheckCircle2, Plus, Trash2 } from "lucide-react";
+import { PageHeader, StatusPill, SurfaceCard, PrimaryButton } from "@/components/PageHeader";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Installments() {
   const { t, fmt, lang } = useT();
@@ -19,18 +20,104 @@ export default function Installments() {
   const [amount, setAmount] = useState(0);
   const [filter, setFilter] = useState<"all" | "pending" | "overdue" | "paid">("all");
 
+  // ===== New Installment Plan Modal =====
+  const [openNew, setOpenNew] = useState(false);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [guarantors, setGuarantors] = useState<any[]>([]);
+  const [showG, setShowG] = useState(false);
+  const [gForm, setGForm] = useState<any>({ name: "", phone: "", nid: "", address: "", relation: "" });
+  const [plan, setPlan] = useState<any>({
+    customer_id: "", guarantor_id: "",
+    items: [] as any[], pid: "", qty: 1, price: 0,
+    down_payment: 0, interest_rate: 0, tenure_months: 6, late_fee_per_day: 0, notes: "",
+    first_due: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().slice(0, 10),
+  });
+
   const load = async () => {
-    const { data } = await supabase.from("installments")
-      .select("*, sales(invoice_no, customers(name, phone))")
-      .order("due_date");
+    const [{ data }, c, p, g] = await Promise.all([
+      supabase.from("installments").select("*, sales(invoice_no, customers(name, phone))").order("due_date"),
+      supabase.from("customers").select("id,name,phone").order("name"),
+      supabase.from("products").select("id,name,price,stock").order("name"),
+      supabase.from("guarantors").select("id,name,phone").order("name"),
+    ]);
     const today = new Date().toISOString().slice(0, 10);
     const enriched = (data ?? []).map(i => ({
       ...i,
       status: i.status === "paid" ? "paid" : (i.due_date < today ? "overdue" : "pending"),
     }));
     setItems(enriched);
+    setCustomers(c.data ?? []); setProducts(p.data ?? []); setGuarantors(g.data ?? []);
   };
   useEffect(() => { load(); }, []);
+
+  // ===== Plan calculations =====
+  const planSubtotal = plan.items.reduce((a: number, b: any) => a + b.subtotal, 0);
+  const interestAmount = (planSubtotal - plan.down_payment) * (plan.interest_rate / 100) * (plan.tenure_months / 12);
+  const planTotal = planSubtotal + interestAmount;
+  const financed = Math.max(planTotal - plan.down_payment, 0);
+  const emi = plan.tenure_months > 0 ? financed / plan.tenure_months : 0;
+
+  const addPlanItem = () => {
+    const prod = products.find(x => x.id === plan.pid);
+    if (!prod || plan.qty <= 0) return;
+    setPlan({
+      ...plan,
+      items: [...plan.items, { product_id: prod.id, product_name: prod.name, qty: plan.qty, unit_price: plan.price || prod.price, subtotal: plan.qty * (plan.price || prod.price) }],
+      pid: "", qty: 1, price: 0,
+    });
+  };
+
+  const saveGuarantor = async () => {
+    if (!gForm.name) return toast({ title: "Name required", variant: "destructive" });
+    const { data, error } = await supabase.from("guarantors").insert(gForm).select().single();
+    if (error) return toast({ title: error.message, variant: "destructive" });
+    setGuarantors([data, ...guarantors]); setPlan({ ...plan, guarantor_id: data.id }); setShowG(false);
+    setGForm({ name: "", phone: "", nid: "", address: "", relation: "" });
+  };
+
+  const savePlan = async () => {
+    if (!plan.customer_id) return toast({ title: lang === "bn" ? "ক্রেতা নির্বাচন করুন" : "Select customer", variant: "destructive" });
+    if (plan.items.length === 0) return toast({ title: lang === "bn" ? "পণ্য যোগ করুন" : "Add items", variant: "destructive" });
+    if (!plan.guarantor_id) return toast({ title: lang === "bn" ? "জামিনদার নির্বাচন করুন" : "Select guarantor", variant: "destructive" });
+    if (plan.tenure_months <= 0) return toast({ title: "Invalid tenure", variant: "destructive" });
+
+    const { data: sale, error } = await supabase.from("sales").insert({
+      customer_id: plan.customer_id,
+      subtotal: planSubtotal, discount: 0, total: planTotal,
+      paid: plan.down_payment, due: financed,
+      payment_type: "installment" as any,
+      status: financed > 0 ? "partial" : "completed" as any,
+      created_by: user!.id,
+      down_payment: plan.down_payment, interest_rate: plan.interest_rate,
+      tenure_months: plan.tenure_months, emi_amount: emi,
+      late_fee_per_day: plan.late_fee_per_day, guarantor_id: plan.guarantor_id,
+      notes: plan.notes,
+    } as any).select().single();
+    if (error) return toast({ title: error.message, variant: "destructive" });
+
+    const saleItems = plan.items.map((i: any) => ({ ...i, sale_id: sale.id }));
+    await supabase.from("sale_items").insert(saleItems);
+
+    const per = Math.round((financed / plan.tenure_months) * 100) / 100;
+    const firstDue = new Date(plan.first_due);
+    const schedule = Array.from({ length: plan.tenure_months }).map((_, idx) => {
+      const d = new Date(firstDue); d.setMonth(d.getMonth() + idx);
+      return {
+        sale_id: sale.id, installment_no: idx + 1,
+        due_date: d.toISOString().slice(0, 10),
+        amount: idx === plan.tenure_months - 1 ? financed - per * (plan.tenure_months - 1) : per,
+      };
+    });
+    await supabase.from("installments").insert(schedule);
+
+    toast({ title: lang === "bn" ? "কিস্তি প্ল্যান তৈরি হয়েছে" : "Installment plan created" });
+    setOpenNew(false);
+    setPlan({ customer_id: "", guarantor_id: "", items: [], pid: "", qty: 1, price: 0,
+      down_payment: 0, interest_rate: 0, tenure_months: 6, late_fee_per_day: 0, notes: "",
+      first_due: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().slice(0, 10) });
+    load();
+  };
 
   const pay = async () => {
     if (amount <= 0) return;
