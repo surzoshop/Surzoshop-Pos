@@ -3,7 +3,6 @@ import { Download, Smartphone, Share, Plus, CheckCircle2, Apple, Chrome, ScanLin
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
 
 type BIPEvent = Event & {
   prompt: () => Promise<void>;

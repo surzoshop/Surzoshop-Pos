@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { Card } from "@/components/ui/card";
 import QRCode from "react-qr-code";
-import { RTC_CONFIG, encodeSignal, extractSignalValue, waitForIceGatheringComplete } from "@/lib/webrtcPairing";
+import { RTC_CONFIG, decodeSignal, encodeSignal, extractSignalValue, waitForIceGatheringComplete } from "@/lib/webrtcPairing";
 
 type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number };
 type CartItem = { product: Product; qty: number };
@@ -189,8 +189,7 @@ export default function POS() {
       if (!pcRef.current) throw new Error("আগে pair শুরু করুন");
       const encoded = extractSignalValue(answerInput, "answer");
       if (!encoded) throw new Error("Answer code দিন");
-      const answer = JSON.parse((await import("lz-string")).default.decompressFromEncodedURIComponent(encoded) || "null");
-      if (!answer) throw new Error("Answer পড়া যায়নি");
+      const answer = decodeSignal(encoded);
       await pcRef.current.setRemoteDescription(answer);
       setConnectionState("Answer গ্রহণ করা হয়েছে — connection complete হওয়ার অপেক্ষায়");
     } catch (error: any) {

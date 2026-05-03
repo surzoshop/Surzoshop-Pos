@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "react-qr-code";
 import { BrowserMultiFormatReader, IScannerControls } from "@zxing/browser";
-import { Camera, CheckCircle2, Copy, Link2, Loader2, RefreshCw, ScanLine, Smartphone, Wifi, WifiOff } from "lucide-react";
+import { CheckCircle2, Copy, Link2, Loader2, RefreshCw, ScanLine, Smartphone, Wifi, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,12 @@ export default function ScannerCompanion() {
   const isStandalone =
     typeof window !== "undefined" &&
     (window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const offer = params.get("offer");
+    if (offer) setOfferInput(offer);
+  }, []);
 
   useEffect(() => {
     const handler = (e: Event) => {
