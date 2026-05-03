@@ -1,17 +1,20 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useShop } from "@/hooks/useShop";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Minus, Search, ScanLine, ShoppingCart, Trash, Receipt as ReceiptIcon, Printer, Package, Smartphone, Wifi } from "lucide-react";
+import { Trash2, Plus, Minus, Search, ScanLine, ShoppingCart, Trash, Receipt as ReceiptIcon, Printer, Package, Smartphone, Wifi, CalendarDays } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { useMobileScanner } from "@/hooks/useMobileScanner";
 import { Link } from "react-router-dom";
+import { CustomerCombobox } from "@/components/CustomerCombobox";
+import { ThermalReceipt } from "@/components/ThermalReceipt";
 
 type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number };
 type CartItem = { product: Product; qty: number };
