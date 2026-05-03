@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Search, Package, Tag, Printer } from "lucide-react";
 import { PageHeader, StatusPill, SurfaceCard, PrimaryButton } from "@/components/PageHeader";
+import { ImageUpload } from "@/components/ImageUpload";
 
 // short, scan-friendly barcode generator (CODE128, ~12 chars)
 function generateBarcode() {
@@ -32,7 +33,7 @@ export default function Products() {
   const [newCat, setNewCat] = useState("");
   const isAdmin = role === "admin";
 
-  const empty = { name: "", category_id: "", price: 0, cost: 0, stock: 0, unit: "pcs" };
+  const empty = { name: "", category_id: "", price: 0, cost: 0, stock: 0, unit: "pcs", image_url: "" };
   const [form, setForm] = useState<any>(empty);
 
   const load = async () => {
@@ -45,7 +46,7 @@ export default function Products() {
   };
   useEffect(() => { load(); }, []);
 
-  const startEdit = (p: any) => { setEditing(p); setForm({ ...p, category_id: p.category_id ?? "" }); setOpen(true); };
+  const startEdit = (p: any) => { setEditing(p); setForm({ ...p, category_id: p.category_id ?? "", image_url: p.image_url ?? "" }); setOpen(true); };
   const startNew = () => { setEditing(null); setForm(empty); setOpen(true); };
 
   const save = async () => {
@@ -57,6 +58,7 @@ export default function Products() {
       stock: Number(form.stock) || 0,
       unit: form.unit || "pcs",
       category_id: form.category_id || null,
+      image_url: form.image_url || null,
     };
     if (!editing) {
       // auto-generate unique barcode for new product
@@ -151,24 +153,33 @@ export default function Products() {
         <div className="md:hidden space-y-2">
           {filtered.length === 0 && <div className="py-12 text-center text-muted-foreground text-sm">{t("noResults")}</div>}
           {filtered.map(p => (
-            <div key={p.id} className="bg-[hsl(var(--surface-container-low))] p-3 rounded-xl">
-              <div className="flex justify-between items-start gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="font-bold text-foreground truncate">{p.name}</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{catName(p.category_id)} · {p.barcode ?? "—"}</p>
-                </div>
-                {isAdmin && (
-                  <div className="flex shrink-0">
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEdit(p)}><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => del(p.id)}><Trash2 className="h-4 w-4" /></Button>
-                  </div>
+            <div key={p.id} className="bg-[hsl(var(--surface-container-low))] p-3 rounded-xl flex gap-3">
+              <div className="w-16 h-16 rounded-lg overflow-hidden bg-[hsl(var(--surface-container-high))] shrink-0 flex items-center justify-center">
+                {p.image_url ? (
+                  <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+                ) : (
+                  <Package className="h-6 w-6 text-muted-foreground/50" />
                 )}
               </div>
-              <div className="flex items-center justify-between mt-2">
-                <span className="font-bold text-primary text-sm">{fmt(p.price)}</span>
-                {p.stock === 0 ? <StatusPill tone="destructive">{t("outOfStock")}</StatusPill>
-                  : p.stock <= 5 ? <StatusPill tone="warning">{p.stock} {p.unit}</StatusPill>
-                  : <span className="text-xs text-foreground/70 font-medium">{p.stock} {p.unit}</span>}
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-foreground truncate">{p.name}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{catName(p.category_id)} · {p.barcode ?? "—"}</p>
+                  </div>
+                  {isAdmin && (
+                    <div className="flex shrink-0">
+                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEdit(p)}><Pencil className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => del(p.id)}><Trash2 className="h-4 w-4" /></Button>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center justify-between mt-1.5">
+                  <span className="font-bold text-primary text-sm">{fmt(p.price)}</span>
+                  {p.stock === 0 ? <StatusPill tone="destructive">{t("outOfStock")}</StatusPill>
+                    : p.stock <= 5 ? <StatusPill tone="warning">{p.stock} {p.unit}</StatusPill>
+                    : <span className="text-xs text-foreground/70 font-medium">{p.stock} {p.unit}</span>}
+                </div>
               </div>
             </div>
           ))}
@@ -178,32 +189,42 @@ export default function Products() {
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                <th className="pb-6 font-bold">{t("name")}</th>
-                <th className="pb-6 font-bold">{t("category")}</th>
-                <th className="pb-6 font-bold">{t("barcode")}</th>
-                <th className="pb-6 font-bold">{t("price")}</th>
-                <th className="pb-6 font-bold">{t("stock")}</th>
-                {isAdmin && <th className="pb-6 font-bold text-right">{t("actions")}</th>}
+              <tr className="text-[11px] uppercase tracking-widest text-muted-foreground border-b border-[hsl(var(--surface-container))]">
+                <th className="pb-3 font-bold w-14"></th>
+                <th className="pb-3 font-bold">{t("name")}</th>
+                <th className="pb-3 font-bold">{t("category")}</th>
+                <th className="pb-3 font-bold">{t("barcode")}</th>
+                <th className="pb-3 font-bold">{t("price")}</th>
+                <th className="pb-3 font-bold">{t("stock")}</th>
+                {isAdmin && <th className="pb-3 font-bold text-right">{t("actions")}</th>}
               </tr>
             </thead>
-            <tbody className="text-sm">
+            <tbody className="text-sm divide-y divide-[hsl(var(--surface-container))]">
               {filtered.length === 0 && (
-                <tr><td colSpan={6} className="py-12 text-center text-muted-foreground">{t("noResults")}</td></tr>
+                <tr><td colSpan={7} className="py-12 text-center text-muted-foreground">{t("noResults")}</td></tr>
               )}
               {filtered.map(p => (
                 <tr key={p.id} className="hover:bg-[hsl(var(--surface-container-low))] transition-colors">
-                  <td className="py-4 font-semibold text-foreground">{p.name}</td>
-                  <td className="py-4 text-muted-foreground">{catName(p.category_id)}</td>
-                  <td className="py-4 text-muted-foreground font-mono text-xs">{p.barcode || "—"}</td>
-                  <td className="py-4 font-bold text-primary">{fmt(p.price)}</td>
-                  <td className="py-4">
+                  <td className="py-2">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-[hsl(var(--surface-container-high))] flex items-center justify-center">
+                      {p.image_url ? (
+                        <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+                      ) : (
+                        <Package className="h-5 w-5 text-muted-foreground/50" />
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-2 font-semibold text-foreground">{p.name}</td>
+                  <td className="py-2 text-muted-foreground">{catName(p.category_id)}</td>
+                  <td className="py-2 text-muted-foreground font-mono text-xs">{p.barcode || "—"}</td>
+                  <td className="py-2 font-bold text-primary">{fmt(p.price)}</td>
+                  <td className="py-2">
                     {p.stock === 0 ? <StatusPill tone="destructive">{t("outOfStock")}</StatusPill>
                       : p.stock <= 5 ? <StatusPill tone="warning">{p.stock} {p.unit}</StatusPill>
                       : <span className="text-foreground font-medium">{p.stock} {p.unit}</span>}
                   </td>
                   {isAdmin && (
-                    <td className="py-4 text-right">
+                    <td className="py-2 text-right">
                       <Button size="icon" variant="ghost" onClick={() => startEdit(p)}><Pencil className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" className="text-destructive" onClick={() => del(p.id)}><Trash2 className="h-4 w-4" /></Button>
                     </td>
@@ -225,6 +246,12 @@ export default function Products() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2 flex justify-center">
+              <div className="text-center">
+                <Label className="block mb-2">পণ্যের ছবি</Label>
+                <ImageUpload value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} />
+              </div>
+            </div>
             <div className="sm:col-span-2">
               <Label>পণ্যের নাম *</Label>
               <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="যেমন: Lux সাবান" />

@@ -1,19 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useShop } from "@/hooks/useShop";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Minus, Search, ScanLine, ShoppingCart, Trash, Receipt as ReceiptIcon, Printer, Package, Smartphone, Wifi } from "lucide-react";
+import { Trash2, Plus, Minus, Search, ScanLine, ShoppingCart, Trash, Receipt as ReceiptIcon, Printer, Package, Smartphone, Wifi, CalendarDays } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { useMobileScanner } from "@/hooks/useMobileScanner";
 import { Link } from "react-router-dom";
+import { CustomerCombobox } from "@/components/CustomerCombobox";
+import { ThermalReceipt } from "@/components/ThermalReceipt";
 
-type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number };
+type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number; image_url?: string | null };
 type CartItem = { product: Product; qty: number };
 
 const VAT_RATE = 0.05;
@@ -21,7 +24,9 @@ const VAT_RATE = 0.05;
 export default function POS() {
   const { t, fmt, lang } = useT();
   const { user } = useAuth();
+  const { currentShop } = useShop();
   const { toast } = useToast();
+  const receiptRef = useRef<HTMLDivElement>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState<string>("__all");
@@ -49,7 +54,7 @@ export default function POS() {
 
   const load = async () => {
     const [{ data: p }, { data: c }, { data: g }] = await Promise.all([
-      supabase.from("products").select("id,name,barcode,sku,price,stock").order("name"),
+      supabase.from("products").select("id,name,barcode,sku,price,stock,image_url").order("name"),
       supabase.from("customers").select("id,name,phone").order("name"),
       supabase.from("guarantors").select("id,name,phone").order("name"),
     ]);
@@ -92,14 +97,27 @@ export default function POS() {
   const subtotal = cart.reduce((a, i) => a + i.product.price * i.qty, 0);
   const vat = subtotal * VAT_RATE;
   const baseTotal = Math.max(0, subtotal + vat - discount);
+  // EMI calculation: simple interest over tenure (more transparent for retail)
+  const principal = paymentType === "installment" ? Math.max(baseTotal - downPayment, 0) : 0;
   const interestAmount = paymentType === "installment"
-    ? (baseTotal - downPayment) * (interestRate / 100) * (installmentCount / 12)
+    ? principal * (interestRate / 100) * (installmentCount / 12)
     : 0;
   const total = baseTotal + interestAmount;
-  const financed = paymentType === "installment" ? Math.max(total - downPayment, 0) : 0;
+  const financed = principal + interestAmount;
   const due = paymentType === "installment" ? financed : 0;
   const paid = paymentType === "installment" ? downPayment : total;
   const emi = paymentType === "installment" && installmentCount > 0 ? financed / installmentCount : 0;
+
+  // EMI schedule preview
+  const schedulePreview = useMemo(() => {
+    if (paymentType !== "installment" || installmentCount <= 0 || financed <= 0) return [];
+    const per = Math.round((financed / installmentCount) * 100) / 100;
+    return Array.from({ length: installmentCount }).map((_, idx) => {
+      const d = new Date(); d.setMonth(d.getMonth() + idx + 1);
+      const amount = idx === installmentCount - 1 ? financed - per * (installmentCount - 1) : per;
+      return { no: idx + 1, date: d.toISOString().slice(0, 10), amount };
+    });
+  }, [paymentType, installmentCount, financed]);
 
   // Subscribe to barcodes from paired mobile scanner (managed globally)
   useEffect(() => {
@@ -170,7 +188,10 @@ export default function POS() {
       await supabase.from("installments").insert(schedule);
     }
 
-    setLastSale({ ...sale, items: cart, customer: customers.find(c => c.id === customerId) });
+    const firstDue = paymentType === "installment" && installmentCount > 0
+      ? (() => { const d = new Date(); d.setMonth(d.getMonth() + 1); return d.toISOString().slice(0, 10); })()
+      : undefined;
+    setLastSale({ ...sale, items: cart, customer: customers.find(c => c.id === customerId), payment_method: paymentMethod, first_due: firstDue });
     setShowReceipt(true);
     setCart([]); setDiscount(0); setCustomerId(""); setPaymentType("cash"); setPaymentMethod("cash");
     setDownPayment(0); setInterestRate(0); setLateFeePerDay(0); setGuarantorId("");
@@ -238,7 +259,11 @@ export default function POS() {
             <button key={p.id} onClick={() => addToCart(p)}
               className="bg-[hsl(var(--surface-container-lowest))] p-3 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col gap-2 text-left">
               <div className="aspect-square rounded-lg overflow-hidden bg-[hsl(var(--surface-container-high))] relative flex items-center justify-center">
-                <Package className="h-12 w-12 text-muted-foreground/40 group-hover:scale-110 transition-transform duration-500" />
+                {p.image_url ? (
+                  <img src={p.image_url} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                ) : (
+                  <Package className="h-12 w-12 text-muted-foreground/40 group-hover:scale-110 transition-transform duration-500" />
+                )}
                 {p.stock <= 5 && p.stock > 0 && (
                   <span className="absolute top-2 right-2 bg-secondary text-[hsl(var(--secondary-foreground))] text-[10px] font-bold px-2 py-1 rounded-md">
                     {t("lowStock")}
@@ -284,8 +309,12 @@ export default function POS() {
           )}
           {cart.map(i => (
             <div key={i.product.id} className="flex items-center gap-3 p-2 bg-[hsl(var(--surface))] rounded-xl">
-              <div className="w-14 h-14 rounded-lg bg-[hsl(var(--surface-container-high))] flex items-center justify-center shrink-0">
-                <Package className="h-6 w-6 text-muted-foreground/50" />
+              <div className="w-14 h-14 rounded-lg bg-[hsl(var(--surface-container-high))] flex items-center justify-center shrink-0 overflow-hidden">
+                {i.product.image_url ? (
+                  <img src={i.product.image_url} alt={i.product.name} className="w-full h-full object-cover" loading="lazy" />
+                ) : (
+                  <Package className="h-6 w-6 text-muted-foreground/50" />
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="font-semibold text-foreground text-sm truncate">{i.product.name}</h4>
@@ -311,16 +340,10 @@ export default function POS() {
 
         {cart.length > 0 && (
           <>
-            <div className="grid grid-cols-2 gap-2 mb-3">
+            <div className="grid grid-cols-1 gap-2 mb-3">
               <div>
                 <Label className="text-xs">{t("customer")}</Label>
-                <Select value={customerId || "_walkin"} onValueChange={v => setCustomerId(v === "_walkin" ? "" : v)}>
-                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_walkin">{t("walkInCustomer")}</SelectItem>
-                    {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <CustomerCombobox customers={customers} value={customerId} onChange={setCustomerId} />
               </div>
               <div>
                 <Label className="text-xs">{t("paymentType")}</Label>
@@ -368,10 +391,23 @@ export default function POS() {
                     </Select>
                   </div>
                 </div>
-                <div className="flex justify-between text-xs pt-2 border-t border-secondary/30">
-                  <span className="text-muted-foreground">EMI/{t("months")}</span>
-                  <span className="font-bold">{fmt(emi)}</span>
+                <div className="space-y-1 pt-2 border-t border-secondary/30 text-xs">
+                  <div className="flex justify-between"><span className="text-muted-foreground">মোট সুদ</span><span className="font-bold">{fmt(interestAmount)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">EMI / {t("months")}</span><span className="font-bold text-primary">{fmt(emi)}</span></div>
                 </div>
+                {schedulePreview.length > 0 && (
+                  <details className="text-xs rounded-lg bg-[hsl(var(--surface-container-lowest))] p-2">
+                    <summary className="cursor-pointer font-bold flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> {t("schedule")} preview ({schedulePreview.length})</summary>
+                    <div className="max-h-32 overflow-y-auto mt-2 space-y-1">
+                      {schedulePreview.map(s => (
+                        <div key={s.no} className="flex justify-between border-b border-dashed border-muted/50 py-0.5">
+                          <span>#{s.no} · {s.date}</span>
+                          <span className="font-mono font-bold">{fmt(s.amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
               </div>
             )}
           </>
@@ -430,33 +466,36 @@ export default function POS() {
       </section>
 
       <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
-        <DialogContent className="max-w-sm bg-[hsl(var(--surface-container-lowest))]">
-          <DialogHeader><DialogTitle>{t("receipt")}</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-md bg-[hsl(var(--surface-container-lowest))] max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{t("receipt")} — Thermal 80mm</DialogTitle></DialogHeader>
           {lastSale && (
-            <div id="receipt-print" className="text-sm space-y-2">
-              <div className="text-center border-b pb-2">
-                <div className="font-bold text-lg">{t("appName")}</div>
-                <div className="text-xs text-muted-foreground">{lastSale.invoice_no}</div>
-                <div className="text-xs">{new Date(lastSale.created_at).toLocaleString()}</div>
-              </div>
-              <div className="text-xs">{t("customer")}: {lastSale.customer?.name ?? t("walkInCustomer")}</div>
-              <div className="border-y py-2 space-y-1">
-                {lastSale.items.map((i: CartItem) => (
-                  <div key={i.product.id} className="flex justify-between text-xs">
-                    <span>{i.product.name} × {i.qty}</span>
-                    <span>{fmt(i.product.price * i.qty)}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="space-y-0.5 text-xs">
-                <div className="flex justify-between"><span>{t("subtotal")}</span><span>{fmt(Number(lastSale.subtotal))}</span></div>
-                <div className="flex justify-between"><span>{t("discount")}</span><span>{fmt(Number(lastSale.discount))}</span></div>
-                <div className="flex justify-between font-bold"><span>{t("total")}</span><span>{fmt(Number(lastSale.total))}</span></div>
-                <div className="flex justify-between"><span>{t("paid")}</span><span>{fmt(Number(lastSale.paid))}</span></div>
-                <div className="flex justify-between"><span>{t("due")}</span><span>{fmt(Number(lastSale.due))}</span></div>
-              </div>
-              <div className="text-center text-xs pt-2 border-t">{t("thankYou")}</div>
-            </div>
+            <ThermalReceipt
+              ref={receiptRef}
+              shop={{
+                name: currentShop?.name ?? t("appName"),
+                address: currentShop?.address,
+                phone: currentShop?.phone,
+                logo_url: currentShop?.logo_url,
+              }}
+              invoiceNo={lastSale.invoice_no}
+              createdAt={lastSale.created_at}
+              customer={lastSale.customer ? { name: lastSale.customer.name, phone: lastSale.customer.phone } : null}
+              items={lastSale.items.map((i: CartItem) => ({
+                name: i.product.name,
+                qty: i.qty,
+                unit_price: i.product.price,
+                subtotal: i.product.price * i.qty,
+              }))}
+              subtotal={Number(lastSale.subtotal)}
+              discount={Number(lastSale.discount)}
+              total={Number(lastSale.total)}
+              paid={Number(lastSale.paid)}
+              due={Number(lastSale.due)}
+              paymentType={lastSale.payment_type}
+              paymentMethod={lastSale.payment_method ?? undefined}
+              emi={lastSale.emi_amount ? { count: lastSale.tenure_months, amount: Number(lastSale.emi_amount), firstDue: lastSale.first_due } : null}
+              fmt={fmt}
+            />
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowReceipt(false)}>{t("cancel")}</Button>
