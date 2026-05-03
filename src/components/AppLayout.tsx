@@ -58,7 +58,7 @@ export default function AppLayout() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-4 md:gap-6">
+        <div className="flex items-center gap-2 md:gap-6">
           {/* Shop switcher (super admin) */}
           {isSuperAdmin && shops.length > 0 && (
             <div className="relative">
@@ -88,7 +88,7 @@ export default function AppLayout() {
 
           <button
             onClick={() => setLang(lang === "bn" ? "en" : "bn")}
-            className="flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 hover:brightness-105"
+            className="hidden sm:flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 hover:brightness-105"
           >
             <Languages className="h-4 w-4" />
             BN / EN
@@ -108,7 +108,7 @@ export default function AppLayout() {
 
       {/* Main canvas */}
       <main className="md:ml-64 pt-16 min-h-screen">
-        <div className="px-4 md:px-8 py-8 animate-fade-in">
+        <div className="px-3 md:px-8 py-6 md:py-8 animate-fade-in">
           <Outlet />
         </div>
       </main>
