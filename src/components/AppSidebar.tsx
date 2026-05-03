@@ -2,42 +2,66 @@ import { NavLink, useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, Package, Receipt, Warehouse, Users, ShoppingCart,
   HelpCircle, LogOut, Truck, ShoppingBag, Wallet, ClipboardList,
-  UserCog, CalendarCheck, BarChart3,
+  UserCog, CalendarCheck, BarChart3, Store,
 } from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useShop, PageKey } from "@/hooks/useShop";
 
 export function AppSidebar() {
   const { pathname } = useLocation();
   const { t } = useT();
   const { signOut } = useAuth();
+  const { canAccess, isSuperAdmin, currentShop } = useShop();
 
-  const items = [
-    { url: "/", icon: LayoutDashboard, label: t("dashboard") },
-    { url: "/pos", icon: ShoppingCart, label: t("pos") },
-    { url: "/sales", icon: Receipt, label: t("salesLedger") },
-    { url: "/customers", icon: Users, label: t("customers") },
-    { url: "/installments", icon: Wallet, label: t("installments") },
-    { url: "/products", icon: Package, label: t("productCatalog") },
-    { url: "/suppliers", icon: Truck, label: t("suppliers") },
-    { url: "/purchases", icon: ShoppingBag, label: t("purchases") },
-    { url: "/stock-adjustments", icon: Warehouse, label: t("stockAdjustments") },
-    { url: "/expenses", icon: ClipboardList, label: t("expenses") },
-    { url: "/reports", icon: BarChart3, label: t("reports") },
-    { url: "/staff", icon: UserCog, label: t("staff") },
-    { url: "/attendance", icon: CalendarCheck, label: t("attendance") },
+  const allItems: { url: string; icon: any; label: string; key: PageKey }[] = [
+    { url: "/", icon: LayoutDashboard, label: t("dashboard"), key: "dashboard" },
+    { url: "/pos", icon: ShoppingCart, label: t("pos"), key: "pos" },
+    { url: "/sales", icon: Receipt, label: t("salesLedger"), key: "sales" },
+    { url: "/customers", icon: Users, label: t("customers"), key: "customers" },
+    { url: "/installments", icon: Wallet, label: t("installments"), key: "installments" },
+    { url: "/products", icon: Package, label: t("productCatalog"), key: "products" },
+    { url: "/suppliers", icon: Truck, label: t("suppliers"), key: "suppliers" },
+    { url: "/purchases", icon: ShoppingBag, label: t("purchases"), key: "purchases" },
+    { url: "/stock-adjustments", icon: Warehouse, label: t("stockAdjustments"), key: "stock-adjustments" },
+    { url: "/expenses", icon: ClipboardList, label: t("expenses"), key: "expenses" },
+    { url: "/reports", icon: BarChart3, label: t("reports"), key: "reports" },
+    { url: "/staff", icon: UserCog, label: t("staff"), key: "staff" },
+    { url: "/attendance", icon: CalendarCheck, label: t("attendance"), key: "attendance" },
   ];
+  const items = allItems.filter(i => canAccess(i.key));
 
   return (
     <aside className="hidden md:flex fixed left-0 top-0 h-screen w-64 bg-[hsl(var(--sidebar-background,var(--surface-container-lowest)))] flex-col z-40 shadow-[0_10px_40px_-10px_hsl(var(--foreground)/0.08)] border-r border-[hsl(var(--surface-container-high))]">
-      {/* Brand */}
+      {/* Brand + current shop */}
       <div className="px-6 pt-6 pb-5 border-b border-[hsl(var(--surface-container-high))]">
         <h1 className="text-lg font-black text-foreground leading-tight">{t("appName")}</h1>
-        <p className="text-[10px] text-muted-foreground tracking-[0.2em] uppercase mt-1">Admin Terminal</p>
+        <p className="text-[10px] text-muted-foreground tracking-[0.2em] uppercase mt-1">
+          {isSuperAdmin ? "Super Admin" : "Staff Terminal"}
+        </p>
+        {currentShop && (
+          <div className="mt-3 flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
+            <Store className="h-4 w-4 text-primary shrink-0" />
+            <span className="text-xs font-bold text-foreground truncate">{currentShop.name}</span>
+          </div>
+        )}
       </div>
 
-      {/* Nav — flat list, always visible */}
+      {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+        {isSuperAdmin && (
+          <NavLink
+            to="/shops"
+            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-150 text-[13px] mb-1 ${
+              pathname === "/shops"
+                ? "bg-primary text-primary-foreground font-bold shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.5)]"
+                : "text-foreground/85 font-medium hover:bg-primary/10 hover:text-primary"
+            }`}
+          >
+            <Store className={`h-[18px] w-[18px] shrink-0 ${pathname === "/shops" ? "" : "text-primary"}`} />
+            <span className="truncate">Multiple Shops</span>
+          </NavLink>
+        )}
         {items.map((item) => {
           const active = pathname === item.url;
           return (

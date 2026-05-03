@@ -22,6 +22,7 @@ export type Database = {
           date: string
           id: string
           notes: string | null
+          shop_id: string | null
           staff_id: string
           status: Database["public"]["Enums"]["attendance_status"]
         }
@@ -32,6 +33,7 @@ export type Database = {
           date?: string
           id?: string
           notes?: string | null
+          shop_id?: string | null
           staff_id: string
           status?: Database["public"]["Enums"]["attendance_status"]
         }
@@ -42,6 +44,7 @@ export type Database = {
           date?: string
           id?: string
           notes?: string | null
+          shop_id?: string | null
           staff_id?: string
           status?: Database["public"]["Enums"]["attendance_status"]
         }
@@ -60,16 +63,19 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          shop_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
+          shop_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          shop_id?: string | null
         }
         Relationships: []
       }
@@ -88,6 +94,7 @@ export type Database = {
           phone: string | null
           photo_url: string | null
           present_address: string | null
+          shop_id: string | null
           updated_at: string
         }
         Insert: {
@@ -104,6 +111,7 @@ export type Database = {
           phone?: string | null
           photo_url?: string | null
           present_address?: string | null
+          shop_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -120,6 +128,7 @@ export type Database = {
           phone?: string | null
           photo_url?: string | null
           present_address?: string | null
+          shop_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -129,16 +138,19 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          shop_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
+          shop_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          shop_id?: string | null
         }
         Relationships: []
       }
@@ -152,6 +164,7 @@ export type Database = {
           id: string
           notes: string | null
           payment_method: string | null
+          shop_id: string | null
           title: string
         }
         Insert: {
@@ -163,6 +176,7 @@ export type Database = {
           id?: string
           notes?: string | null
           payment_method?: string | null
+          shop_id?: string | null
           title: string
         }
         Update: {
@@ -174,6 +188,7 @@ export type Database = {
           id?: string
           notes?: string | null
           payment_method?: string | null
+          shop_id?: string | null
           title?: string
         }
         Relationships: [
@@ -200,6 +215,7 @@ export type Database = {
           photo_url: string | null
           relation: string | null
           sale_id: string | null
+          shop_id: string | null
           updated_at: string
         }
         Insert: {
@@ -215,6 +231,7 @@ export type Database = {
           photo_url?: string | null
           relation?: string | null
           sale_id?: string | null
+          shop_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -230,6 +247,7 @@ export type Database = {
           photo_url?: string | null
           relation?: string | null
           sale_id?: string | null
+          shop_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -250,6 +268,7 @@ export type Database = {
           note: string | null
           paid_at: string
           received_by: string | null
+          shop_id: string | null
         }
         Insert: {
           amount: number
@@ -258,6 +277,7 @@ export type Database = {
           note?: string | null
           paid_at?: string
           received_by?: string | null
+          shop_id?: string | null
         }
         Update: {
           amount?: number
@@ -266,6 +286,7 @@ export type Database = {
           note?: string | null
           paid_at?: string
           received_by?: string | null
+          shop_id?: string | null
         }
         Relationships: [
           {
@@ -286,6 +307,7 @@ export type Database = {
           installment_no: number
           paid_amount: number
           sale_id: string
+          shop_id: string | null
           status: Database["public"]["Enums"]["installment_status"]
         }
         Insert: {
@@ -296,6 +318,7 @@ export type Database = {
           installment_no: number
           paid_amount?: number
           sale_id: string
+          shop_id?: string | null
           status?: Database["public"]["Enums"]["installment_status"]
         }
         Update: {
@@ -306,6 +329,7 @@ export type Database = {
           installment_no?: number
           paid_amount?: number
           sale_id?: string
+          shop_id?: string | null
           status?: Database["public"]["Enums"]["installment_status"]
         }
         Relationships: [
@@ -329,6 +353,7 @@ export type Database = {
           is_active: boolean
           name: string
           price: number
+          shop_id: string | null
           sku: string | null
           stock: number
           unit: string | null
@@ -344,6 +369,7 @@ export type Database = {
           is_active?: boolean
           name: string
           price?: number
+          shop_id?: string | null
           sku?: string | null
           stock?: number
           unit?: string | null
@@ -359,6 +385,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           price?: number
+          shop_id?: string | null
           sku?: string | null
           stock?: number
           unit?: string | null
@@ -406,6 +433,7 @@ export type Database = {
           product_name: string
           purchase_id: string
           qty: number
+          shop_id: string | null
           subtotal: number
           unit_cost: number
         }
@@ -416,6 +444,7 @@ export type Database = {
           product_name: string
           purchase_id: string
           qty: number
+          shop_id?: string | null
           subtotal: number
           unit_cost: number
         }
@@ -426,6 +455,7 @@ export type Database = {
           product_name?: string
           purchase_id?: string
           qty?: number
+          shop_id?: string | null
           subtotal?: number
           unit_cost?: number
         }
@@ -449,6 +479,7 @@ export type Database = {
           id: string
           notes: string | null
           paid: number
+          shop_id: string | null
           subtotal: number
           supplier_id: string | null
           total: number
@@ -462,6 +493,7 @@ export type Database = {
           id?: string
           notes?: string | null
           paid?: number
+          shop_id?: string | null
           subtotal?: number
           supplier_id?: string | null
           total?: number
@@ -475,6 +507,7 @@ export type Database = {
           id?: string
           notes?: string | null
           paid?: number
+          shop_id?: string | null
           subtotal?: number
           supplier_id?: string | null
           total?: number
@@ -497,6 +530,7 @@ export type Database = {
           product_name: string
           qty: number
           sale_id: string
+          shop_id: string | null
           subtotal: number
           unit_price: number
         }
@@ -507,6 +541,7 @@ export type Database = {
           product_name: string
           qty: number
           sale_id: string
+          shop_id?: string | null
           subtotal: number
           unit_price: number
         }
@@ -517,6 +552,7 @@ export type Database = {
           product_name?: string
           qty?: number
           sale_id?: string
+          shop_id?: string | null
           subtotal?: number
           unit_price?: number
         }
@@ -555,6 +591,7 @@ export type Database = {
           notes: string | null
           paid: number
           payment_type: Database["public"]["Enums"]["payment_type"]
+          shop_id: string | null
           status: Database["public"]["Enums"]["sale_status"]
           subtotal: number
           tenure_months: number | null
@@ -577,6 +614,7 @@ export type Database = {
           notes?: string | null
           paid?: number
           payment_type?: Database["public"]["Enums"]["payment_type"]
+          shop_id?: string | null
           status?: Database["public"]["Enums"]["sale_status"]
           subtotal?: number
           tenure_months?: number | null
@@ -599,6 +637,7 @@ export type Database = {
           notes?: string | null
           paid?: number
           payment_type?: Database["public"]["Enums"]["payment_type"]
+          shop_id?: string | null
           status?: Database["public"]["Enums"]["sale_status"]
           subtotal?: number
           tenure_months?: number | null
@@ -621,6 +660,89 @@ export type Database = {
           },
         ]
       }
+      shop_users: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          is_active: boolean
+          permissions: Json
+          shop_id: string
+          staff_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          permissions?: Json
+          shop_id: string
+          staff_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          permissions?: Json
+          shop_id?: string
+          staff_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_users_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shops: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          name: string
+          owner_id: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name: string
+          owner_id?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name?: string
+          owner_id?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       staff: {
         Row: {
           address: string | null
@@ -633,6 +755,7 @@ export type Database = {
           phone: string | null
           position: string | null
           salary: number
+          shop_id: string | null
           updated_at: string
         }
         Insert: {
@@ -646,6 +769,7 @@ export type Database = {
           phone?: string | null
           position?: string | null
           salary?: number
+          shop_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -659,6 +783,7 @@ export type Database = {
           phone?: string | null
           position?: string | null
           salary?: number
+          shop_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -672,6 +797,7 @@ export type Database = {
           product_name: string
           qty: number
           reason: string | null
+          shop_id: string | null
           type: Database["public"]["Enums"]["adjustment_type"]
         }
         Insert: {
@@ -682,6 +808,7 @@ export type Database = {
           product_name: string
           qty: number
           reason?: string | null
+          shop_id?: string | null
           type: Database["public"]["Enums"]["adjustment_type"]
         }
         Update: {
@@ -692,6 +819,7 @@ export type Database = {
           product_name?: string
           qty?: number
           reason?: string | null
+          shop_id?: string | null
           type?: Database["public"]["Enums"]["adjustment_type"]
         }
         Relationships: []
@@ -706,6 +834,7 @@ export type Database = {
           name: string
           opening_balance: number
           phone: string | null
+          shop_id: string | null
           updated_at: string
         }
         Insert: {
@@ -717,6 +846,7 @@ export type Database = {
           name: string
           opening_balance?: number
           phone?: string | null
+          shop_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -728,6 +858,7 @@ export type Database = {
           name?: string
           opening_balance?: number
           phone?: string | null
+          shop_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -763,6 +894,15 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      user_can_access_shop: {
+        Args: { _shop_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_in_shop: {
+        Args: { _shop_id: string; _user_id: string }
         Returns: boolean
       }
     }
