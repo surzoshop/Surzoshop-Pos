@@ -305,10 +305,44 @@ export default function POS() {
               </div>
             </div>
             {paymentType === "installment" && (
-              <div className="mb-3">
-                <Label className="text-xs">{t("numberOfInstallments")}</Label>
-                <Input type="number" min={1} max={36} value={installmentCount}
-                  onChange={e => setInstallmentCount(Math.max(1, +e.target.value))} className="h-9" />
+              <div className="mb-3 space-y-2 p-3 rounded-xl bg-secondary/15">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--secondary-foreground))]">{t("loanTerms")}</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">{t("downPayment")}</Label>
+                    <Input type="number" value={downPayment} onChange={e => setDownPayment(+e.target.value || 0)} className="h-9" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">{t("tenureMonths")}</Label>
+                    <Input type="number" min={1} max={60} value={installmentCount}
+                      onChange={e => setInstallmentCount(Math.max(1, +e.target.value))} className="h-9" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">{t("interestRate")}</Label>
+                    <Input type="number" value={interestRate} onChange={e => setInterestRate(+e.target.value || 0)} className="h-9" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">{t("lateFee")}</Label>
+                    <Input type="number" value={lateFeePerDay} onChange={e => setLateFeePerDay(+e.target.value || 0)} className="h-9" />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">{t("guarantor")}</Label>
+                  <div className="flex gap-2">
+                    <Select value={guarantorId || "_none"} onValueChange={v => v === "__new" ? setShowGuarantorForm(true) : setGuarantorId(v === "_none" ? "" : v)}>
+                      <SelectTrigger className="h-9"><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_none">—</SelectItem>
+                        {guarantors.map(g => <SelectItem key={g.id} value={g.id}>{g.name} {g.phone ? `(${g.phone})` : ""}</SelectItem>)}
+                        <SelectItem value="__new">+ {t("add")} {t("guarantor")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex justify-between text-xs pt-2 border-t border-secondary/30">
+                  <span className="text-muted-foreground">EMI/{t("months")}</span>
+                  <span className="font-bold">{fmt(emi)}</span>
+                </div>
               </div>
             )}
           </>
