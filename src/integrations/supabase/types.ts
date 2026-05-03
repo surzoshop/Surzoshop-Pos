@@ -773,7 +773,7 @@ export type Database = {
         | "count"
         | "transfer_in"
         | "transfer_out"
-      app_role: "admin" | "cashier"
+      app_role: "admin" | "cashier" | "super_admin" | "staff"
       attendance_status: "present" | "absent" | "leave" | "half_day"
       installment_status: "pending" | "paid" | "overdue"
       payment_type: "cash" | "installment"
@@ -912,7 +912,7 @@ export const Constants = {
         "transfer_in",
         "transfer_out",
       ],
-      app_role: ["admin", "cashier"],
+      app_role: ["admin", "cashier", "super_admin", "staff"],
       attendance_status: ["present", "absent", "leave", "half_day"],
       installment_status: ["pending", "paid", "overdue"],
       payment_type: ["cash", "installment"],
