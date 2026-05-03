@@ -2,31 +2,34 @@ import { NavLink, useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, Package, Receipt, Warehouse, Users, ShoppingCart,
   HelpCircle, LogOut, Truck, ShoppingBag, Wallet, ClipboardList,
-  UserCog, CalendarCheck, BarChart3,
+  UserCog, CalendarCheck, BarChart3, Store,
 } from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useShop, PageKey } from "@/hooks/useShop";
 
 export function AppSidebar() {
   const { pathname } = useLocation();
   const { t } = useT();
   const { signOut } = useAuth();
+  const { canAccess, isSuperAdmin, currentShop } = useShop();
 
-  const items = [
-    { url: "/", icon: LayoutDashboard, label: t("dashboard") },
-    { url: "/pos", icon: ShoppingCart, label: t("pos") },
-    { url: "/sales", icon: Receipt, label: t("salesLedger") },
-    { url: "/customers", icon: Users, label: t("customers") },
-    { url: "/installments", icon: Wallet, label: t("installments") },
-    { url: "/products", icon: Package, label: t("productCatalog") },
-    { url: "/suppliers", icon: Truck, label: t("suppliers") },
-    { url: "/purchases", icon: ShoppingBag, label: t("purchases") },
-    { url: "/stock-adjustments", icon: Warehouse, label: t("stockAdjustments") },
-    { url: "/expenses", icon: ClipboardList, label: t("expenses") },
-    { url: "/reports", icon: BarChart3, label: t("reports") },
-    { url: "/staff", icon: UserCog, label: t("staff") },
-    { url: "/attendance", icon: CalendarCheck, label: t("attendance") },
+  const allItems: { url: string; icon: any; label: string; key: PageKey }[] = [
+    { url: "/", icon: LayoutDashboard, label: t("dashboard"), key: "dashboard" },
+    { url: "/pos", icon: ShoppingCart, label: t("pos"), key: "pos" },
+    { url: "/sales", icon: Receipt, label: t("salesLedger"), key: "sales" },
+    { url: "/customers", icon: Users, label: t("customers"), key: "customers" },
+    { url: "/installments", icon: Wallet, label: t("installments"), key: "installments" },
+    { url: "/products", icon: Package, label: t("productCatalog"), key: "products" },
+    { url: "/suppliers", icon: Truck, label: t("suppliers"), key: "suppliers" },
+    { url: "/purchases", icon: ShoppingBag, label: t("purchases"), key: "purchases" },
+    { url: "/stock-adjustments", icon: Warehouse, label: t("stockAdjustments"), key: "stock-adjustments" },
+    { url: "/expenses", icon: ClipboardList, label: t("expenses"), key: "expenses" },
+    { url: "/reports", icon: BarChart3, label: t("reports"), key: "reports" },
+    { url: "/staff", icon: UserCog, label: t("staff"), key: "staff" },
+    { url: "/attendance", icon: CalendarCheck, label: t("attendance"), key: "attendance" },
   ];
+  const items = allItems.filter(i => canAccess(i.key));
 
   return (
     <aside className="hidden md:flex fixed left-0 top-0 h-screen w-64 bg-[hsl(var(--sidebar-background,var(--surface-container-lowest)))] flex-col z-40 shadow-[0_10px_40px_-10px_hsl(var(--foreground)/0.08)] border-r border-[hsl(var(--surface-container-high))]">
