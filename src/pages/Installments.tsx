@@ -139,7 +139,8 @@ export default function Installments() {
 
   return (
     <div>
-      <PageHeader title={t("installments")} subtitle={t("installmentsSubtitle")} />
+      <PageHeader title={t("installments")} subtitle={t("installmentsSubtitle")}
+        actions={<PrimaryButton onClick={() => setOpenNew(true)}><Plus className="h-5 w-5" />{lang === "bn" ? "নতুন কিস্তি" : "New Installment"}</PrimaryButton>} />
 
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
@@ -223,6 +224,119 @@ export default function Installments() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setPaying(null)}>{t("cancel")}</Button>
             <Button onClick={pay} className="gradient-primary">{t("pay")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Installment Plan */}
+      <Dialog open={openNew} onOpenChange={setOpenNew}>
+        <DialogContent className="bg-[hsl(var(--surface-container-lowest))] max-w-3xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{lang === "bn" ? "নতুন কিস্তি প্ল্যান" : "New Installment Plan"}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            {/* Customer + Guarantor */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>{t("customer")}</Label>
+                <Select value={plan.customer_id || "_n"} onValueChange={v => setPlan({ ...plan, customer_id: v === "_n" ? "" : v })}>
+                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_n">—</SelectItem>
+                    {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name} {c.phone ? `(${c.phone})` : ""}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>{t("guarantor")}</Label>
+                <div className="flex gap-2">
+                  <Select value={plan.guarantor_id || "_n"} onValueChange={v => v === "__new" ? setShowG(true) : setPlan({ ...plan, guarantor_id: v === "_n" ? "" : v })}>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_n">—</SelectItem>
+                      {guarantors.map(g => <SelectItem key={g.id} value={g.id}>{g.name} {g.phone ? `(${g.phone})` : ""}</SelectItem>)}
+                      <SelectItem value="__new">+ {t("add")} {t("guarantor")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Items */}
+            <div className="border-t border-[hsl(var(--surface-container-high))] pt-3">
+              <Label className="mb-2 block">{t("items")}</Label>
+              <div className="grid grid-cols-12 gap-2 mb-2">
+                <Select value={plan.pid || "_n"} onValueChange={v => { const id = v === "_n" ? "" : v; const p = products.find(x => x.id === id); setPlan({ ...plan, pid: id, price: p ? Number(p.price) : 0 }); }}>
+                  <SelectTrigger className="col-span-5"><SelectValue placeholder={t("products")} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_n">—</SelectItem>
+                    {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Input className="col-span-2" type="number" placeholder={t("qty")} value={plan.qty} onChange={e => setPlan({ ...plan, qty: +e.target.value })} />
+                <Input className="col-span-3" type="number" placeholder={t("price")} value={plan.price} onChange={e => setPlan({ ...plan, price: +e.target.value })} />
+                <Button className="col-span-2" onClick={addPlanItem}>{t("add")}</Button>
+              </div>
+              {plan.items.map((i: any, idx: number) => (
+                <div key={idx} className="flex justify-between items-center text-sm bg-[hsl(var(--surface-container-low))] rounded-lg px-3 py-2 mb-1">
+                  <span className="font-medium">{i.product_name}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-muted-foreground">{i.qty} × {fmt(i.unit_price)}</span>
+                    <span className="font-bold">{fmt(i.subtotal)}</span>
+                    <button onClick={() => setPlan({ ...plan, items: plan.items.filter((_: any, x: number) => x !== idx) })} className="text-destructive"><Trash2 className="h-4 w-4" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Loan terms */}
+            <div className="border-t border-[hsl(var(--surface-container-high))] pt-3 space-y-3">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--secondary-foreground))]">{t("loanTerms")}</div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div><Label>{t("downPayment")}</Label><Input type="number" value={plan.down_payment} onChange={e => setPlan({ ...plan, down_payment: +e.target.value || 0 })} /></div>
+                <div><Label>{t("tenureMonths")}</Label><Input type="number" min={1} max={60} value={plan.tenure_months} onChange={e => setPlan({ ...plan, tenure_months: Math.max(1, +e.target.value) })} /></div>
+                <div><Label>{t("interestRate")}</Label><Input type="number" value={plan.interest_rate} onChange={e => setPlan({ ...plan, interest_rate: +e.target.value || 0 })} /></div>
+                <div><Label>{t("lateFee")}</Label><Input type="number" value={plan.late_fee_per_day} onChange={e => setPlan({ ...plan, late_fee_per_day: +e.target.value || 0 })} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>{lang === "bn" ? "প্রথম কিস্তির তারিখ" : "First due date"}</Label><Input type="date" value={plan.first_due} onChange={e => setPlan({ ...plan, first_due: e.target.value })} /></div>
+                <div><Label>{lang === "bn" ? "নোট" : "Notes"}</Label><Input value={plan.notes} onChange={e => setPlan({ ...plan, notes: e.target.value })} /></div>
+              </div>
+            </div>
+
+            {/* Summary */}
+            <div className="bg-secondary/15 rounded-xl p-4 space-y-1.5 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">{t("subtotal")}</span><span>{fmt(planSubtotal)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">{lang === "bn" ? "সুদ" : "Interest"}</span><span>{fmt(interestAmount)}</span></div>
+              <div className="flex justify-between font-bold"><span>{t("total")}</span><span>{fmt(planTotal)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">{t("downPayment")}</span><span>−{fmt(plan.down_payment)}</span></div>
+              <div className="flex justify-between text-destructive font-bold border-t border-secondary/40 pt-1.5"><span>{lang === "bn" ? "অর্থায়িত পরিমাণ" : "Financed"}</span><span>{fmt(financed)}</span></div>
+              <div className="flex justify-between text-primary font-black text-base pt-1"><span>EMI / {t("months")}</span><span>{fmt(emi)}</span></div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenNew(false)}>{t("cancel")}</Button>
+            <Button onClick={savePlan} className="gradient-primary">{t("save")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick Guarantor */}
+      <Dialog open={showG} onOpenChange={setShowG}>
+        <DialogContent className="bg-[hsl(var(--surface-container-lowest))]">
+          <DialogHeader><DialogTitle>{t("add")} {t("guarantor")}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>{t("name")}</Label><Input value={gForm.name} onChange={e => setGForm({ ...gForm, name: e.target.value })} /></div>
+              <div><Label>{t("relation")}</Label><Input value={gForm.relation} onChange={e => setGForm({ ...gForm, relation: e.target.value })} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>{t("phone")}</Label><Input value={gForm.phone} onChange={e => setGForm({ ...gForm, phone: e.target.value })} /></div>
+              <div><Label>{t("nid")}</Label><Input value={gForm.nid} onChange={e => setGForm({ ...gForm, nid: e.target.value })} /></div>
+            </div>
+            <div><Label>{t("address")}</Label><Input value={gForm.address} onChange={e => setGForm({ ...gForm, address: e.target.value })} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowG(false)}>{t("cancel")}</Button>
+            <Button onClick={saveGuarantor} className="gradient-primary">{t("save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
