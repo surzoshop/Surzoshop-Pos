@@ -429,44 +429,6 @@ export default function POS() {
         </div>
       </section>
 
-      <Dialog open={pairOpen} onOpenChange={setPairOpen}>
-        <DialogContent className="max-w-xl bg-[hsl(var(--surface-container-lowest))]">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Smartphone className="h-5 w-5 text-primary" /> Mobile Pairing</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <Card className="p-4 space-y-2 bg-primary/5 border-primary/20">
-              <div className="flex items-center gap-2 text-sm font-bold"><Wifi className="h-4 w-4 text-primary" /> Step 1: মোবাইলে scanner app খুলুন</div>
-              <p className="text-xs text-muted-foreground">এই QR scan করুন অথবা link copy করে ফোনে খুলুন।</p>
-              <div className="bg-background rounded-xl p-4">
-                <QRCode value={pairLink} size={180} className="mx-auto h-auto w-full max-w-[180px]" />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" onClick={() => { navigator.clipboard.writeText(pairLink); toast({ title: "Link copied" }); }}><Link2 className="h-4 w-4" /> Copy link</Button>
-                <Button variant="outline" onClick={() => { navigator.clipboard.writeText(offerText); toast({ title: "Offer copied" }); }}><Copy className="h-4 w-4" /> Copy offer</Button>
-              </div>
-            </Card>
-
-            <div className="space-y-2">
-              <Label>Step 2: Scanner app-এর answer code এখানে দিন</Label>
-              <textarea
-                value={answerInput}
-                onChange={(e) => setAnswerInput(e.target.value)}
-                placeholder="Answer code / link paste করুন"
-                className="w-full min-h-28 rounded-xl border bg-background p-3 text-xs"
-              />
-              <Button onClick={finalizePairing} className="w-full gradient-primary text-primary-foreground">Connect scanner</Button>
-            </div>
-
-            <div className="rounded-xl bg-muted/50 px-4 py-3 text-sm flex items-center gap-2">
-              {rtcPhase === "connected" ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <Smartphone className="h-4 w-4 text-primary" />}
-              <span>{connectionState}</span>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPairOpen(false)}>{t("cancel")}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
         <DialogContent className="max-w-sm bg-[hsl(var(--surface-container-lowest))]">
           <DialogHeader><DialogTitle>{t("receipt")}</DialogTitle></DialogHeader>
