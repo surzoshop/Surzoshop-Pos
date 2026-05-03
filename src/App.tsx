@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ShopProvider } from "@/hooks/useShop";
+import { MobileScannerProvider } from "@/hooks/useMobileScanner";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PageGate } from "@/components/PageGate";
 import AppLayout from "@/components/AppLayout";
