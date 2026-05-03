@@ -64,7 +64,7 @@ export default function InstallApp() {
             <p className="text-sm text-muted-foreground">মোবাইলকে barcode scanner remote হিসেবে ব্যবহার করুন এবং সরাসরি POS-এ product পাঠান।</p>
           </div>
           <Button asChild className="gradient-primary text-primary-foreground">
-            <a href="/scanner.html">
+            <a href="/scanner?standalone=1">
               Open Scanner App <ArrowRight className="h-4 w-4" />
             </a>
           </Button>
