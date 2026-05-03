@@ -329,16 +329,10 @@ export default function POS() {
 
         {cart.length > 0 && (
           <>
-            <div className="grid grid-cols-2 gap-2 mb-3">
+            <div className="grid grid-cols-1 gap-2 mb-3">
               <div>
                 <Label className="text-xs">{t("customer")}</Label>
-                <Select value={customerId || "_walkin"} onValueChange={v => setCustomerId(v === "_walkin" ? "" : v)}>
-                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_walkin">{t("walkInCustomer")}</SelectItem>
-                    {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <CustomerCombobox customers={customers} value={customerId} onChange={setCustomerId} />
               </div>
               <div>
                 <Label className="text-xs">{t("paymentType")}</Label>
