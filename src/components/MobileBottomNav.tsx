@@ -13,10 +13,10 @@ export function MobileBottomNav({ onOpenMenu }: Props) {
   const { canAccess } = useShop();
 
   const items: { url: string; icon: any; label: string; key: PageKey }[] = [
-    { url: "/", icon: LayoutDashboard, label: t("dashboard"), key: "dashboard" },
-    { url: "/pos", icon: ShoppingCart, label: t("pos"), key: "pos" },
-    { url: "/installments", icon: Wallet, label: t("installments"), key: "installments" },
-    { url: "/reports", icon: BarChart3, label: t("reports"), key: "reports" },
+    { url: "/", icon: LayoutDashboard, label: t("dashboard"), key: "dashboard" as PageKey },
+    { url: "/pos", icon: ShoppingCart, label: t("pos"), key: "pos" as PageKey },
+    { url: "/installments", icon: Wallet, label: t("installments"), key: "installments" as PageKey },
+    { url: "/reports", icon: BarChart3, label: t("reports"), key: "reports" as PageKey },
   ].filter(i => canAccess(i.key));
 
   return (
@@ -46,7 +46,7 @@ export function MobileBottomNav({ onOpenMenu }: Props) {
           <div className="h-9 w-12 flex items-center justify-center rounded-xl">
             <Menu className="h-5 w-5" />
           </div>
-          <span>{t("more") || "More"}</span>
+          <span>{t("menu" as any) || "Menu"}</span>
         </button>
       </div>
     </nav>
