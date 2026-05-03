@@ -46,7 +46,7 @@ export default function Products() {
   };
   useEffect(() => { load(); }, []);
 
-  const startEdit = (p: any) => { setEditing(p); setForm({ ...p, category_id: p.category_id ?? "" }); setOpen(true); };
+  const startEdit = (p: any) => { setEditing(p); setForm({ ...p, category_id: p.category_id ?? "", image_url: p.image_url ?? "" }); setOpen(true); };
   const startNew = () => { setEditing(null); setForm(empty); setOpen(true); };
 
   const save = async () => {
