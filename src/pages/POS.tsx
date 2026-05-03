@@ -4,25 +4,27 @@ import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Minus, ScanLine, Receipt as ReceiptIcon } from "lucide-react";
+import { Trash2, Plus, Minus, Search, ScanLine, ShoppingCart, Trash, Receipt as ReceiptIcon, Printer, Package } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
-type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number };
+type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number; category?: string };
 type CartItem = { product: Product; qty: number };
+
+const VAT_RATE = 0.05;
 
 export default function POS() {
   const { t, fmt, lang } = useT();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
-  const [results, setResults] = useState<Product[]>([]);
+  const [activeCat, setActiveCat] = useState<string>("__all");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [discount, setDiscount] = useState(0);
-  const [paid, setPaid] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "bkash" | "nagad">("cash");
   const [paymentType, setPaymentType] = useState<"cash" | "installment">("cash");
   const [customers, setCustomers] = useState<any[]>([]);
   const [customerId, setCustomerId] = useState<string>("");
@@ -31,28 +33,40 @@ export default function POS() {
   const [showReceipt, setShowReceipt] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { inputRef.current?.focus(); loadCustomers(); }, []);
-  const loadCustomers = async () => {
-    const { data } = await supabase.from("customers").select("id,name,phone").order("name");
-    setCustomers(data ?? []);
+  useEffect(() => { inputRef.current?.focus(); load(); }, []);
+
+  const load = async () => {
+    const [{ data: p }, { data: c }] = await Promise.all([
+      supabase.from("products").select("id,name,barcode,sku,price,stock,category").order("name"),
+      supabase.from("customers").select("id,name,phone").order("name"),
+    ]);
+    setProducts(p ?? []);
+    setCustomers(c ?? []);
   };
 
+  // Auto-add by barcode scan
   useEffect(() => {
-    if (!search) { setResults([]); return; }
-    const id = setTimeout(async () => {
-      const { data } = await supabase.from("products")
-        .select("id,name,barcode,sku,price,stock")
-        .or(`barcode.eq.${search},name.ilike.%${search}%,sku.ilike.%${search}%`)
-        .limit(8);
-      setResults(data ?? []);
-      // auto-add if exact barcode match
-      const exact = (data ?? []).find(p => p.barcode === search);
-      if (exact) { addToCart(exact); setSearch(""); setResults([]); }
+    if (!search) return;
+    const id = setTimeout(() => {
+      const exact = products.find(p => p.barcode === search);
+      if (exact) { addToCart(exact); setSearch(""); }
     }, 200);
     return () => clearTimeout(id);
-  }, [search]);
+  }, [search, products]);
+
+  const categories = ["__all", ...Array.from(new Set(products.map(p => p.category).filter(Boolean) as string[]))];
+
+  const visible = products.filter(p => {
+    if (activeCat !== "__all" && p.category !== activeCat) return false;
+    if (search && !p.name.toLowerCase().includes(search.toLowerCase()) && !p.sku?.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
 
   const addToCart = (p: Product) => {
+    if (p.stock <= 0) {
+      toast({ title: t("outOfStock"), variant: "destructive" });
+      return;
+    }
     setCart(c => {
       const ex = c.find(i => i.product.id === p.id);
       if (ex) return c.map(i => i.product.id === p.id ? { ...i, qty: Math.min(i.qty + 1, p.stock) } : i);
@@ -65,13 +79,15 @@ export default function POS() {
   const removeItem = (id: string) => setCart(c => c.filter(i => i.product.id !== id));
 
   const subtotal = cart.reduce((a, i) => a + i.product.price * i.qty, 0);
-  const total = Math.max(0, subtotal - discount);
-  const due = Math.max(0, total - paid);
+  const vat = subtotal * VAT_RATE;
+  const total = Math.max(0, subtotal + vat - discount);
+  const due = paymentType === "installment" ? total : 0;
+  const paid = total - due;
 
   const completeSale = async () => {
     if (cart.length === 0) return;
     if (paymentType === "installment" && !customerId) {
-      toast({ title: lang === "bn" ? "ক্রেতা নির্বাচন করুন" : "Select a customer for installment", variant: "destructive" });
+      toast({ title: lang === "bn" ? "ক্রেতা নির্বাচন করুন" : "Select a customer", variant: "destructive" });
       return;
     }
 
@@ -105,109 +121,232 @@ export default function POS() {
 
     setLastSale({ ...sale, items: cart, customer: customers.find(c => c.id === customerId) });
     setShowReceipt(true);
-    setCart([]); setDiscount(0); setPaid(0); setCustomerId(""); setPaymentType("cash");
+    setCart([]); setDiscount(0); setCustomerId(""); setPaymentType("cash"); setPaymentMethod("cash");
+    load();
     toast({ title: lang === "bn" ? "বিক্রয় সম্পন্ন" : "Sale completed" });
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 h-[calc(100vh-7rem)]">
-      <div className="lg:col-span-3 flex flex-col gap-4 min-h-0">
-        <Card className="p-4">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-[calc(100vh-8rem)]">
+      {/* LEFT — product browser */}
+      <section className="lg:col-span-3 flex flex-col gap-4 min-h-0">
+        {/* Search + barcode */}
+        <div className="bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-4 shadow-sm">
           <div className="relative">
-            <ScanLine className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input ref={inputRef} value={search} onChange={e => setSearch(e.target.value)} placeholder={t("scanBarcode")} className="pl-10 h-11 text-base" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <input
+              ref={inputRef}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={t("productSearch")}
+              className="w-full h-14 pl-12 pr-12 rounded-xl bg-[hsl(var(--surface-container-low))] border-none focus:outline-none focus:ring-2 focus:ring-primary/30 text-base"
+            />
+            <ScanLine className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary cursor-pointer hover:scale-110 transition-transform" />
           </div>
-          {results.length > 0 && (
-            <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2 max-h-64 overflow-auto">
-              {results.map(p => (
-                <button key={p.id} onClick={() => { addToCart(p); setSearch(""); setResults([]); inputRef.current?.focus(); }}
-                  className="text-left p-3 rounded-lg border hover:border-primary hover:bg-primary/5 transition">
-                  <div className="font-medium text-sm line-clamp-1">{p.name}</div>
-                  <div className="text-xs text-muted-foreground">{t("stock")}: {p.stock}</div>
-                  <div className="text-primary font-semibold mt-1">{fmt(p.price)}</div>
+        </div>
+
+        {/* Category chips */}
+        <div className="flex gap-3 overflow-x-auto pb-2">
+          {categories.map(c => (
+            <button key={c} onClick={() => setActiveCat(c)}
+              className={`px-6 py-2 rounded-full font-medium whitespace-nowrap text-sm transition-all ${
+                activeCat === c
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-[hsl(var(--surface-container-lowest))] text-muted-foreground hover:bg-white"
+              }`}>
+              {c === "__all" ? t("allProducts") : c}
+            </button>
+          ))}
+        </div>
+
+        {/* Product grid */}
+        <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 pb-4">
+          {visible.length === 0 && (
+            <div className="col-span-full text-center text-muted-foreground py-16">{t("noResults")}</div>
+          )}
+          {visible.map(p => (
+            <button key={p.id} onClick={() => addToCart(p)}
+              className="bg-[hsl(var(--surface-container-lowest))] p-3 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col gap-2 text-left">
+              <div className="aspect-square rounded-lg overflow-hidden bg-[hsl(var(--surface-container-high))] relative flex items-center justify-center">
+                <Package className="h-12 w-12 text-muted-foreground/40 group-hover:scale-110 transition-transform duration-500" />
+                {p.stock <= 5 && p.stock > 0 && (
+                  <span className="absolute top-2 right-2 bg-secondary text-[hsl(var(--secondary-foreground))] text-[10px] font-bold px-2 py-1 rounded-md">
+                    {t("lowStock")}
+                  </span>
+                )}
+                {p.stock === 0 && (
+                  <span className="absolute top-2 right-2 bg-destructive text-destructive-foreground text-[10px] font-bold px-2 py-1 rounded-md">
+                    {t("outOfStock")}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-col">
+                {p.category && <span className="text-muted-foreground text-xs mb-1">{p.category}</span>}
+                <h3 className="font-bold text-foreground text-sm leading-tight line-clamp-2">{p.name}</h3>
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-primary font-bold">{fmt(p.price)}</span>
+                  <span className="text-primary bg-primary/10 p-1 rounded-lg">
+                    <Plus className="h-4 w-4" />
+                  </span>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* RIGHT — cart */}
+      <section className="lg:col-span-2 flex flex-col bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-6 min-h-0 shadow-sm">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-extrabold flex items-center gap-2 text-foreground">
+            <ShoppingCart className="h-6 w-6 text-primary" />
+            {t("currentCart")} ({cart.length})
+          </h2>
+          {cart.length > 0 && (
+            <button onClick={() => setCart([])} className="text-destructive text-sm font-medium flex items-center gap-1 hover:bg-destructive/10 px-3 py-1 rounded-lg transition-colors">
+              <Trash className="h-4 w-4" />
+              {t("clearAll")}
+            </button>
+          )}
+        </div>
+
+        {/* Items */}
+        <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+          {cart.length === 0 && (
+            <div className="text-center text-muted-foreground py-12">{t("emptyCart")}</div>
+          )}
+          {cart.map(i => (
+            <div key={i.product.id} className="flex items-center gap-3 p-2 bg-[hsl(var(--surface))] rounded-xl">
+              <div className="w-14 h-14 rounded-lg bg-[hsl(var(--surface-container-high))] flex items-center justify-center shrink-0">
+                <Package className="h-6 w-6 text-muted-foreground/50" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-semibold text-foreground text-sm truncate">{i.product.name}</h4>
+                <div className="flex items-center justify-between mt-2 gap-2">
+                  <div className="flex items-center gap-2 bg-[hsl(var(--surface-container-high))] rounded-full px-2 py-1">
+                    <button onClick={() => updateQty(i.product.id, -1)} className="w-6 h-6 flex items-center justify-center bg-[hsl(var(--surface-container-lowest))] rounded-full shadow-sm active:scale-90">
+                      <Minus className="h-3 w-3" />
+                    </button>
+                    <span className="text-sm font-bold w-6 text-center">{i.qty}</span>
+                    <button onClick={() => updateQty(i.product.id, 1)} className="w-6 h-6 flex items-center justify-center bg-[hsl(var(--surface-container-lowest))] rounded-full shadow-sm active:scale-90">
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <span className="font-bold text-primary text-sm">{fmt(i.product.price * i.qty)}</span>
+                  <button onClick={() => removeItem(i.product.id)} className="text-destructive p-1">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Customer + Payment Type */}
+        {cart.length > 0 && (
+          <>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <div>
+                <Label className="text-xs">{t("customer")}</Label>
+                <Select value={customerId || "_walkin"} onValueChange={v => setCustomerId(v === "_walkin" ? "" : v)}>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_walkin">{t("walkInCustomer")}</SelectItem>
+                    {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">{t("paymentType")}</Label>
+                <Select value={paymentType} onValueChange={v => setPaymentType(v as any)}>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">{t("cash")}</SelectItem>
+                    <SelectItem value="installment">{t("installmentSale")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {paymentType === "installment" && (
+              <div className="mb-3">
+                <Label className="text-xs">{t("numberOfInstallments")}</Label>
+                <Input type="number" min={1} max={36} value={installmentCount}
+                  onChange={e => setInstallmentCount(Math.max(1, +e.target.value))} className="h-9" />
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Summary & payment */}
+        <div className="space-y-4 pt-4 border-t border-[hsl(var(--surface-container-high))]">
+          <div className="flex gap-2">
+            <input
+              type="number"
+              value={discount || ""}
+              onChange={e => setDiscount(+e.target.value || 0)}
+              placeholder={t("discountCode")}
+              className="flex-1 h-10 px-4 rounded-lg bg-[hsl(var(--surface))] border-none text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50"
+            />
+            <button className="bg-secondary text-[hsl(var(--secondary-foreground))] px-4 rounded-lg font-bold text-sm hover:brightness-105 transition">
+              {t("apply")}
+            </button>
+          </div>
+
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between text-muted-foreground">
+              <span>{t("subtotal")}:</span>
+              <span>{fmt(subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-muted-foreground">
+              <span>{t("vat")}:</span>
+              <span>{fmt(vat)}</span>
+            </div>
+            <div className="flex justify-between text-muted-foreground">
+              <span>{t("discount")}:</span>
+              <span className="text-destructive">-{fmt(discount)}</span>
+            </div>
+            <div className="flex justify-between text-xl font-black pt-2 border-t border-dashed border-[hsl(var(--surface-container-highest))]">
+              <span>{t("grandTotal")}:</span>
+              <span className="text-primary">{fmt(total)}</span>
+            </div>
+          </div>
+
+          {/* Payment methods */}
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t("paymentMethods")}</span>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { id: "cash", label: "Cash" },
+                { id: "card", label: "Card" },
+                { id: "bkash", label: "bKash", color: "text-pink-600" },
+                { id: "nagad", label: "Nagad", color: "text-orange-600" },
+              ].map(m => (
+                <button key={m.id} onClick={() => setPaymentMethod(m.id as any)}
+                  className={`h-10 flex items-center justify-center rounded-lg transition-all text-xs font-bold ${
+                    paymentMethod === m.id
+                      ? "bg-[hsl(var(--surface-container-low))] border-2 border-primary text-primary"
+                      : `bg-[hsl(var(--surface-container-low))] ${m.color ?? "text-muted-foreground"} hover:bg-[hsl(var(--surface-container))]`
+                  }`}>
+                  {m.label}
                 </button>
               ))}
             </div>
-          )}
-        </Card>
-
-        <Card className="flex-1 flex flex-col min-h-0">
-          <div className="p-4 border-b font-semibold">{t("cart")} ({cart.length})</div>
-          <div className="flex-1 overflow-auto p-2">
-            {cart.length === 0 && <div className="text-center text-muted-foreground p-8">{t("emptyCart")}</div>}
-            {cart.map(i => (
-              <div key={i.product.id} className="flex items-center gap-2 p-2 rounded hover:bg-muted/50">
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{i.product.name}</div>
-                  <div className="text-xs text-muted-foreground">{fmt(i.product.price)} × {i.qty}</div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQty(i.product.id, -1)}><Minus className="h-3 w-3" /></Button>
-                  <span className="w-8 text-center text-sm">{i.qty}</span>
-                  <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQty(i.product.id, 1)}><Plus className="h-3 w-3" /></Button>
-                </div>
-                <div className="w-20 text-right font-semibold">{fmt(i.product.price * i.qty)}</div>
-                <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => removeItem(i.product.id)}><Trash2 className="h-3 w-3" /></Button>
-              </div>
-            ))}
           </div>
-        </Card>
-      </div>
 
-      <Card className="lg:col-span-2 p-4 flex flex-col gap-3 overflow-auto">
-        <div>
-          <Label>{t("customer")}</Label>
-          <Select value={customerId || "_walkin"} onValueChange={v => setCustomerId(v === "_walkin" ? "" : v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="_walkin">{t("walkInCustomer")}</SelectItem>
-              {customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name} {c.phone ? `• ${c.phone}` : ""}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <Label>{t("paymentType")}</Label>
-          <Select value={paymentType} onValueChange={v => setPaymentType(v as any)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="cash">{t("cash")}</SelectItem>
-              <SelectItem value="installment">{t("installmentSale")}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {paymentType === "installment" && (
-          <div>
-            <Label>{t("numberOfInstallments")}</Label>
-            <Input type="number" min={1} max={36} value={installmentCount} onChange={e => setInstallmentCount(Math.max(1, +e.target.value))} />
+          {/* Action buttons */}
+          <div className="flex flex-col gap-3">
+            <button onClick={completeSale} disabled={cart.length === 0}
+              className="w-full h-14 gradient-primary text-primary-foreground rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.4)] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed">
+              <ReceiptIcon className="h-5 w-5" />
+              {t("payNow")}
+            </button>
           </div>
-        )}
-
-        <div className="space-y-1 mt-2 pt-3 border-t">
-          <div className="flex justify-between text-sm"><span>{t("subtotal")}</span><span>{fmt(subtotal)}</span></div>
-          <div className="flex justify-between items-center text-sm">
-            <span>{t("discount")}</span>
-            <Input type="number" value={discount} onChange={e => setDiscount(+e.target.value || 0)} className="w-24 h-8 text-right" />
-          </div>
-          <div className="flex justify-between text-base font-bold pt-2 border-t"><span>{t("total")}</span><span className="text-primary">{fmt(total)}</span></div>
-          <div className="flex justify-between items-center text-sm pt-2">
-            <span>{t("paid")}</span>
-            <Input type="number" value={paid} onChange={e => setPaid(+e.target.value || 0)} className="w-24 h-8 text-right" />
-          </div>
-          <div className="flex justify-between text-sm font-semibold"><span>{t("due")}</span><span className={due > 0 ? "text-warning" : ""}>{fmt(due)}</span></div>
         </div>
+      </section>
 
-        <div className="flex gap-2 mt-2">
-          <Button variant="outline" className="flex-1" onClick={() => setPaid(total)}>{t("cash")} = {t("total")}</Button>
-        </div>
-        <Button size="lg" className="w-full" onClick={completeSale} disabled={cart.length === 0}>
-          <ReceiptIcon className="h-5 w-5 mr-2" />{t("completeSale")}
-        </Button>
-      </Card>
-
+      {/* Receipt dialog */}
       <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm bg-[hsl(var(--surface-container-lowest))]">
           <DialogHeader><DialogTitle>{t("receipt")}</DialogTitle></DialogHeader>
           {lastSale && (
             <div id="receipt-print" className="text-sm space-y-2">
@@ -237,7 +376,7 @@ export default function POS() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowReceipt(false)}>{t("cancel")}</Button>
-            <Button onClick={() => window.print()}>{t("printReceipt")}</Button>
+            <Button onClick={() => window.print()} className="gradient-primary"><Printer className="h-4 w-4 mr-1" />{t("printReceipt")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
