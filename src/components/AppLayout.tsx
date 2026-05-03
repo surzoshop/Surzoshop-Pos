@@ -108,11 +108,13 @@ export default function AppLayout() {
       </header>
 
       {/* Main canvas */}
-      <main className="md:ml-64 pt-16 min-h-screen">
+      <main className="md:ml-64 pt-16 pb-24 md:pb-0 min-h-screen">
         <div className="px-3 md:px-8 py-6 md:py-8 animate-fade-in">
           <Outlet />
         </div>
       </main>
+
+      <MobileBottomNav onOpenMenu={() => setMobileNavOpen(true)} />
     </div>
   );
 }
