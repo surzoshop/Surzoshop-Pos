@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,12 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Minus, Search, ScanLine, ShoppingCart, Trash, Receipt as ReceiptIcon, Printer, Package, Smartphone, Wifi, Loader2, Link2, Copy, CheckCircle2 } from "lucide-react";
+import { Trash2, Plus, Minus, Search, ScanLine, ShoppingCart, Trash, Receipt as ReceiptIcon, Printer, Package, Smartphone, Wifi } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
-import { Card } from "@/components/ui/card";
-import QRCode from "react-qr-code";
-import { RTC_CONFIG, decodeSignal, encodeSignal, extractSignalValue, waitForIceGatheringComplete } from "@/lib/webrtcPairing";
+import { useMobileScanner } from "@/hooks/useMobileScanner";
+import { Link } from "react-router-dom";
 
 type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number };
 type CartItem = { product: Product; qty: number };
@@ -44,24 +43,9 @@ export default function POS() {
   const [showReceipt, setShowReceipt] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
-
-  const [pairOpen, setPairOpen] = useState(false);
-  const [rtcPhase, setRtcPhase] = useState<"idle" | "offer-ready" | "connected">("idle");
-  const [offerText, setOfferText] = useState("");
-  const [answerInput, setAnswerInput] = useState("");
-  const [connectionState, setConnectionState] = useState("Pair শুরু করুন");
-  const [pairingBusy, setPairingBusy] = useState(false);
-  const pcRef = useRef<RTCPeerConnection | null>(null);
-  const dcRef = useRef<RTCDataChannel | null>(null);
+  const mobileScanner = useMobileScanner();
 
   useEffect(() => { inputRef.current?.focus(); load(); }, []);
-
-  useEffect(() => {
-    return () => {
-      dcRef.current?.close();
-      pcRef.current?.close();
-    };
-  }, []);
 
   const load = async () => {
     const [{ data: p }, { data: c }, { data: g }] = await Promise.all([
@@ -117,85 +101,18 @@ export default function POS() {
   const paid = paymentType === "installment" ? downPayment : total;
   const emi = paymentType === "installment" && installmentCount > 0 ? financed / installmentCount : 0;
 
-  const pairLink = useMemo(() => {
-    if (!offerText) return `${window.location.origin}/scanner.html`;
-    const url = new URL(`${window.location.origin}/scanner.html`);
-    url.searchParams.set("offer", offerText);
-    return url.toString();
-  }, [offerText]);
-
-  const openPairing = async () => {
-    try {
-      setPairOpen(true);
-      setPairingBusy(true);
-      setConnectionState("Offer তৈরি হচ্ছে...");
-      const pc = new RTCPeerConnection(RTC_CONFIG);
-      const dc = pc.createDataChannel("barcode-scanner");
-      pcRef.current = pc;
-      dcRef.current = dc;
-
-      dc.onopen = () => {
-        setRtcPhase("connected");
-        setConnectionState("মোবাইল scanner connected");
-        toast({ title: "Scanner connected", description: "এখন মোবাইল থেকে scan করলে cart-এ যোগ হবে" });
-      };
-      dc.onclose = () => {
-        setRtcPhase("idle");
-        setConnectionState("সংযোগ বন্ধ হয়েছে");
-      };
-      dc.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          if (payload?.type === "barcode" && payload.code) {
-            const found = products.find(p => p.barcode === payload.code || p.sku === payload.code);
-            if (found) {
-              addToCart(found);
-              toast({ title: "মোবাইল থেকে যোগ হয়েছে", description: found.name });
-            } else {
-              toast({ title: "Product পাওয়া যায়নি", description: payload.code, variant: "destructive" });
-            }
-          }
-        } catch {
-          toast({ title: "অজানা data পাওয়া গেছে", variant: "destructive" });
-        }
-      };
-
-      pc.onconnectionstatechange = () => {
-        if (pc.connectionState === "connected") {
-          setRtcPhase("connected");
-          setConnectionState("সরাসরি P2P connection তৈরি হয়েছে");
-        } else if (["failed", "disconnected", "closed"].includes(pc.connectionState)) {
-          setConnectionState("সংযোগ বিচ্ছিন্ন");
-        }
-      };
-
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      await waitForIceGatheringComplete(pc);
-      if (!pc.localDescription) throw new Error("Offer তৈরি হয়নি");
-      setOfferText(encodeSignal(pc.localDescription.toJSON()));
-      setRtcPhase("offer-ready");
-      setConnectionState("Offer প্রস্তুত — মোবাইল app-এ দিন");
-    } catch (error: any) {
-      toast({ title: error?.message ?? "Pairing শুরু করা যায়নি", variant: "destructive" });
-      setConnectionState("Pairing ব্যর্থ হয়েছে");
-    } finally {
-      setPairingBusy(false);
-    }
-  };
-
-  const finalizePairing = async () => {
-    try {
-      if (!pcRef.current) throw new Error("আগে pair শুরু করুন");
-      const encoded = extractSignalValue(answerInput, "answer");
-      if (!encoded) throw new Error("Answer code দিন");
-      const answer = decodeSignal(encoded);
-      await pcRef.current.setRemoteDescription(answer);
-      setConnectionState("Answer গ্রহণ করা হয়েছে — connection complete হওয়ার অপেক্ষায়");
-    } catch (error: any) {
-      toast({ title: error?.message ?? "Answer গ্রহণ করা যায়নি", variant: "destructive" });
-    }
-  };
+  // Subscribe to barcodes from paired mobile scanner (managed globally)
+  useEffect(() => {
+    return mobileScanner.subscribe((code) => {
+      const found = products.find(p => p.barcode === code || p.sku === code);
+      if (found) {
+        addToCart(found);
+        toast({ title: "মোবাইল থেকে যোগ হয়েছে", description: found.name });
+      } else {
+        toast({ title: "Product পাওয়া যায়নি", description: code, variant: "destructive" });
+      }
+    });
+  }, [mobileScanner, products]);
 
   const saveGuarantor = async () => {
     if (!gForm.name) return toast({ title: "Name required", variant: "destructive" });
@@ -283,16 +200,21 @@ export default function POS() {
               <ScanLine className="h-5 w-5" />
             </button>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button type="button" variant="outline" className="app-touch" onClick={openPairing}>
-              {pairingBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Smartphone className="h-4 w-4" />}
-              Mobile Pair
-            </Button>
-            <div className="flex items-center gap-2 rounded-xl bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
-              {rtcPhase === "connected" ? <Wifi className="h-4 w-4 text-primary" /> : <Smartphone className="h-4 w-4 text-primary" />}
-              <span>{connectionState}</span>
+          {mobileScanner.phase === "connected" && (
+            <div className="flex items-center gap-2 rounded-xl bg-primary/10 px-3 py-2 text-xs font-medium text-primary">
+              <Wifi className="h-4 w-4" />
+              <span>মোবাইল scanner connected — scan করলে cart-এ যোগ হবে</span>
             </div>
-          </div>
+          )}
+          {mobileScanner.phase !== "connected" && (
+            <Link
+              to="/install"
+              className="flex items-center gap-2 rounded-xl bg-muted/50 hover:bg-muted px-3 py-2 text-xs text-muted-foreground transition-colors"
+            >
+              <Smartphone className="h-4 w-4 text-primary" />
+              <span>মোবাইল ফোনকে wireless scanner বানাতে চান? Scanner App পেজে যান</span>
+            </Link>
+          )}
         </div>
 
         <div className="flex gap-3 overflow-x-auto pb-2">
@@ -506,44 +428,6 @@ export default function POS() {
           </div>
         </div>
       </section>
-
-      <Dialog open={pairOpen} onOpenChange={setPairOpen}>
-        <DialogContent className="max-w-xl bg-[hsl(var(--surface-container-lowest))]">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Smartphone className="h-5 w-5 text-primary" /> Mobile Pairing</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <Card className="p-4 space-y-2 bg-primary/5 border-primary/20">
-              <div className="flex items-center gap-2 text-sm font-bold"><Wifi className="h-4 w-4 text-primary" /> Step 1: মোবাইলে scanner app খুলুন</div>
-              <p className="text-xs text-muted-foreground">এই QR scan করুন অথবা link copy করে ফোনে খুলুন।</p>
-              <div className="bg-background rounded-xl p-4">
-                <QRCode value={pairLink} size={180} className="mx-auto h-auto w-full max-w-[180px]" />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" onClick={() => { navigator.clipboard.writeText(pairLink); toast({ title: "Link copied" }); }}><Link2 className="h-4 w-4" /> Copy link</Button>
-                <Button variant="outline" onClick={() => { navigator.clipboard.writeText(offerText); toast({ title: "Offer copied" }); }}><Copy className="h-4 w-4" /> Copy offer</Button>
-              </div>
-            </Card>
-
-            <div className="space-y-2">
-              <Label>Step 2: Scanner app-এর answer code এখানে দিন</Label>
-              <textarea
-                value={answerInput}
-                onChange={(e) => setAnswerInput(e.target.value)}
-                placeholder="Answer code / link paste করুন"
-                className="w-full min-h-28 rounded-xl border bg-background p-3 text-xs"
-              />
-              <Button onClick={finalizePairing} className="w-full gradient-primary text-primary-foreground">Connect scanner</Button>
-            </div>
-
-            <div className="rounded-xl bg-muted/50 px-4 py-3 text-sm flex items-center gap-2">
-              {rtcPhase === "connected" ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <Smartphone className="h-4 w-4 text-primary" />}
-              <span>{connectionState}</span>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPairOpen(false)}>{t("cancel")}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
         <DialogContent className="max-w-sm bg-[hsl(var(--surface-container-lowest))]">
