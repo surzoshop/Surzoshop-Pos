@@ -17,7 +17,10 @@ export default function Customers() {
   const [items, setItems] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", address: "", nid: "" });
+  const [form, setForm] = useState<any>({
+    name: "", phone: "", address: "", nid: "",
+    present_address: "", permanent_address: "", occupation: "", monthly_income: 0,
+  });
   const isAdmin = role === "admin";
 
   const load = async () => {
@@ -27,9 +30,12 @@ export default function Customers() {
   useEffect(() => { load(); }, []);
 
   const save = async () => {
-    const { error } = await supabase.from("customers").insert(form);
+    if (!form.name) return toast({ title: "Name required", variant: "destructive" });
+    const payload = { ...form, monthly_income: form.monthly_income || null };
+    const { error } = await supabase.from("customers").insert(payload);
     if (error) return toast({ title: error.message, variant: "destructive" });
-    setForm({ name: "", phone: "", address: "", nid: "" }); setOpen(false); load();
+    setForm({ name: "", phone: "", address: "", nid: "", present_address: "", permanent_address: "", occupation: "", monthly_income: 0 });
+    setOpen(false); load();
   };
   const del = async (id: string) => {
     if (!confirm(t("confirmDelete"))) return;
@@ -92,13 +98,21 @@ export default function Customers() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="bg-[hsl(var(--surface-container-lowest))]">
-          <DialogHeader><DialogTitle>{t("addCustomer")}</DialogTitle></DialogHeader>
+        <DialogContent className="bg-[hsl(var(--surface-container-lowest))] max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{t("addCustomer")} — {t("kyc")}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div><Label>{t("name")}</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
-            <div><Label>{t("phone")}</Label><Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>{t("name")}</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+              <div><Label>{t("phone")}</Label><Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>{t("nid")}</Label><Input value={form.nid} onChange={e => setForm({ ...form, nid: e.target.value })} /></div>
+              <div><Label>{t("occupation")}</Label><Input value={form.occupation} onChange={e => setForm({ ...form, occupation: e.target.value })} /></div>
+            </div>
+            <div><Label>{t("monthlyIncome")}</Label><Input type="number" value={form.monthly_income} onChange={e => setForm({ ...form, monthly_income: +e.target.value })} /></div>
+            <div><Label>{t("presentAddress")}</Label><Input value={form.present_address} onChange={e => setForm({ ...form, present_address: e.target.value })} /></div>
+            <div><Label>{t("permanentAddress")}</Label><Input value={form.permanent_address} onChange={e => setForm({ ...form, permanent_address: e.target.value })} /></div>
             <div><Label>{t("address")}</Label><Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
-            <div><Label>{t("nid")}</Label><Input value={form.nid} onChange={e => setForm({ ...form, nid: e.target.value })} /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button>

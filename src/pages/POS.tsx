@@ -29,6 +29,14 @@ export default function POS() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [customerId, setCustomerId] = useState<string>("");
   const [installmentCount, setInstallmentCount] = useState(3);
+  // Loan terms
+  const [downPayment, setDownPayment] = useState(0);
+  const [interestRate, setInterestRate] = useState(0); // % annual
+  const [lateFeePerDay, setLateFeePerDay] = useState(0);
+  const [guarantors, setGuarantors] = useState<any[]>([]);
+  const [guarantorId, setGuarantorId] = useState<string>("");
+  const [showGuarantorForm, setShowGuarantorForm] = useState(false);
+  const [gForm, setGForm] = useState<any>({ name: "", phone: "", nid: "", address: "", relation: "" });
   const [lastSale, setLastSale] = useState<any>(null);
   const [showReceipt, setShowReceipt] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -36,12 +44,14 @@ export default function POS() {
   useEffect(() => { inputRef.current?.focus(); load(); }, []);
 
   const load = async () => {
-    const [{ data: p }, { data: c }] = await Promise.all([
+    const [{ data: p }, { data: c }, { data: g }] = await Promise.all([
       supabase.from("products").select("id,name,barcode,sku,price,stock").order("name"),
       supabase.from("customers").select("id,name,phone").order("name"),
+      supabase.from("guarantors").select("id,name,phone").order("name"),
     ]);
     setProducts(p ?? []);
     setCustomers(c ?? []);
+    setGuarantors(g ?? []);
   };
 
   // Auto-add by barcode scan
@@ -79,9 +89,24 @@ export default function POS() {
 
   const subtotal = cart.reduce((a, i) => a + i.product.price * i.qty, 0);
   const vat = subtotal * VAT_RATE;
-  const total = Math.max(0, subtotal + vat - discount);
-  const due = paymentType === "installment" ? total : 0;
-  const paid = total - due;
+  const baseTotal = Math.max(0, subtotal + vat - discount);
+  // For installment: total includes interest
+  const interestAmount = paymentType === "installment"
+    ? (baseTotal - downPayment) * (interestRate / 100) * (installmentCount / 12)
+    : 0;
+  const total = baseTotal + interestAmount;
+  const financed = paymentType === "installment" ? Math.max(total - downPayment, 0) : 0;
+  const due = paymentType === "installment" ? financed : 0;
+  const paid = paymentType === "installment" ? downPayment : total;
+  const emi = paymentType === "installment" && installmentCount > 0 ? financed / installmentCount : 0;
+
+  const saveGuarantor = async () => {
+    if (!gForm.name) return toast({ title: "Name required", variant: "destructive" });
+    const { data, error } = await supabase.from("guarantors").insert(gForm).select().single();
+    if (error) return toast({ title: error.message, variant: "destructive" });
+    setGuarantors([data, ...guarantors]); setGuarantorId(data.id); setShowGuarantorForm(false);
+    setGForm({ name: "", phone: "", nid: "", address: "", relation: "" });
+  };
 
   const completeSale = async () => {
     if (cart.length === 0) return;
@@ -89,14 +114,27 @@ export default function POS() {
       toast({ title: lang === "bn" ? "ক্রেতা নির্বাচন করুন" : "Select a customer", variant: "destructive" });
       return;
     }
+    if (paymentType === "installment" && !guarantorId) {
+      toast({ title: lang === "bn" ? "জামিনদার নির্বাচন করুন" : "Select a guarantor", variant: "destructive" });
+      return;
+    }
 
-    const { data: sale, error } = await supabase.from("sales").insert({
+    const salePayload: any = {
       customer_id: customerId || null,
       subtotal, discount, total, paid, due,
       payment_type: paymentType,
       status: due > 0 ? "partial" : "completed",
       created_by: user!.id,
-    }).select().single();
+    };
+    if (paymentType === "installment") {
+      salePayload.down_payment = downPayment;
+      salePayload.interest_rate = interestRate;
+      salePayload.tenure_months = installmentCount;
+      salePayload.emi_amount = emi;
+      salePayload.late_fee_per_day = lateFeePerDay;
+      salePayload.guarantor_id = guarantorId;
+    }
+    const { data: sale, error } = await supabase.from("sales").insert(salePayload).select().single();
     if (error) { toast({ title: error.message, variant: "destructive" }); return; }
 
     const items = cart.map(i => ({
@@ -106,7 +144,7 @@ export default function POS() {
     await supabase.from("sale_items").insert(items);
 
     if (paymentType === "installment" && due > 0) {
-      const per = Math.ceil((due / installmentCount) * 100) / 100;
+      const per = Math.round((due / installmentCount) * 100) / 100;
       const schedule = Array.from({ length: installmentCount }).map((_, idx) => {
         const d = new Date(); d.setMonth(d.getMonth() + idx + 1);
         return {
@@ -121,6 +159,7 @@ export default function POS() {
     setLastSale({ ...sale, items: cart, customer: customers.find(c => c.id === customerId) });
     setShowReceipt(true);
     setCart([]); setDiscount(0); setCustomerId(""); setPaymentType("cash"); setPaymentMethod("cash");
+    setDownPayment(0); setInterestRate(0); setLateFeePerDay(0); setGuarantorId("");
     load();
     toast({ title: lang === "bn" ? "বিক্রয় সম্পন্ন" : "Sale completed" });
   };
@@ -266,10 +305,44 @@ export default function POS() {
               </div>
             </div>
             {paymentType === "installment" && (
-              <div className="mb-3">
-                <Label className="text-xs">{t("numberOfInstallments")}</Label>
-                <Input type="number" min={1} max={36} value={installmentCount}
-                  onChange={e => setInstallmentCount(Math.max(1, +e.target.value))} className="h-9" />
+              <div className="mb-3 space-y-2 p-3 rounded-xl bg-secondary/15">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--secondary-foreground))]">{t("loanTerms")}</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">{t("downPayment")}</Label>
+                    <Input type="number" value={downPayment} onChange={e => setDownPayment(+e.target.value || 0)} className="h-9" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">{t("tenureMonths")}</Label>
+                    <Input type="number" min={1} max={60} value={installmentCount}
+                      onChange={e => setInstallmentCount(Math.max(1, +e.target.value))} className="h-9" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">{t("interestRate")}</Label>
+                    <Input type="number" value={interestRate} onChange={e => setInterestRate(+e.target.value || 0)} className="h-9" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">{t("lateFee")}</Label>
+                    <Input type="number" value={lateFeePerDay} onChange={e => setLateFeePerDay(+e.target.value || 0)} className="h-9" />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">{t("guarantor")}</Label>
+                  <div className="flex gap-2">
+                    <Select value={guarantorId || "_none"} onValueChange={v => v === "__new" ? setShowGuarantorForm(true) : setGuarantorId(v === "_none" ? "" : v)}>
+                      <SelectTrigger className="h-9"><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_none">—</SelectItem>
+                        {guarantors.map(g => <SelectItem key={g.id} value={g.id}>{g.name} {g.phone ? `(${g.phone})` : ""}</SelectItem>)}
+                        <SelectItem value="__new">+ {t("add")} {t("guarantor")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex justify-between text-xs pt-2 border-t border-secondary/30">
+                  <span className="text-muted-foreground">EMI/{t("months")}</span>
+                  <span className="font-bold">{fmt(emi)}</span>
+                </div>
               </div>
             )}
           </>
@@ -375,6 +448,27 @@ export default function POS() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowReceipt(false)}>{t("cancel")}</Button>
             <Button onClick={() => window.print()} className="gradient-primary"><Printer className="h-4 w-4 mr-1" />{t("printReceipt")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showGuarantorForm} onOpenChange={setShowGuarantorForm}>
+        <DialogContent className="bg-[hsl(var(--surface-container-lowest))]">
+          <DialogHeader><DialogTitle>{t("add")} {t("guarantor")}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>{t("name")}</Label><Input value={gForm.name} onChange={e => setGForm({ ...gForm, name: e.target.value })} /></div>
+              <div><Label>{t("relation")}</Label><Input value={gForm.relation} onChange={e => setGForm({ ...gForm, relation: e.target.value })} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>{t("phone")}</Label><Input value={gForm.phone} onChange={e => setGForm({ ...gForm, phone: e.target.value })} /></div>
+              <div><Label>{t("nid")}</Label><Input value={gForm.nid} onChange={e => setGForm({ ...gForm, nid: e.target.value })} /></div>
+            </div>
+            <div><Label>{t("address")}</Label><Input value={gForm.address} onChange={e => setGForm({ ...gForm, address: e.target.value })} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowGuarantorForm(false)}>{t("cancel")}</Button>
+            <Button onClick={saveGuarantor} className="gradient-primary">{t("save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

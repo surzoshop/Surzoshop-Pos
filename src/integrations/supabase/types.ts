@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendance: {
+        Row: {
+          check_in: string | null
+          check_out: string | null
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          staff_id: string
+          status: Database["public"]["Enums"]["attendance_status"]
+        }
+        Insert: {
+          check_in?: string | null
+          check_out?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          staff_id: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+        }
+        Update: {
+          check_in?: string | null
+          check_out?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          staff_id?: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -37,30 +78,169 @@ export type Database = {
           address: string | null
           created_at: string
           id: string
+          monthly_income: number | null
           name: string
           nid: string | null
+          nid_back_url: string | null
+          nid_front_url: string | null
+          occupation: string | null
+          permanent_address: string | null
           phone: string | null
+          photo_url: string | null
+          present_address: string | null
           updated_at: string
         }
         Insert: {
           address?: string | null
           created_at?: string
           id?: string
+          monthly_income?: number | null
           name: string
           nid?: string | null
+          nid_back_url?: string | null
+          nid_front_url?: string | null
+          occupation?: string | null
+          permanent_address?: string | null
           phone?: string | null
+          photo_url?: string | null
+          present_address?: string | null
           updated_at?: string
         }
         Update: {
           address?: string | null
           created_at?: string
           id?: string
+          monthly_income?: number | null
           name?: string
           nid?: string | null
+          nid_back_url?: string | null
+          nid_front_url?: string | null
+          occupation?: string | null
+          permanent_address?: string | null
           phone?: string | null
+          photo_url?: string | null
+          present_address?: string | null
           updated_at?: string
         }
         Relationships: []
+      }
+      expense_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category_id: string | null
+          created_at: string
+          created_by: string | null
+          expense_date: string
+          id: string
+          notes: string | null
+          payment_method: string | null
+          title: string
+        }
+        Insert: {
+          amount: number
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          expense_date?: string
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          title: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          expense_date?: string
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guarantors: {
+        Row: {
+          address: string | null
+          created_at: string
+          customer_id: string | null
+          id: string
+          name: string
+          nid: string | null
+          nid_back_url: string | null
+          nid_front_url: string | null
+          phone: string | null
+          photo_url: string | null
+          relation: string | null
+          sale_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          name: string
+          nid?: string | null
+          nid_back_url?: string | null
+          nid_front_url?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          relation?: string | null
+          sale_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          name?: string
+          nid?: string | null
+          nid_back_url?: string | null
+          nid_front_url?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          relation?: string | null
+          sale_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guarantors_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       installment_payments: {
         Row: {
@@ -218,6 +398,97 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_items: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          product_name: string
+          purchase_id: string
+          qty: number
+          subtotal: number
+          unit_cost: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          product_name: string
+          purchase_id: string
+          qty: number
+          subtotal: number
+          unit_cost: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          product_name?: string
+          purchase_id?: string
+          qty?: number
+          subtotal?: number
+          unit_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_items_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchases: {
+        Row: {
+          bill_no: string
+          created_at: string
+          created_by: string | null
+          discount: number
+          due: number
+          id: string
+          notes: string | null
+          paid: number
+          subtotal: number
+          supplier_id: string | null
+          total: number
+        }
+        Insert: {
+          bill_no?: string
+          created_at?: string
+          created_by?: string | null
+          discount?: number
+          due?: number
+          id?: string
+          notes?: string | null
+          paid?: number
+          subtotal?: number
+          supplier_id?: string | null
+          total?: number
+        }
+        Update: {
+          bill_no?: string
+          created_at?: string
+          created_by?: string | null
+          discount?: number
+          due?: number
+          id?: string
+          notes?: string | null
+          paid?: number
+          subtotal?: number
+          supplier_id?: string | null
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchases_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sale_items: {
         Row: {
           created_at: string
@@ -268,48 +539,69 @@ export type Database = {
       }
       sales: {
         Row: {
+          agreement_url: string | null
           created_at: string
           created_by: string | null
           customer_id: string | null
           discount: number
+          down_payment: number
           due: number
+          emi_amount: number | null
+          guarantor_id: string | null
           id: string
+          interest_rate: number
           invoice_no: string
+          late_fee_per_day: number
           notes: string | null
           paid: number
           payment_type: Database["public"]["Enums"]["payment_type"]
           status: Database["public"]["Enums"]["sale_status"]
           subtotal: number
+          tenure_months: number | null
           total: number
         }
         Insert: {
+          agreement_url?: string | null
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
           discount?: number
+          down_payment?: number
           due?: number
+          emi_amount?: number | null
+          guarantor_id?: string | null
           id?: string
+          interest_rate?: number
           invoice_no?: string
+          late_fee_per_day?: number
           notes?: string | null
           paid?: number
           payment_type?: Database["public"]["Enums"]["payment_type"]
           status?: Database["public"]["Enums"]["sale_status"]
           subtotal?: number
+          tenure_months?: number | null
           total?: number
         }
         Update: {
+          agreement_url?: string | null
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
           discount?: number
+          down_payment?: number
           due?: number
+          emi_amount?: number | null
+          guarantor_id?: string | null
           id?: string
+          interest_rate?: number
           invoice_no?: string
+          late_fee_per_day?: number
           notes?: string | null
           paid?: number
           payment_type?: Database["public"]["Enums"]["payment_type"]
           status?: Database["public"]["Enums"]["sale_status"]
           subtotal?: number
+          tenure_months?: number | null
           total?: number
         }
         Relationships: [
@@ -320,7 +612,125 @@ export type Database = {
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "sales_guarantor_id_fkey"
+            columns: ["guarantor_id"]
+            isOneToOne: false
+            referencedRelation: "guarantors"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      staff: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          joined_at: string | null
+          name: string
+          nid: string | null
+          phone: string | null
+          position: string | null
+          salary: number
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          joined_at?: string | null
+          name: string
+          nid?: string | null
+          phone?: string | null
+          position?: string | null
+          salary?: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          joined_at?: string | null
+          name?: string
+          nid?: string | null
+          phone?: string | null
+          position?: string | null
+          salary?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      stock_adjustments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          product_id: string
+          product_name: string
+          qty: number
+          reason: string | null
+          type: Database["public"]["Enums"]["adjustment_type"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          product_id: string
+          product_name: string
+          qty: number
+          reason?: string | null
+          type: Database["public"]["Enums"]["adjustment_type"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          product_id?: string
+          product_name?: string
+          qty?: number
+          reason?: string | null
+          type?: Database["public"]["Enums"]["adjustment_type"]
+        }
+        Relationships: []
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          contact_person: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          opening_balance: number
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          opening_balance?: number
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          opening_balance?: number
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -357,7 +767,14 @@ export type Database = {
       }
     }
     Enums: {
+      adjustment_type:
+        | "damage"
+        | "return"
+        | "count"
+        | "transfer_in"
+        | "transfer_out"
       app_role: "admin" | "cashier"
+      attendance_status: "present" | "absent" | "leave" | "half_day"
       installment_status: "pending" | "paid" | "overdue"
       payment_type: "cash" | "installment"
       sale_status: "completed" | "partial" | "cancelled"
@@ -488,7 +905,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      adjustment_type: [
+        "damage",
+        "return",
+        "count",
+        "transfer_in",
+        "transfer_out",
+      ],
       app_role: ["admin", "cashier"],
+      attendance_status: ["present", "absent", "leave", "half_day"],
       installment_status: ["pending", "paid", "overdue"],
       payment_type: ["cash", "installment"],
       sale_status: ["completed", "partial", "cancelled"],
