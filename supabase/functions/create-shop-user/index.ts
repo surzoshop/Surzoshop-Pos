@@ -1,0 +1,62 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  try {
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const supaUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    const userClient = createClient(supaUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
+    const { data: { user } } = await userClient.auth.getUser();
+    if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+    const admin = createClient(supaUrl, serviceKey);
+    const { data: isSA } = await admin.rpc("is_super_admin", { _user_id: user.id });
+    if (!isSA) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+    const body = await req.json();
+    const { email, password, full_name, shop_id, permissions, staff_id } = body;
+    if (!email || !password || !shop_id) {
+      return new Response(JSON.stringify({ error: "email, password, shop_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Try create user; if exists, fetch
+    let userId: string | null = null;
+    const { data: created, error: cErr } = await admin.auth.admin.createUser({
+      email, password, email_confirm: true, user_metadata: { full_name: full_name ?? email },
+    });
+    if (cErr) {
+      // try find existing
+      const { data: list } = await admin.auth.admin.listUsers();
+      const found = list.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+      if (!found) throw cErr;
+      userId = found.id;
+    } else {
+      userId = created.user!.id;
+    }
+
+    // Ensure 'staff' role
+    await admin.from("user_roles").upsert({ user_id: userId, role: "staff" }, { onConflict: "user_id,role" });
+
+    // Upsert shop_users
+    const { error: suErr } = await admin.from("shop_users").upsert({
+      user_id: userId, shop_id, staff_id: staff_id ?? null,
+      display_name: full_name ?? email, email,
+      permissions: permissions ?? {}, is_active: true,
+    }, { onConflict: "user_id,shop_id" });
+    if (suErr) throw suErr;
+
+    return new Response(JSON.stringify({ ok: true, user_id: userId }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+});
