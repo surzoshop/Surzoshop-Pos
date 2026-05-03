@@ -53,8 +53,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = "/auth";
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.warn("signOut error", e);
+    }
+    setUser(null);
+    setSession(null);
+    setRole(null);
+    // ProtectedRoute will redirect to /auth via React Router (no full page reload → no 404 risk)
   };
 
   return <Ctx.Provider value={{ user, session, role, loading, signOut }}>{children}</Ctx.Provider>;
