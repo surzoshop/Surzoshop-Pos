@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Plus, Minus, Search, ScanLine, ShoppingCart, Trash, Receipt as ReceiptIcon, Printer, Package } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { BarcodeScanner } from "@/components/BarcodeScanner";
 
 type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number };
 type CartItem = { product: Product; qty: number };
@@ -40,6 +41,7 @@ export default function POS() {
   const [lastSale, setLastSale] = useState<any>(null);
   const [showReceipt, setShowReceipt] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   useEffect(() => { inputRef.current?.focus(); load(); }, []);
 
@@ -179,7 +181,14 @@ export default function POS() {
               placeholder={t("productSearch")}
               className="w-full h-14 pl-12 pr-12 rounded-xl bg-[hsl(var(--surface-container-low))] border-none focus:outline-none focus:ring-2 focus:ring-primary/30 text-base"
             />
-            <ScanLine className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary cursor-pointer hover:scale-110 transition-transform" />
+            <button
+              type="button"
+              onClick={() => setScannerOpen(true)}
+              aria-label="Open barcode scanner"
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-all active:scale-95"
+            >
+              <ScanLine className="h-5 w-5" />
+            </button>
           </div>
         </div>
 
@@ -472,6 +481,22 @@ export default function POS() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BarcodeScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onDetected={(code) => {
+          setScannerOpen(false);
+          const found = products.find(p => p.barcode === code || p.sku === code);
+          if (found) {
+            addToCart(found);
+            toast({ title: "✓ যোগ হয়েছে", description: found.name });
+          } else {
+            setSearch(code);
+            toast({ title: "Product পাওয়া যায়নি", description: code, variant: "destructive" });
+          }
+        }}
+      />
     </div>
   );
 }
