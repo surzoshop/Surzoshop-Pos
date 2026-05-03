@@ -5,7 +5,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ShopProvider } from "@/hooks/useShop";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { PageGate } from "@/components/PageGate";
 import AppLayout from "@/components/AppLayout";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -21,6 +23,7 @@ import Expenses from "./pages/Expenses";
 import StockAdjustments from "./pages/StockAdjustments";
 import Staff from "./pages/Staff";
 import Attendance from "./pages/Attendance";
+import Shops from "./pages/Shops";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
