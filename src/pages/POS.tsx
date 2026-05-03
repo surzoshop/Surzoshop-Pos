@@ -97,14 +97,27 @@ export default function POS() {
   const subtotal = cart.reduce((a, i) => a + i.product.price * i.qty, 0);
   const vat = subtotal * VAT_RATE;
   const baseTotal = Math.max(0, subtotal + vat - discount);
+  // EMI calculation: simple interest over tenure (more transparent for retail)
+  const principal = paymentType === "installment" ? Math.max(baseTotal - downPayment, 0) : 0;
   const interestAmount = paymentType === "installment"
-    ? (baseTotal - downPayment) * (interestRate / 100) * (installmentCount / 12)
+    ? principal * (interestRate / 100) * (installmentCount / 12)
     : 0;
   const total = baseTotal + interestAmount;
-  const financed = paymentType === "installment" ? Math.max(total - downPayment, 0) : 0;
+  const financed = principal + interestAmount;
   const due = paymentType === "installment" ? financed : 0;
   const paid = paymentType === "installment" ? downPayment : total;
   const emi = paymentType === "installment" && installmentCount > 0 ? financed / installmentCount : 0;
+
+  // EMI schedule preview
+  const schedulePreview = useMemo(() => {
+    if (paymentType !== "installment" || installmentCount <= 0 || financed <= 0) return [];
+    const per = Math.round((financed / installmentCount) * 100) / 100;
+    return Array.from({ length: installmentCount }).map((_, idx) => {
+      const d = new Date(); d.setMonth(d.getMonth() + idx + 1);
+      const amount = idx === installmentCount - 1 ? financed - per * (installmentCount - 1) : per;
+      return { no: idx + 1, date: d.toISOString().slice(0, 10), amount };
+    });
+  }, [paymentType, installmentCount, financed]);
 
   // Subscribe to barcodes from paired mobile scanner (managed globally)
   useEffect(() => {
