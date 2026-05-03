@@ -143,7 +143,7 @@ function StaffAccessDialog({ shopId, onClose }: { shopId: string; onClose: () =>
     const { data } = await supabase.from("shop_users").select("*").eq("shop_id", shopId).order("created_at");
     setMembers(data ?? []); setLoading(false);
   };
-  useState(() => { load(); });
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
 
   const togglePerm = async (memberId: string, page: PageKey, perms: any) => {
     const next = { ...(perms || {}), [page]: !perms?.[page] };
