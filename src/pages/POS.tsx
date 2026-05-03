@@ -309,8 +309,12 @@ export default function POS() {
           )}
           {cart.map(i => (
             <div key={i.product.id} className="flex items-center gap-3 p-2 bg-[hsl(var(--surface))] rounded-xl">
-              <div className="w-14 h-14 rounded-lg bg-[hsl(var(--surface-container-high))] flex items-center justify-center shrink-0">
-                <Package className="h-6 w-6 text-muted-foreground/50" />
+              <div className="w-14 h-14 rounded-lg bg-[hsl(var(--surface-container-high))] flex items-center justify-center shrink-0 overflow-hidden">
+                {i.product.image_url ? (
+                  <img src={i.product.image_url} alt={i.product.name} className="w-full h-full object-cover" loading="lazy" />
+                ) : (
+                  <Package className="h-6 w-6 text-muted-foreground/50" />
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="font-semibold text-foreground text-sm truncate">{i.product.name}</h4>
