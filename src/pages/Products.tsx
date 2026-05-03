@@ -189,32 +189,42 @@ export default function Products() {
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                <th className="pb-6 font-bold">{t("name")}</th>
-                <th className="pb-6 font-bold">{t("category")}</th>
-                <th className="pb-6 font-bold">{t("barcode")}</th>
-                <th className="pb-6 font-bold">{t("price")}</th>
-                <th className="pb-6 font-bold">{t("stock")}</th>
-                {isAdmin && <th className="pb-6 font-bold text-right">{t("actions")}</th>}
+              <tr className="text-[11px] uppercase tracking-widest text-muted-foreground border-b border-[hsl(var(--surface-container))]">
+                <th className="pb-3 font-bold w-14"></th>
+                <th className="pb-3 font-bold">{t("name")}</th>
+                <th className="pb-3 font-bold">{t("category")}</th>
+                <th className="pb-3 font-bold">{t("barcode")}</th>
+                <th className="pb-3 font-bold">{t("price")}</th>
+                <th className="pb-3 font-bold">{t("stock")}</th>
+                {isAdmin && <th className="pb-3 font-bold text-right">{t("actions")}</th>}
               </tr>
             </thead>
-            <tbody className="text-sm">
+            <tbody className="text-sm divide-y divide-[hsl(var(--surface-container))]">
               {filtered.length === 0 && (
-                <tr><td colSpan={6} className="py-12 text-center text-muted-foreground">{t("noResults")}</td></tr>
+                <tr><td colSpan={7} className="py-12 text-center text-muted-foreground">{t("noResults")}</td></tr>
               )}
               {filtered.map(p => (
                 <tr key={p.id} className="hover:bg-[hsl(var(--surface-container-low))] transition-colors">
-                  <td className="py-4 font-semibold text-foreground">{p.name}</td>
-                  <td className="py-4 text-muted-foreground">{catName(p.category_id)}</td>
-                  <td className="py-4 text-muted-foreground font-mono text-xs">{p.barcode || "—"}</td>
-                  <td className="py-4 font-bold text-primary">{fmt(p.price)}</td>
-                  <td className="py-4">
+                  <td className="py-2">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-[hsl(var(--surface-container-high))] flex items-center justify-center">
+                      {p.image_url ? (
+                        <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+                      ) : (
+                        <Package className="h-5 w-5 text-muted-foreground/50" />
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-2 font-semibold text-foreground">{p.name}</td>
+                  <td className="py-2 text-muted-foreground">{catName(p.category_id)}</td>
+                  <td className="py-2 text-muted-foreground font-mono text-xs">{p.barcode || "—"}</td>
+                  <td className="py-2 font-bold text-primary">{fmt(p.price)}</td>
+                  <td className="py-2">
                     {p.stock === 0 ? <StatusPill tone="destructive">{t("outOfStock")}</StatusPill>
                       : p.stock <= 5 ? <StatusPill tone="warning">{p.stock} {p.unit}</StatusPill>
                       : <span className="text-foreground font-medium">{p.stock} {p.unit}</span>}
                   </td>
                   {isAdmin && (
-                    <td className="py-4 text-right">
+                    <td className="py-2 text-right">
                       <Button size="icon" variant="ghost" onClick={() => startEdit(p)}><Pencil className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" className="text-destructive" onClick={() => del(p.id)}><Trash2 className="h-4 w-4" /></Button>
                     </td>
