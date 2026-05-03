@@ -3,7 +3,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useShop } from "@/hooks/useShop";
-import { Search, Bell, Languages, Sun, Moon, Store, ChevronDown } from "lucide-react";
+import { Search, Bell, Languages, Sun, Moon, Store, ChevronDown, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function AppLayout() {
@@ -11,6 +11,7 @@ export default function AppLayout() {
   const { user } = useAuth();
   const { shops, currentShop, setCurrentShopId, isSuperAdmin } = useShop();
   const [shopOpen, setShopOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   useEffect(() => { document.documentElement.classList.toggle("dark", dark); }, [dark]);
 
@@ -18,12 +19,19 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-[hsl(var(--surface-container-low))]">
-      <AppSidebar />
+      <AppSidebar mobileOpen={mobileNavOpen} onCloseMobile={() => setMobileNavOpen(false)} />
 
       {/* Top App Bar — glassmorphic */}
-      <header className="fixed top-0 right-0 left-0 md:left-64 h-16 glass z-30 flex justify-between items-center px-4 md:px-8 shadow-[0_10px_40px_-10px_hsl(var(--foreground)/0.06)]">
-        <div className="flex items-center flex-1">
-          <div className="relative w-full max-w-md">
+      <header className="fixed top-0 right-0 left-0 md:left-64 h-16 glass z-30 flex justify-between items-center px-3 md:px-8 shadow-[0_10px_40px_-10px_hsl(var(--foreground)/0.06)]">
+        <div className="flex items-center flex-1 gap-2">
+          <button
+            onClick={() => setMobileNavOpen(true)}
+            className="md:hidden p-2 -ml-1 rounded-lg hover:bg-muted text-foreground"
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <div className="relative w-full max-w-md hidden sm:block">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
