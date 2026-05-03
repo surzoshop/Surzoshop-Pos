@@ -1,0 +1,30 @@
+{
+  "name": "সূর্য শপ - POS ও কিস্তি ম্যানেজমেন্ট",
+  "short_name": "সূর্য শপ",
+  "description": "POS, ইনভেন্টরি, কিস্তি ও মাল্টি-শপ ম্যানেজমেন্ট সিস্টেম",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "lang": "bn",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    { "name": "POS", "short_name": "POS", "url": "/pos", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Dashboard", "short_name": "Dashboard", "url": "/", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
