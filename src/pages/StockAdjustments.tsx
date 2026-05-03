@@ -34,8 +34,8 @@ export default function StockAdjustments() {
     const prod = products.find(p => p.id === form.product_id);
     if (!prod) return toast({ title: "Select product", variant: "destructive" });
     const { error } = await supabase.from("stock_adjustments").insert({
-      ...form, product_name: prod.name, created_by: user!.id,
-    });
+      ...form, type: form.type as any, product_name: prod.name, created_by: user!.id,
+    } as any);
     if (error) return toast({ title: error.message, variant: "destructive" });
     setForm({ product_id: "", type: "damage", qty: 1, reason: "" });
     setOpen(false); load();

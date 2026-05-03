@@ -27,7 +27,7 @@ export default function Attendance() {
   useEffect(() => { load(); }, [date]);
 
   const mark = async (staff_id: string, status: string) => {
-    const { error } = await supabase.from("attendance").upsert({ staff_id, date, status }, { onConflict: "staff_id,date" });
+    const { error } = await supabase.from("attendance").upsert({ staff_id, date, status: status as any }, { onConflict: "staff_id,date" } as any);
     if (error) return toast({ title: error.message, variant: "destructive" });
     setAtt({ ...att, [staff_id]: status });
   };
