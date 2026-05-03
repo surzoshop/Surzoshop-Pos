@@ -250,6 +250,17 @@ export default function Products() {
               <Label>পণ্যের নাম *</Label>
               <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="যেমন: Lux সাবান" />
             </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2 flex justify-center">
+              <div className="text-center">
+                <Label className="block mb-2">পণ্যের ছবি</Label>
+                <ImageUpload value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} />
+              </div>
+            </div>
+            <div className="sm:col-span-2">
+              <Label>পণ্যের নাম *</Label>
+              <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="যেমন: Lux সাবান" />
+            </div>
             <div className="sm:col-span-2">
               <Label>{t("category")}</Label>
               <Select value={form.category_id || "__none"} onValueChange={(v) => setForm({ ...form, category_id: v === "__none" ? "" : v })}>
