@@ -481,6 +481,22 @@ export default function POS() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BarcodeScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onDetected={(code) => {
+          setScannerOpen(false);
+          const found = products.find(p => p.barcode === code || p.sku === code);
+          if (found) {
+            addToCart(found);
+            toast({ title: "✓ যোগ হয়েছে", description: found.name });
+          } else {
+            setSearch(code);
+            toast({ title: "Product পাওয়া যায়নি", description: code, variant: "destructive" });
+          }
+        }}
+      />
     </div>
   );
 }
