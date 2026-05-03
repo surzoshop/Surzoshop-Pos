@@ -2,7 +2,7 @@ import { NavLink, useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, Package, Receipt, Warehouse, Users, ShoppingCart,
   HelpCircle, LogOut, Truck, ShoppingBag, Wallet, ClipboardList,
-  UserCog, CalendarCheck, BarChart3, Store, X, Smartphone,
+  UserCog, CalendarCheck, BarChart3, Store, X, Smartphone, Printer,
 } from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -78,19 +78,35 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
         )}
         {items.map((item) => {
           const active = pathname === item.url;
+          const isProducts = item.url === "/products";
+          const productsActive = pathname.startsWith("/products");
           return (
-            <NavLink
-              key={item.url}
-              to={item.url}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-150 text-[13px] ${
-                active
-                  ? "bg-primary text-primary-foreground font-bold shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.5)]"
-                  : "text-foreground/85 font-medium hover:bg-primary/10 hover:text-primary"
-              }`}
-            >
-              <item.icon className={`h-[18px] w-[18px] shrink-0 ${active ? "" : "text-primary"}`} />
-              <span className="truncate">{item.label}</span>
-            </NavLink>
+            <div key={item.url}>
+              <NavLink
+                to={item.url}
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-150 text-[13px] ${
+                  active
+                    ? "bg-primary text-primary-foreground font-bold shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.5)]"
+                    : "text-foreground/85 font-medium hover:bg-primary/10 hover:text-primary"
+                }`}
+              >
+                <item.icon className={`h-[18px] w-[18px] shrink-0 ${active ? "" : "text-primary"}`} />
+                <span className="truncate">{item.label}</span>
+              </NavLink>
+              {isProducts && productsActive && (
+                <NavLink
+                  to="/products/barcodes"
+                  className={`flex items-center gap-2 ml-9 mt-1 px-3 py-1.5 rounded-lg text-[12px] transition-all ${
+                    pathname === "/products/barcodes"
+                      ? "bg-primary/15 text-primary font-bold"
+                      : "text-foreground/70 hover:text-primary hover:bg-primary/5"
+                  }`}
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                  <span>বারকোড প্রিন্ট</span>
+                </NavLink>
+              )}
+            </div>
           );
         })}
         <NavLink
