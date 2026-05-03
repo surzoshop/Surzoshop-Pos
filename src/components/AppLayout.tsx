@@ -1,5 +1,6 @@
 import { Outlet, NavLink } from "react-router-dom";
 import { AppSidebar } from "@/components/AppSidebar";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useShop } from "@/hooks/useShop";
