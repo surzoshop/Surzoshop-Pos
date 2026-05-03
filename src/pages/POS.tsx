@@ -54,7 +54,7 @@ export default function POS() {
 
   const load = async () => {
     const [{ data: p }, { data: c }, { data: g }] = await Promise.all([
-      supabase.from("products").select("id,name,barcode,sku,price,stock").order("name"),
+      supabase.from("products").select("id,name,barcode,sku,price,stock,image_url").order("name"),
       supabase.from("customers").select("id,name,phone").order("name"),
       supabase.from("guarantors").select("id,name,phone").order("name"),
     ]);
