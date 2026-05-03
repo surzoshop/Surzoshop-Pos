@@ -246,11 +246,6 @@ export default function Products() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="sm:col-span-2">
-              <Label>পণ্যের নাম *</Label>
-              <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="যেমন: Lux সাবান" />
-            </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2 flex justify-center">
               <div className="text-center">
                 <Label className="block mb-2">পণ্যের ছবি</Label>
