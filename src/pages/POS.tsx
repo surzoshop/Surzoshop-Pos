@@ -455,33 +455,36 @@ export default function POS() {
       </section>
 
       <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
-        <DialogContent className="max-w-sm bg-[hsl(var(--surface-container-lowest))]">
-          <DialogHeader><DialogTitle>{t("receipt")}</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-md bg-[hsl(var(--surface-container-lowest))] max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{t("receipt")} — Thermal 80mm</DialogTitle></DialogHeader>
           {lastSale && (
-            <div id="receipt-print" className="text-sm space-y-2">
-              <div className="text-center border-b pb-2">
-                <div className="font-bold text-lg">{t("appName")}</div>
-                <div className="text-xs text-muted-foreground">{lastSale.invoice_no}</div>
-                <div className="text-xs">{new Date(lastSale.created_at).toLocaleString()}</div>
-              </div>
-              <div className="text-xs">{t("customer")}: {lastSale.customer?.name ?? t("walkInCustomer")}</div>
-              <div className="border-y py-2 space-y-1">
-                {lastSale.items.map((i: CartItem) => (
-                  <div key={i.product.id} className="flex justify-between text-xs">
-                    <span>{i.product.name} × {i.qty}</span>
-                    <span>{fmt(i.product.price * i.qty)}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="space-y-0.5 text-xs">
-                <div className="flex justify-between"><span>{t("subtotal")}</span><span>{fmt(Number(lastSale.subtotal))}</span></div>
-                <div className="flex justify-between"><span>{t("discount")}</span><span>{fmt(Number(lastSale.discount))}</span></div>
-                <div className="flex justify-between font-bold"><span>{t("total")}</span><span>{fmt(Number(lastSale.total))}</span></div>
-                <div className="flex justify-between"><span>{t("paid")}</span><span>{fmt(Number(lastSale.paid))}</span></div>
-                <div className="flex justify-between"><span>{t("due")}</span><span>{fmt(Number(lastSale.due))}</span></div>
-              </div>
-              <div className="text-center text-xs pt-2 border-t">{t("thankYou")}</div>
-            </div>
+            <ThermalReceipt
+              ref={receiptRef}
+              shop={{
+                name: currentShop?.name ?? t("appName"),
+                address: currentShop?.address,
+                phone: currentShop?.phone,
+                logo_url: currentShop?.logo_url,
+              }}
+              invoiceNo={lastSale.invoice_no}
+              createdAt={lastSale.created_at}
+              customer={lastSale.customer ? { name: lastSale.customer.name, phone: lastSale.customer.phone } : null}
+              items={lastSale.items.map((i: CartItem) => ({
+                name: i.product.name,
+                qty: i.qty,
+                unit_price: i.product.price,
+                subtotal: i.product.price * i.qty,
+              }))}
+              subtotal={Number(lastSale.subtotal)}
+              discount={Number(lastSale.discount)}
+              total={Number(lastSale.total)}
+              paid={Number(lastSale.paid)}
+              due={Number(lastSale.due)}
+              paymentType={lastSale.payment_type}
+              paymentMethod={lastSale.payment_method ?? undefined}
+              emi={lastSale.emi_amount ? { count: lastSale.tenure_months, amount: Number(lastSale.emi_amount), firstDue: lastSale.first_due } : null}
+              fmt={fmt}
+            />
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowReceipt(false)}>{t("cancel")}</Button>
