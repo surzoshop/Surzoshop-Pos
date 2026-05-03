@@ -2,17 +2,26 @@ import { NavLink, useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, Package, Receipt, Warehouse, Users, ShoppingCart,
   HelpCircle, LogOut, Truck, ShoppingBag, Wallet, ClipboardList,
-  UserCog, CalendarCheck, BarChart3, Store,
+  UserCog, CalendarCheck, BarChart3, Store, X,
 } from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useShop, PageKey } from "@/hooks/useShop";
+import { useEffect } from "react";
 
-export function AppSidebar() {
+interface Props {
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
+}
+
+export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
   const { pathname } = useLocation();
   const { t } = useT();
   const { signOut } = useAuth();
   const { canAccess, isSuperAdmin, currentShop } = useShop();
+
+  // close mobile drawer on route change
+  useEffect(() => { if (mobileOpen) onCloseMobile?.(); /* eslint-disable-next-line */ }, [pathname]);
 
   const allItems: { url: string; icon: any; label: string; key: PageKey }[] = [
     { url: "/", icon: LayoutDashboard, label: t("dashboard"), key: "dashboard" },
@@ -31,20 +40,25 @@ export function AppSidebar() {
   ];
   const items = allItems.filter(i => canAccess(i.key));
 
-  return (
-    <aside className="hidden md:flex fixed left-0 top-0 h-screen w-64 bg-[hsl(var(--sidebar-background,var(--surface-container-lowest)))] flex-col z-40 shadow-[0_10px_40px_-10px_hsl(var(--foreground)/0.08)] border-r border-[hsl(var(--surface-container-high))]">
+  const content = (
+    <>
       {/* Brand + current shop */}
-      <div className="px-6 pt-6 pb-5 border-b border-[hsl(var(--surface-container-high))]">
-        <h1 className="text-lg font-black text-foreground leading-tight">{t("appName")}</h1>
-        <p className="text-[10px] text-muted-foreground tracking-[0.2em] uppercase mt-1">
-          {isSuperAdmin ? "Super Admin" : "Staff Terminal"}
-        </p>
-        {currentShop && (
-          <div className="mt-3 flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
-            <Store className="h-4 w-4 text-primary shrink-0" />
-            <span className="text-xs font-bold text-foreground truncate">{currentShop.name}</span>
-          </div>
-        )}
+      <div className="px-6 pt-6 pb-5 border-b border-[hsl(var(--surface-container-high))] flex items-start justify-between">
+        <div>
+          <h1 className="text-lg font-black text-foreground leading-tight">{t("appName")}</h1>
+          <p className="text-[10px] text-muted-foreground tracking-[0.2em] uppercase mt-1">
+            {isSuperAdmin ? "Super Admin" : "Staff Terminal"}
+          </p>
+          {currentShop && (
+            <div className="mt-3 flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
+              <Store className="h-4 w-4 text-primary shrink-0" />
+              <span className="text-xs font-bold text-foreground truncate">{currentShop.name}</span>
+            </div>
+          )}
+        </div>
+        <button onClick={onCloseMobile} className="md:hidden p-2 -mr-2 -mt-1 rounded-lg hover:bg-muted text-muted-foreground" aria-label="Close menu">
+          <X className="h-5 w-5" />
+        </button>
       </div>
 
       {/* Nav */}
@@ -100,6 +114,28 @@ export function AppSidebar() {
           <LogOut className="h-4 w-4" /> {t("logout")}
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop */}
+      <aside className="hidden md:flex fixed left-0 top-0 h-screen w-64 bg-[hsl(var(--sidebar-background,var(--surface-container-lowest)))] flex-col z-40 shadow-[0_10px_40px_-10px_hsl(var(--foreground)/0.08)] border-r border-[hsl(var(--surface-container-high))]">
+        {content}
+      </aside>
+
+      {/* Mobile drawer */}
+      <div className={`md:hidden fixed inset-0 z-50 ${mobileOpen ? "" : "pointer-events-none"}`}>
+        <div
+          onClick={onCloseMobile}
+          className={`absolute inset-0 bg-foreground/40 backdrop-blur-sm transition-opacity ${mobileOpen ? "opacity-100" : "opacity-0"}`}
+        />
+        <aside
+          className={`absolute left-0 top-0 h-full w-72 max-w-[85%] bg-[hsl(var(--sidebar-background,var(--surface-container-lowest)))] flex flex-col shadow-2xl border-r border-[hsl(var(--surface-container-high))] transition-transform duration-300 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}
+        >
+          {content}
+        </aside>
+      </div>
+    </>
   );
 }
