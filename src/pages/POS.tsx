@@ -24,7 +24,9 @@ const VAT_RATE = 0.05;
 export default function POS() {
   const { t, fmt, lang } = useT();
   const { user } = useAuth();
+  const { currentShop } = useShop();
   const { toast } = useToast();
+  const receiptRef = useRef<HTMLDivElement>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState<string>("__all");
