@@ -43,24 +43,9 @@ export default function POS() {
   const [showReceipt, setShowReceipt] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
-
-  const [pairOpen, setPairOpen] = useState(false);
-  const [rtcPhase, setRtcPhase] = useState<"idle" | "offer-ready" | "connected">("idle");
-  const [offerText, setOfferText] = useState("");
-  const [answerInput, setAnswerInput] = useState("");
-  const [connectionState, setConnectionState] = useState("Pair শুরু করুন");
-  const [pairingBusy, setPairingBusy] = useState(false);
-  const pcRef = useRef<RTCPeerConnection | null>(null);
-  const dcRef = useRef<RTCDataChannel | null>(null);
+  const mobileScanner = useMobileScanner();
 
   useEffect(() => { inputRef.current?.focus(); load(); }, []);
-
-  useEffect(() => {
-    return () => {
-      dcRef.current?.close();
-      pcRef.current?.close();
-    };
-  }, []);
 
   const load = async () => {
     const [{ data: p }, { data: c }, { data: g }] = await Promise.all([
