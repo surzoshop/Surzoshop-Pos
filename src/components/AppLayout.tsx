@@ -2,12 +2,15 @@ import { Outlet, NavLink } from "react-router-dom";
 import { AppSidebar } from "@/components/AppSidebar";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
-import { Search, Bell, Languages, Sun, Moon } from "lucide-react";
+import { useShop } from "@/hooks/useShop";
+import { Search, Bell, Languages, Sun, Moon, Store, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function AppLayout() {
   const { t, lang, setLang } = useT();
   const { user } = useAuth();
+  const { shops, currentShop, setCurrentShopId, isSuperAdmin } = useShop();
+  const [shopOpen, setShopOpen] = useState(false);
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   useEffect(() => { document.documentElement.classList.toggle("dark", dark); }, [dark]);
 
