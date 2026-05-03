@@ -276,9 +276,9 @@ export default function Dashboard() {
   );
 }
 
-function StatCard({ icon, iconBg, chip, chipClass, label, value, sub }: any) {
+function StatCard({ to, icon, iconBg, chip, chipClass, label, value, sub }: any) {
   return (
-    <div className="bg-[hsl(var(--surface-container-lowest))] p-6 rounded-2xl transition-all hover:-translate-y-1">
+    <Link to={to ?? "#"} className="bg-[hsl(var(--surface-container-lowest))] p-6 rounded-2xl transition-all hover:-translate-y-1 block hover:shadow-lg">
       <div className="flex justify-between items-start mb-4">
         <div className={`p-3 ${iconBg} rounded-xl`}>{icon}</div>
         <span className={`text-xs font-bold ${chipClass} px-2 py-1 rounded`}>{chip}</span>
@@ -286,7 +286,7 @@ function StatCard({ icon, iconBg, chip, chipClass, label, value, sub }: any) {
       <p className="text-muted-foreground text-sm font-medium">{label}</p>
       <h3 className="text-2xl font-bold mt-1 text-foreground">{value}</h3>
       <p className="text-[10px] text-muted-foreground mt-2">{sub}</p>
-    </div>
+    </Link>
   );
 }
 
