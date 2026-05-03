@@ -182,3 +182,16 @@
   html.pwa-standalone main { -webkit-overflow-scrolling: touch; }
 }
 
+/* ============= Thermal printing (80mm receipt) ============= */
+@media print {
+  body * { visibility: hidden !important; }
+  .thermal-receipt, .thermal-receipt * { visibility: visible !important; }
+  .thermal-receipt {
+    position: absolute !important;
+    left: 0; top: 0;
+    width: 80mm !important;
+    box-shadow: none !important;
+  }
+  @page { size: 80mm auto; margin: 0; }
+}
+
