@@ -105,13 +105,13 @@ export default function Auth() {
       </aside>
 
       {/* RIGHT — Auth form */}
-      <main className="relative flex items-center justify-center p-5 sm:p-8 md:p-12 bg-[hsl(var(--surface-container-low,var(--background)))]">
+      <main className="relative flex items-start lg:items-center justify-center px-5 pt-8 pb-10 sm:px-8 sm:pt-10 lg:p-12 bg-[hsl(var(--surface-container-low,var(--background)))]">
         {/* mobile decorative top */}
-        <div className="lg:hidden absolute inset-x-0 top-0 h-44 gradient-primary -z-0" />
+        <div className="lg:hidden absolute inset-x-0 top-0 h-56 gradient-primary -z-0" />
 
         <div className="w-full max-w-md relative z-10">
           {/* Mobile brand */}
-          <div className="lg:hidden flex flex-col items-center mb-6 text-primary-foreground">
+          <div className="lg:hidden flex flex-col items-center mb-5 text-primary-foreground">
             <div className="h-14 w-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center ring-1 ring-white/30">
               <Sun className="h-7 w-7" />
             </div>
@@ -120,21 +120,25 @@ export default function Auth() {
           </div>
 
           {/* Card */}
-          <div className="bg-card text-card-foreground rounded-3xl shadow-2xl border border-border/60 p-6 sm:p-8">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-black tracking-tight">
-                  {mode === "login"
-                    ? (lang === "bn" ? "স্বাগতম 👋" : "Welcome back 👋")
-                    : (lang === "bn" ? "অ্যাকাউন্ট তৈরি করুন" : "Create an account")}
-                </h2>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  {mode === "login" ? t("loginSubtitle") : t("signupSubtitle")}
-                </p>
-              </div>
-              <Button size="sm" variant="ghost" onClick={() => setLang(lang === "bn" ? "en" : "bn")} className="shrink-0">
-                <Languages className="h-4 w-4 mr-1" />{lang === "bn" ? "EN" : "বাং"}
-              </Button>
+          <div className="relative bg-card text-card-foreground rounded-3xl shadow-2xl border border-border/60 p-6 sm:p-8">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setLang(lang === "bn" ? "en" : "bn")}
+              className="absolute top-3 right-3 h-8 px-2 text-xs"
+            >
+              <Languages className="h-4 w-4 mr-1" />{lang === "bn" ? "EN" : "বাং"}
+            </Button>
+
+            <div className="text-center mb-6 pt-2">
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight">
+                {mode === "login"
+                  ? (lang === "bn" ? "স্বাগতম 👋" : "Welcome back 👋")
+                  : (lang === "bn" ? "অ্যাকাউন্ট তৈরি করুন" : "Create an account")}
+              </h2>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                {mode === "login" ? t("loginSubtitle") : t("signupSubtitle")}
+              </p>
             </div>
 
             {/* Tabs */}
