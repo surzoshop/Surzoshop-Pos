@@ -148,4 +148,37 @@
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
   }
+  .dark .glass { background: hsl(200 10% 12% / 0.85); }
+
+  /* ============= PWA / Standalone (installed app) styling ============= */
+  /* Safe area helpers */
+  .safe-top { padding-top: env(safe-area-inset-top); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+  html.pwa-standalone body {
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  html.pwa-standalone input,
+  html.pwa-standalone textarea { user-select: text; }
+
+  /* Larger, friendlier touch targets in installed app */
+  html.pwa-standalone .app-touch { min-height: 48px; }
+
+  /* Native-feel bottom nav for installed app */
+  .app-bottom-nav {
+    background: hsl(var(--background) / 0.95);
+    backdrop-filter: saturate(180%) blur(24px);
+    -webkit-backdrop-filter: saturate(180%) blur(24px);
+  }
+
+  /* Floating action button center pill */
+  .app-fab {
+    box-shadow: 0 12px 30px -8px hsl(var(--primary) / 0.55), 0 4px 12px -2px hsl(var(--primary) / 0.4);
+  }
+
+  /* Smooth iOS-style page transitions */
+  html.pwa-standalone main { -webkit-overflow-scrolling: touch; }
 }
+
