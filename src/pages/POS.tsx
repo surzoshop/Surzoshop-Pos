@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Trash2, Plus, Minus, Search, ScanLine, ShoppingCart, Trash, Receipt as ReceiptIcon, Printer, Package } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
-type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number; category?: string };
+type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number };
 type CartItem = { product: Product; qty: number };
 
 const VAT_RATE = 0.05;
@@ -37,7 +37,7 @@ export default function POS() {
 
   const load = async () => {
     const [{ data: p }, { data: c }] = await Promise.all([
-      supabase.from("products").select("id,name,barcode,sku,price,stock,category").order("name"),
+      supabase.from("products").select("id,name,barcode,sku,price,stock").order("name"),
       supabase.from("customers").select("id,name,phone").order("name"),
     ]);
     setProducts(p ?? []);
@@ -54,10 +54,9 @@ export default function POS() {
     return () => clearTimeout(id);
   }, [search, products]);
 
-  const categories = ["__all", ...Array.from(new Set(products.map(p => p.category).filter(Boolean) as string[]))];
+  const categories = ["__all"];
 
   const visible = products.filter(p => {
-    if (activeCat !== "__all" && p.category !== activeCat) return false;
     if (search && !p.name.toLowerCase().includes(search.toLowerCase()) && !p.sku?.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
@@ -181,7 +180,6 @@ export default function POS() {
                 )}
               </div>
               <div className="flex flex-col">
-                {p.category && <span className="text-muted-foreground text-xs mb-1">{p.category}</span>}
                 <h3 className="font-bold text-foreground text-sm leading-tight line-clamp-2">{p.name}</h3>
                 <div className="flex justify-between items-center mt-2">
                   <span className="text-primary font-bold">{fmt(p.price)}</span>
