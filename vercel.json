@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/scanner.html", "destination": "/scanner.html" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
+  "cleanUrls": true
+}
