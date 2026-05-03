@@ -29,6 +29,14 @@ export default function POS() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [customerId, setCustomerId] = useState<string>("");
   const [installmentCount, setInstallmentCount] = useState(3);
+  // Loan terms
+  const [downPayment, setDownPayment] = useState(0);
+  const [interestRate, setInterestRate] = useState(0); // % annual
+  const [lateFeePerDay, setLateFeePerDay] = useState(0);
+  const [guarantors, setGuarantors] = useState<any[]>([]);
+  const [guarantorId, setGuarantorId] = useState<string>("");
+  const [showGuarantorForm, setShowGuarantorForm] = useState(false);
+  const [gForm, setGForm] = useState<any>({ name: "", phone: "", nid: "", address: "", relation: "" });
   const [lastSale, setLastSale] = useState<any>(null);
   const [showReceipt, setShowReceipt] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -36,12 +44,14 @@ export default function POS() {
   useEffect(() => { inputRef.current?.focus(); load(); }, []);
 
   const load = async () => {
-    const [{ data: p }, { data: c }] = await Promise.all([
+    const [{ data: p }, { data: c }, { data: g }] = await Promise.all([
       supabase.from("products").select("id,name,barcode,sku,price,stock").order("name"),
       supabase.from("customers").select("id,name,phone").order("name"),
+      supabase.from("guarantors").select("id,name,phone").order("name"),
     ]);
     setProducts(p ?? []);
     setCustomers(c ?? []);
+    setGuarantors(g ?? []);
   };
 
   // Auto-add by barcode scan
