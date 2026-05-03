@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Search, Package, Tag, Printer } from "lucide-react";
 import { PageHeader, StatusPill, SurfaceCard, PrimaryButton } from "@/components/PageHeader";
+import { ImageUpload } from "@/components/ImageUpload";
 
 // short, scan-friendly barcode generator (CODE128, ~12 chars)
 function generateBarcode() {
