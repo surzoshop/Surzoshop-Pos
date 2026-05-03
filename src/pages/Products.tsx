@@ -33,7 +33,7 @@ export default function Products() {
   const [newCat, setNewCat] = useState("");
   const isAdmin = role === "admin";
 
-  const empty = { name: "", category_id: "", price: 0, cost: 0, stock: 0, unit: "pcs" };
+  const empty = { name: "", category_id: "", price: 0, cost: 0, stock: 0, unit: "pcs", image_url: "" };
   const [form, setForm] = useState<any>(empty);
 
   const load = async () => {
