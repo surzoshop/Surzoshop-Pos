@@ -1,45 +1,88 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Search, Package } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Tag, Printer } from "lucide-react";
 import { PageHeader, StatusPill, SurfaceCard, PrimaryButton } from "@/components/PageHeader";
+
+// short, scan-friendly barcode generator (CODE128, ~12 chars)
+function generateBarcode() {
+  const ts = Date.now().toString(36).toUpperCase();
+  const rnd = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `SS${ts}${rnd}`;
+}
 
 export default function Products() {
   const { t, fmt } = useT();
   const { role } = useAuth();
   const { toast } = useToast();
   const [items, setItems] = useState<any[]>([]);
+  const [cats, setCats] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [catOpen, setCatOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
+  const [newCat, setNewCat] = useState("");
   const isAdmin = role === "admin";
 
-  const empty = { name: "", sku: "", barcode: "", price: 0, cost: 0, stock: 0, unit: "pcs" };
+  const empty = { name: "", category_id: "", price: 0, cost: 0, stock: 0, unit: "pcs" };
   const [form, setForm] = useState<any>(empty);
 
   const load = async () => {
-    const { data } = await supabase.from("products").select("*").order("created_at", { ascending: false });
-    setItems(data ?? []);
+    const [{ data: p }, { data: c }] = await Promise.all([
+      supabase.from("products").select("*").order("created_at", { ascending: false }),
+      supabase.from("categories").select("*").order("name"),
+    ]);
+    setItems(p ?? []);
+    setCats(c ?? []);
   };
   useEffect(() => { load(); }, []);
 
-  const startEdit = (p: any) => { setEditing(p); setForm(p); setOpen(true); };
+  const startEdit = (p: any) => { setEditing(p); setForm({ ...p, category_id: p.category_id ?? "" }); setOpen(true); };
   const startNew = () => { setEditing(null); setForm(empty); setOpen(true); };
 
   const save = async () => {
-    const payload = { ...form, price: Number(form.price), cost: Number(form.cost), stock: Number(form.stock),
-      sku: form.sku || null, barcode: form.barcode || null };
+    if (!form.name?.trim()) return toast({ title: "নাম দিন", variant: "destructive" });
+    const payload: any = {
+      name: form.name.trim(),
+      price: Number(form.price) || 0,
+      cost: Number(form.cost) || 0,
+      stock: Number(form.stock) || 0,
+      unit: form.unit || "pcs",
+      category_id: form.category_id || null,
+    };
+    if (!editing) {
+      // auto-generate unique barcode for new product
+      payload.barcode = generateBarcode();
+    }
     const { error } = editing
       ? await supabase.from("products").update(payload).eq("id", editing.id)
       : await supabase.from("products").insert(payload);
     if (error) return toast({ title: error.message, variant: "destructive" });
+    toast({ title: editing ? "পণ্য আপডেট হয়েছে" : "পণ্য যোগ হয়েছে" });
     setOpen(false); load();
+  };
+
+  const saveCat = async () => {
+    if (!newCat.trim()) return;
+    const { error } = await supabase.from("categories").insert({ name: newCat.trim() });
+    if (error) return toast({ title: error.message, variant: "destructive" });
+    setNewCat(""); setCatOpen(false); load();
+    toast({ title: "ক্যাটাগরি যোগ হয়েছে" });
+  };
+
+  const delCat = async (id: string) => {
+    if (!confirm("ক্যাটাগরি মুছবেন?")) return;
+    const { error } = await supabase.from("categories").delete().eq("id", id);
+    if (error) return toast({ title: error.message, variant: "destructive" });
+    load();
   };
 
   const del = async (id: string) => {
@@ -56,28 +99,44 @@ export default function Products() {
 
   const totalValue = filtered.reduce((a, p) => a + Number(p.price) * Number(p.stock), 0);
   const lowCount = filtered.filter(p => p.stock <= 5).length;
+  const catName = (id: string | null) => cats.find(c => c.id === id)?.name ?? "—";
 
   return (
     <div>
       <PageHeader
         title={t("productsInventory")}
         subtitle={t("productsSubtitle")}
-        actions={isAdmin && <PrimaryButton onClick={startNew}><Plus className="h-5 w-5" />{t("addProduct")}</PrimaryButton>}
+        actions={isAdmin && (
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to="/products/barcodes"
+              className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-2.5 rounded-xl text-sm font-bold hover:brightness-105 active:scale-95 transition-all"
+            >
+              <Printer className="h-4 w-4" /> বারকোড প্রিন্ট
+            </Link>
+            <button
+              onClick={() => setCatOpen(true)}
+              className="inline-flex items-center gap-2 bg-info/10 text-info px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-info/15 active:scale-95 transition-all"
+            >
+              <Tag className="h-4 w-4" /> ক্যাটাগরি যোগ করুন
+            </button>
+            <PrimaryButton onClick={startNew}><Plus className="h-5 w-5" />{t("addProduct")}</PrimaryButton>
+          </div>
+        )}
       />
 
       {/* Quick stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <MiniStat icon={<Package className="h-6 w-6 text-primary" />} bg="bg-primary/10"
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-6 md:mb-8">
+        <MiniStat icon={<Package className="h-5 w-5 md:h-6 md:w-6 text-primary" />} bg="bg-primary/10"
           label={t("totalProducts")} value={items.length.toString()} />
-        <MiniStat icon={<Package className="h-6 w-6 text-info" />} bg="bg-info/10"
+        <MiniStat icon={<Package className="h-5 w-5 md:h-6 md:w-6 text-info" />} bg="bg-info/10"
           label={t("totalRevenue")} value={fmt(totalValue)} />
-        <MiniStat icon={<Package className="h-6 w-6 text-[hsl(var(--secondary-foreground))]" />} bg="bg-secondary/30"
+        <MiniStat icon={<Package className="h-5 w-5 md:h-6 md:w-6 text-[hsl(var(--secondary-foreground))]" />} bg="bg-secondary/30"
           label={t("lowStock")} value={`${lowCount} ${t("productsLow")}`} />
       </div>
 
-      <SurfaceCard className="p-6">
-        {/* Search bar */}
-        <div className="relative mb-6">
+      <SurfaceCard className="p-3 md:p-6">
+        <div className="relative mb-4 md:mb-6">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <input
             type="text"
@@ -88,12 +147,40 @@ export default function Products() {
           />
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
+        {/* Mobile: cards */}
+        <div className="md:hidden space-y-2">
+          {filtered.length === 0 && <div className="py-12 text-center text-muted-foreground text-sm">{t("noResults")}</div>}
+          {filtered.map(p => (
+            <div key={p.id} className="bg-[hsl(var(--surface-container-low))] p-3 rounded-xl">
+              <div className="flex justify-between items-start gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-foreground truncate">{p.name}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{catName(p.category_id)} · {p.barcode ?? "—"}</p>
+                </div>
+                {isAdmin && (
+                  <div className="flex shrink-0">
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEdit(p)}><Pencil className="h-4 w-4" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => del(p.id)}><Trash2 className="h-4 w-4" /></Button>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                <span className="font-bold text-primary text-sm">{fmt(p.price)}</span>
+                {p.stock === 0 ? <StatusPill tone="destructive">{t("outOfStock")}</StatusPill>
+                  : p.stock <= 5 ? <StatusPill tone="warning">{p.stock} {p.unit}</StatusPill>
+                  : <span className="text-xs text-foreground/70 font-medium">{p.stock} {p.unit}</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop: table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="text-[11px] uppercase tracking-widest text-muted-foreground">
                 <th className="pb-6 font-bold">{t("name")}</th>
+                <th className="pb-6 font-bold">{t("category")}</th>
                 <th className="pb-6 font-bold">{t("barcode")}</th>
                 <th className="pb-6 font-bold">{t("price")}</th>
                 <th className="pb-6 font-bold">{t("stock")}</th>
@@ -102,12 +189,13 @@ export default function Products() {
             </thead>
             <tbody className="text-sm">
               {filtered.length === 0 && (
-                <tr><td colSpan={5} className="py-12 text-center text-muted-foreground">{t("noResults")}</td></tr>
+                <tr><td colSpan={6} className="py-12 text-center text-muted-foreground">{t("noResults")}</td></tr>
               )}
               {filtered.map(p => (
                 <tr key={p.id} className="hover:bg-[hsl(var(--surface-container-low))] transition-colors">
                   <td className="py-4 font-semibold text-foreground">{p.name}</td>
-                  <td className="py-4 text-muted-foreground">{p.barcode || "—"}</td>
+                  <td className="py-4 text-muted-foreground">{catName(p.category_id)}</td>
+                  <td className="py-4 text-muted-foreground font-mono text-xs">{p.barcode || "—"}</td>
                   <td className="py-4 font-bold text-primary">{fmt(p.price)}</td>
                   <td className="py-4">
                     {p.stock === 0 ? <StatusPill tone="destructive">{t("outOfStock")}</StatusPill>
@@ -127,22 +215,66 @@ export default function Products() {
         </div>
       </SurfaceCard>
 
+      {/* Add/Edit Product Dialog — mobile friendly */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="bg-[hsl(var(--surface-container-lowest))]">
-          <DialogHeader><DialogTitle>{editing ? t("editProduct") : t("addProduct")}</DialogTitle></DialogHeader>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2"><Label>{t("name")}</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
-            <div><Label>{t("barcode")}</Label><Input value={form.barcode ?? ""} onChange={e => setForm({ ...form, barcode: e.target.value })} /></div>
-            <div><Label>{t("sku")}</Label><Input value={form.sku ?? ""} onChange={e => setForm({ ...form, sku: e.target.value })} /></div>
-            <div><Label>{t("price")}</Label><Input type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} /></div>
-            <div><Label>{t("cost")}</Label><Input type="number" value={form.cost} onChange={e => setForm({ ...form, cost: e.target.value })} /></div>
-            <div><Label>{t("stock")}</Label><Input type="number" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} /></div>
-            <div><Label>{t("unit")}</Label><Input value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} /></div>
+        <DialogContent className="bg-[hsl(var(--surface-container-lowest))] max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editing ? t("editProduct") : t("addProduct")}</DialogTitle>
+            <DialogDescription className="text-xs">
+              বারকোড স্বয়ংক্রিয়ভাবে তৈরি হবে। পরে "বারকোড প্রিন্ট" থেকে print করতে পারবেন।
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2">
+              <Label>পণ্যের নাম *</Label>
+              <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="যেমন: Lux সাবান" />
+            </div>
+            <div className="sm:col-span-2">
+              <Label>{t("category")}</Label>
+              <Select value={form.category_id || "__none"} onValueChange={(v) => setForm({ ...form, category_id: v === "__none" ? "" : v })}>
+                <SelectTrigger><SelectValue placeholder="ক্যাটাগরি নির্বাচন করুন" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">— কোনটি না —</SelectItem>
+                  {cats.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>{t("price")} (৳)</Label><Input type="number" inputMode="decimal" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} /></div>
+            <div><Label>{t("cost")} (৳)</Label><Input type="number" inputMode="decimal" value={form.cost} onChange={e => setForm({ ...form, cost: e.target.value })} /></div>
+            <div><Label>{t("stock")}</Label><Input type="number" inputMode="numeric" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} /></div>
+            <div><Label>{t("unit")}</Label><Input value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} placeholder="pcs / kg / ltr" /></div>
+            {editing?.barcode && (
+              <div className="sm:col-span-2 bg-secondary/30 rounded-lg p-2 text-[11px] font-mono text-center">
+                বারকোড: {editing.barcode}
+              </div>
+            )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button>
-            <Button onClick={save} className="gradient-primary">{t("save")}</Button>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto">{t("cancel")}</Button>
+            <Button onClick={save} className="gradient-primary w-full sm:w-auto">{t("save")}</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Category Dialog */}
+      <Dialog open={catOpen} onOpenChange={setCatOpen}>
+        <DialogContent className="bg-[hsl(var(--surface-container-lowest))] max-w-md w-[95vw]">
+          <DialogHeader><DialogTitle>ক্যাটাগরি ব্যবস্থাপনা</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Input value={newCat} onChange={e => setNewCat(e.target.value)} placeholder="নতুন ক্যাটাগরির নাম" onKeyDown={e => e.key === "Enter" && saveCat()} />
+              <Button onClick={saveCat} className="gradient-primary shrink-0"><Plus className="h-4 w-4" /></Button>
+            </div>
+            <div className="max-h-60 overflow-y-auto space-y-1">
+              {cats.length === 0 && <p className="text-sm text-center text-muted-foreground py-4">এখনো কোনো ক্যাটাগরি নেই</p>}
+              {cats.map(c => (
+                <div key={c.id} className="flex items-center justify-between bg-[hsl(var(--surface-container-low))] px-3 py-2 rounded-lg">
+                  <span className="text-sm font-medium">{c.name}</span>
+                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => delCat(c.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                </div>
+              ))}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
@@ -151,11 +283,11 @@ export default function Products() {
 
 function MiniStat({ icon, bg, label, value }: any) {
   return (
-    <div className="bg-[hsl(var(--surface-container-lowest))] p-6 rounded-2xl flex items-center gap-4 transition-all hover:-translate-y-1">
-      <div className={`p-3 ${bg} rounded-xl`}>{icon}</div>
-      <div>
-        <p className="text-muted-foreground text-sm font-medium">{label}</p>
-        <h3 className="text-xl font-bold text-foreground mt-0.5">{value}</h3>
+    <div className="bg-[hsl(var(--surface-container-lowest))] p-3 md:p-6 rounded-2xl flex items-center gap-2 md:gap-4 transition-all hover:-translate-y-1">
+      <div className={`p-2 md:p-3 ${bg} rounded-xl shrink-0`}>{icon}</div>
+      <div className="min-w-0">
+        <p className="text-muted-foreground text-[11px] md:text-sm font-medium truncate">{label}</p>
+        <h3 className="text-sm md:text-xl font-bold text-foreground mt-0.5 truncate">{value}</h3>
       </div>
     </div>
   );

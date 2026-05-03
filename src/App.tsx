@@ -14,6 +14,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import POS from "./pages/POS";
 import Products from "./pages/Products";
+import BarcodePrint from "./pages/BarcodePrint";
 import Customers from "./pages/Customers";
 import Installments from "./pages/Installments";
 import Sales from "./pages/Sales";
@@ -47,6 +48,7 @@ const App = () => (
                     <Route path="/" element={<PageGate page="dashboard"><Dashboard /></PageGate>} />
                     <Route path="/pos" element={<PageGate page="pos"><POS /></PageGate>} />
                     <Route path="/products" element={<PageGate page="products"><Products /></PageGate>} />
+                    <Route path="/products/barcodes" element={<PageGate page="products"><BarcodePrint /></PageGate>} />
                     <Route path="/customers" element={<PageGate page="customers"><Customers /></PageGate>} />
                     <Route path="/installments" element={<PageGate page="installments"><Installments /></PageGate>} />
                     <Route path="/sales" element={<PageGate page="sales"><Sales /></PageGate>} />
