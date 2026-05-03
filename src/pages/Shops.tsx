@@ -1,16 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useShop } from "@/hooks/useShop";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { PageHeader, PrimaryButton, GhostButton, StatusPill } from "@/components/PageHeader";
+import { PageHeader, PrimaryButton, StatusPill } from "@/components/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Store, Plus, Users, ArrowRightCircle, UserPlus, Loader2, ShieldCheck } from "lucide-react";
+import {
+  Store, Plus, Users, ArrowRightCircle, UserPlus, Loader2, ShieldCheck,
+  TrendingUp, Wallet, Receipt, AlertCircle, Package, ShoppingBag,
+} from "lucide-react";
 import { ALL_PAGES, PageKey } from "@/hooks/useShop";
 import { useT } from "@/i18n/LanguageContext";
 
@@ -22,13 +26,86 @@ const PAGE_LABELS: Record<PageKey, string> = {
   attendance: "Attendance", shops: "Shops",
 };
 
+type ShopStats = {
+  shop_id: string | null;
+  totalSales: number;
+  totalDue: number;
+  totalPaid: number;
+  salesCount: number;
+  installmentCount: number;
+  pendingInstallments: number;
+  totalExpenses: number;
+  productCount: number;
+};
+
 export default function Shops() {
-  const { t } = useT();
+  const { t, fmt } = useT();
   const { shops, currentShop, setCurrentShopId, isSuperAdmin, refresh } = useShop();
   const { user } = useAuth();
-  const { toast } = useToast();
   const [openCreate, setOpenCreate] = useState(false);
   const [openStaff, setOpenStaff] = useState<string | null>(null);
+  const [stats, setStats] = useState<Record<string, ShopStats>>({});
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    void loadStats();
+    // eslint-disable-next-line
+  }, [shops.length, isSuperAdmin]);
+
+  const loadStats = async () => {
+    setLoadingStats(true);
+    const [sales, insts, exp, prods] = await Promise.all([
+      supabase.from("sales").select("shop_id,total,paid,due"),
+      supabase.from("installments").select("shop_id,status"),
+      supabase.from("expenses").select("shop_id,amount"),
+      supabase.from("products").select("shop_id,id"),
+    ]);
+    const map: Record<string, ShopStats> = {};
+    const ensure = (id: string | null) => {
+      const k = id ?? "_none";
+      if (!map[k]) map[k] = { shop_id: id, totalSales: 0, totalDue: 0, totalPaid: 0, salesCount: 0, installmentCount: 0, pendingInstallments: 0, totalExpenses: 0, productCount: 0 };
+      return map[k];
+    };
+    shops.forEach(s => ensure(s.id));
+    (sales.data ?? []).forEach((r: any) => {
+      const s = ensure(r.shop_id);
+      s.totalSales += Number(r.total) || 0;
+      s.totalPaid += Number(r.paid) || 0;
+      s.totalDue += Number(r.due) || 0;
+      s.salesCount += 1;
+    });
+    (insts.data ?? []).forEach((r: any) => {
+      const s = ensure(r.shop_id);
+      s.installmentCount += 1;
+      if (r.status !== "paid") s.pendingInstallments += 1;
+    });
+    (exp.data ?? []).forEach((r: any) => {
+      const s = ensure(r.shop_id);
+      s.totalExpenses += Number(r.amount) || 0;
+    });
+    (prods.data ?? []).forEach((r: any) => {
+      const s = ensure(r.shop_id);
+      s.productCount += 1;
+    });
+    setStats(map);
+    setLoadingStats(false);
+  };
+
+  const totals = useMemo(() => {
+    const init: ShopStats = { shop_id: null, totalSales: 0, totalDue: 0, totalPaid: 0, salesCount: 0, installmentCount: 0, pendingInstallments: 0, totalExpenses: 0, productCount: 0 };
+    return Object.values(stats).reduce((a, s) => ({
+      shop_id: null,
+      totalSales: a.totalSales + s.totalSales,
+      totalDue: a.totalDue + s.totalDue,
+      totalPaid: a.totalPaid + s.totalPaid,
+      salesCount: a.salesCount + s.salesCount,
+      installmentCount: a.installmentCount + s.installmentCount,
+      pendingInstallments: a.pendingInstallments + s.pendingInstallments,
+      totalExpenses: a.totalExpenses + s.totalExpenses,
+      productCount: a.productCount + s.productCount,
+    }), init);
+  }, [stats]);
 
   if (!isSuperAdmin) {
     return (
@@ -45,8 +122,8 @@ export default function Shops() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Multiple Shops"
-        subtitle="সব shop manage করুন, switch করুন এবং staff access দিন।"
+        title="All Shops"
+        subtitle="সব shop-এর বিক্রি, বাকি, কিস্তি ও খরচ একসাথে দেখুন।"
         actions={
           <PrimaryButton onClick={() => setOpenCreate(true)}>
             <Plus className="h-4 w-4" /> নতুন Shop
@@ -54,49 +131,119 @@ export default function Shops() {
         }
       />
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {shops.map((s) => {
-          const active = currentShop?.id === s.id;
-          return (
-            <Card key={s.id} className={`p-5 transition-all ${active ? "ring-2 ring-primary shadow-lg" : ""}`}>
-              <div className="flex items-start justify-between mb-3">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Store className="h-6 w-6 text-primary" />
+      {/* Aggregate totals */}
+      <div>
+        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">সব Shop মিলিয়ে</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <TotalTile to="/sales" icon={<TrendingUp className="h-5 w-5" />} label="মোট বিক্রি" value={fmt(totals.totalSales)} tone="primary" />
+          <TotalTile to="/sales" icon={<Wallet className="h-5 w-5" />} label="মোট আদায়" value={fmt(totals.totalPaid)} tone="success" />
+          <TotalTile to="/sales" icon={<AlertCircle className="h-5 w-5" />} label="মোট বাকি" value={fmt(totals.totalDue)} tone="danger" />
+          <TotalTile to="/installments" icon={<Receipt className="h-5 w-5" />} label="কিস্তি (বাকি/মোট)" value={`${totals.pendingInstallments} / ${totals.installmentCount}`} tone="warning" />
+          <TotalTile to="/expenses" icon={<ShoppingBag className="h-5 w-5" />} label="মোট খরচ" value={fmt(totals.totalExpenses)} tone="muted" />
+          <TotalTile to="/products" icon={<Package className="h-5 w-5" />} label="মোট পণ্য" value={`${totals.productCount}`} tone="muted" />
+          <TotalTile to="/sales" icon={<Receipt className="h-5 w-5" />} label="বিক্রির সংখ্যা" value={`${totals.salesCount}`} tone="muted" />
+          <TotalTile to="/shops" icon={<Store className="h-5 w-5" />} label="মোট Shop" value={`${shops.length}`} tone="primary" />
+        </div>
+      </div>
+
+      {/* Per-shop cards */}
+      <div>
+        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">প্রত্যেক Shop-এর বিস্তারিত</h3>
+        <div className="grid md:grid-cols-2 gap-5">
+          {shops.map((s) => {
+            const active = currentShop?.id === s.id;
+            const st = stats[s.id] ?? { totalSales: 0, totalDue: 0, totalPaid: 0, salesCount: 0, installmentCount: 0, pendingInstallments: 0, totalExpenses: 0, productCount: 0 } as ShopStats;
+            return (
+              <Card key={s.id} className={`p-5 transition-all ${active ? "ring-2 ring-primary shadow-lg" : ""}`}>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Store className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg">{s.name}</h3>
+                      <p className="text-xs text-muted-foreground">{s.address || "—"}</p>
+                    </div>
+                  </div>
+                  {active && <StatusPill tone="success">Active</StatusPill>}
                 </div>
-                {active && <StatusPill tone="success">Active</StatusPill>}
-              </div>
-              <h3 className="font-bold text-lg">{s.name}</h3>
-              <p className="text-sm text-muted-foreground">{s.address || "—"}</p>
-              <p className="text-xs text-muted-foreground mt-1">{s.phone || ""}</p>
-              <div className="flex gap-2 mt-4">
-                <Button
-                  size="sm"
-                  variant={active ? "secondary" : "default"}
-                  onClick={() => setCurrentShopId(s.id)}
-                  className="flex-1"
-                >
-                  <ArrowRightCircle className="h-4 w-4 mr-1" />
-                  {active ? "Selected" : "Switch"}
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setOpenStaff(s.id)}>
-                  <Users className="h-4 w-4" />
-                </Button>
-              </div>
+
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <ShopStatTile label="বিক্রি" value={fmt(st.totalSales)} tone="primary" />
+                  <ShopStatTile label="আদায়" value={fmt(st.totalPaid)} tone="success" />
+                  <ShopStatTile label="বাকি" value={fmt(st.totalDue)} tone="danger" />
+                  <ShopStatTile label="কিস্তি বাকি" value={`${st.pendingInstallments} / ${st.installmentCount}`} tone="warning" />
+                  <ShopStatTile label="খরচ" value={fmt(st.totalExpenses)} tone="muted" />
+                  <ShopStatTile label="পণ্য" value={`${st.productCount}`} tone="muted" />
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={active ? "secondary" : "default"}
+                    onClick={() => setCurrentShopId(s.id)}
+                    className="flex-1"
+                  >
+                    <ArrowRightCircle className="h-4 w-4 mr-1" />
+                    {active ? "Selected" : "Switch"}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setOpenStaff(s.id)}>
+                    <Users className="h-4 w-4 mr-1" /> Staff
+                  </Button>
+                </div>
+              </Card>
+            );
+          })}
+          {shops.length === 0 && (
+            <Card className="p-8 text-center col-span-full">
+              <Store className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+              <p className="font-medium">কোনো shop নেই</p>
+              <p className="text-sm text-muted-foreground mb-4">প্রথম shop তৈরি করুন</p>
+              <PrimaryButton onClick={() => setOpenCreate(true)}><Plus className="h-4 w-4" /> Create Shop</PrimaryButton>
             </Card>
-          );
-        })}
-        {shops.length === 0 && (
-          <Card className="p-8 text-center col-span-full">
-            <Store className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-            <p className="font-medium">কোনো shop নেই</p>
-            <p className="text-sm text-muted-foreground mb-4">প্রথম shop তৈরি করুন</p>
-            <PrimaryButton onClick={() => setOpenCreate(true)}><Plus className="h-4 w-4" /> Create Shop</PrimaryButton>
-          </Card>
-        )}
+          )}
+        </div>
+        {loadingStats && <p className="text-xs text-muted-foreground mt-2 flex items-center gap-2"><Loader2 className="h-3 w-3 animate-spin" /> Stats loading…</p>}
       </div>
 
       <CreateShopDialog open={openCreate} onOpenChange={setOpenCreate} ownerId={user?.id ?? null} onCreated={refresh} />
       {openStaff && <StaffAccessDialog shopId={openStaff} onClose={() => setOpenStaff(null)} />}
+    </div>
+  );
+}
+
+function TotalTile({ to, icon, label, value, tone }: { to: string; icon: React.ReactNode; label: string; value: string; tone: "primary" | "success" | "danger" | "warning" | "muted" }) {
+  const toneClass = {
+    primary: "bg-primary/10 text-primary",
+    success: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    danger: "bg-destructive/10 text-destructive",
+    warning: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+    muted: "bg-muted text-foreground",
+  }[tone];
+  return (
+    <Link
+      to={to}
+      className="group bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-4 hover:-translate-y-0.5 hover:shadow-lg transition-all border border-transparent hover:border-primary/20"
+    >
+      <div className={`h-9 w-9 rounded-xl flex items-center justify-center mb-2 ${toneClass}`}>{icon}</div>
+      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{label}</p>
+      <p className="text-lg font-bold text-foreground mt-1 group-hover:text-primary transition-colors">{value}</p>
+    </Link>
+  );
+}
+
+function ShopStatTile({ label, value, tone }: { label: string; value: string; tone: "primary" | "success" | "danger" | "warning" | "muted" }) {
+  const toneClass = {
+    primary: "border-primary/30 bg-primary/5",
+    success: "border-emerald-500/30 bg-emerald-500/5",
+    danger: "border-destructive/30 bg-destructive/5",
+    warning: "border-amber-500/30 bg-amber-500/5",
+    muted: "border-border bg-muted/30",
+  }[tone];
+  return (
+    <div className={`rounded-xl border px-3 py-2 ${toneClass}`}>
+      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
+      <p className="text-sm font-bold text-foreground mt-0.5">{value}</p>
     </div>
   );
 }
