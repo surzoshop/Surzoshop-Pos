@@ -18,7 +18,7 @@ export function MobileBottomNav({ onOpenMenu }: Props) {
   ].filter(i => canAccess(i.key));
 
   const right = [
-    { url: "/install", icon: Smartphone, label: "App", always: true },
+    { url: "/scanner", icon: Smartphone, label: "Scanner", always: true },
   ];
 
   return (
