@@ -51,7 +51,33 @@ export default function AppLayout() {
         </div>
 
         <div className="flex items-center gap-4 md:gap-6">
-          {/* Language Switcher — yellow chip */}
+          {/* Shop switcher (super admin) */}
+          {isSuperAdmin && shops.length > 0 && (
+            <div className="relative">
+              <button
+                onClick={() => setShopOpen(o => !o)}
+                className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-full text-xs font-bold hover:bg-primary/15 transition-all"
+              >
+                <Store className="h-4 w-4" />
+                <span className="max-w-[120px] truncate">{currentShop?.name ?? "Select Shop"}</span>
+                <ChevronDown className="h-3 w-3" />
+              </button>
+              {shopOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-background border rounded-xl shadow-xl z-50 py-1 max-h-72 overflow-y-auto">
+                  {shops.map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => { setCurrentShopId(s.id); setShopOpen(false); }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-primary/10 flex items-center gap-2 ${currentShop?.id === s.id ? "bg-primary/10 text-primary font-bold" : ""}`}
+                    >
+                      <Store className="h-4 w-4" />{s.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <button
             onClick={() => setLang(lang === "bn" ? "en" : "bn")}
             className="flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 hover:brightness-105"
