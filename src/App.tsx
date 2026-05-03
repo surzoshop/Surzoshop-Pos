@@ -36,25 +36,28 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/pos" element={<POS />} />
-                <Route path="/products" element={<Products />} />
-                <Route path="/customers" element={<Customers />} />
-                <Route path="/installments" element={<Installments />} />
-                <Route path="/sales" element={<Sales />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/suppliers" element={<Suppliers />} />
-                <Route path="/purchases" element={<Purchases />} />
-                <Route path="/expenses" element={<Expenses />} />
-                <Route path="/stock-adjustments" element={<StockAdjustments />} />
-                <Route path="/staff" element={<Staff />} />
-                <Route path="/attendance" element={<Attendance />} />
-              </Route>
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <ShopProvider>
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+                  <Route path="/" element={<PageGate page="dashboard"><Dashboard /></PageGate>} />
+                  <Route path="/pos" element={<PageGate page="pos"><POS /></PageGate>} />
+                  <Route path="/products" element={<PageGate page="products"><Products /></PageGate>} />
+                  <Route path="/customers" element={<PageGate page="customers"><Customers /></PageGate>} />
+                  <Route path="/installments" element={<PageGate page="installments"><Installments /></PageGate>} />
+                  <Route path="/sales" element={<PageGate page="sales"><Sales /></PageGate>} />
+                  <Route path="/reports" element={<PageGate page="reports"><Reports /></PageGate>} />
+                  <Route path="/suppliers" element={<PageGate page="suppliers"><Suppliers /></PageGate>} />
+                  <Route path="/purchases" element={<PageGate page="purchases"><Purchases /></PageGate>} />
+                  <Route path="/expenses" element={<PageGate page="expenses"><Expenses /></PageGate>} />
+                  <Route path="/stock-adjustments" element={<PageGate page="stock-adjustments"><StockAdjustments /></PageGate>} />
+                  <Route path="/staff" element={<PageGate page="staff"><Staff /></PageGate>} />
+                  <Route path="/attendance" element={<PageGate page="attendance"><Attendance /></PageGate>} />
+                  <Route path="/shops" element={<Shops />} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </ShopProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
