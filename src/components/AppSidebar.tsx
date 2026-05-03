@@ -1,83 +1,81 @@
-import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, ShoppingCart, Package, Users, Calendar, Receipt, BarChart3, LogOut, Languages, Sun, Moon } from "lucide-react";
+import { NavLink, useLocation, Link } from "react-router-dom";
 import {
-  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu,
-  SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar,
-} from "@/components/ui/sidebar";
+  LayoutDashboard, Package, Receipt, Warehouse, Users, Settings,
+  HelpCircle, LogOut, ShoppingCart,
+} from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
 
 export function AppSidebar() {
-  const { state } = useSidebar();
-  const collapsed = state === "collapsed";
   const { pathname } = useLocation();
-  const { t, lang, setLang } = useT();
-  const { signOut, role } = useAuth();
-  const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
-
-  useEffect(() => { document.documentElement.classList.toggle("dark", dark); }, [dark]);
+  const { t } = useT();
+  const { signOut } = useAuth();
 
   const items = [
-    { url: "/", icon: LayoutDashboard, label: t("dashboard") },
-    { url: "/pos", icon: ShoppingCart, label: t("pos") },
-    { url: "/products", icon: Package, label: t("products") },
+    { url: "/", icon: LayoutDashboard, label: t("overview") },
+    { url: "/products", icon: Package, label: t("productCatalog") },
+    { url: "/sales", icon: Receipt, label: t("salesLedger") },
     { url: "/customers", icon: Users, label: t("customers") },
-    { url: "/installments", icon: Calendar, label: t("installments") },
-    { url: "/sales", icon: Receipt, label: t("sales") },
-    { url: "/reports", icon: BarChart3, label: t("reports") },
+    { url: "/installments", icon: Warehouse, label: t("installments") },
+    { url: "/reports", icon: Settings, label: t("reports") },
   ];
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border p-4">
-        <div className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-lg gradient-primary flex items-center justify-center text-primary-foreground font-bold shrink-0">SS</div>
-          {!collapsed && (
-            <div className="overflow-hidden">
-              <div className="font-semibold text-sidebar-foreground truncate">{t("appName")}</div>
-              <div className="text-xs text-sidebar-foreground/60 truncate">{t("appTagline")}</div>
-            </div>
-          )}
-        </div>
-      </SidebarHeader>
+    <aside className="hidden md:flex fixed left-0 top-0 h-screen w-64 bg-[hsl(var(--surface-container-lowest))] flex-col py-6 z-40 shadow-[0_10px_40px_-10px_hsl(var(--foreground)/0.06)]">
+      {/* Brand */}
+      <div className="px-8 mb-10">
+        <h1 className="text-lg font-black text-foreground leading-tight">
+          {t("appName")}
+        </h1>
+        <p className="text-[10px] text-muted-foreground tracking-[0.2em] uppercase mt-1">
+          Admin Terminal
+        </p>
+      </div>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map(item => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url}>
-                    <NavLink to={item.url} className="flex items-center gap-3">
-                      <item.icon className="h-5 w-5 shrink-0" />
-                      {!collapsed && <span>{item.label}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+      {/* Nav */}
+      <nav className="flex-1 flex flex-col">
+        {items.map((item) => {
+          const active = pathname === item.url;
+          return (
+            <NavLink
+              key={item.url}
+              to={item.url}
+              className={`flex items-center gap-3 px-8 py-3 transition-all duration-200 ${
+                active
+                  ? "text-primary border-l-4 border-primary bg-primary/5 font-medium"
+                  : "text-muted-foreground hover:bg-[hsl(var(--surface-container-low))] border-l-4 border-transparent"
+              }`}
+            >
+              <item.icon className="h-5 w-5 shrink-0" />
+              <span className="font-medium text-sm">{item.label}</span>
+            </NavLink>
+          );
+        })}
+      </nav>
 
-      <SidebarFooter className="border-t border-sidebar-border p-2 gap-1">
-        {!collapsed && role && (
-          <div className="px-2 py-1 text-xs text-sidebar-foreground/60 capitalize">{t(role as any)}</div>
-        )}
-        <div className="flex gap-1">
-          <Button size="sm" variant="ghost" className="flex-1 text-sidebar-foreground hover:bg-sidebar-accent" onClick={() => setLang(lang === "bn" ? "en" : "bn")}>
-            <Languages className="h-4 w-4" />{!collapsed && <span className="ml-1">{lang === "bn" ? "EN" : "বাং"}</span>}
-          </Button>
-          <Button size="sm" variant="ghost" className="text-sidebar-foreground hover:bg-sidebar-accent" onClick={() => setDark(d => !d)}>
-            {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
+      {/* Footer */}
+      <div className="mt-auto px-8 pt-6 border-t border-[hsl(var(--surface-container-high))] space-y-4">
+        <Link
+          to="/pos"
+          className="w-full inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground py-3 rounded-xl font-bold text-sm shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.4)] hover:brightness-110 active:scale-95 transition-all"
+        >
+          <ShoppingCart className="h-4 w-4" />
+          Open POS
+        </Link>
+        <div className="flex flex-col gap-2">
+          <button className="flex items-center gap-3 text-muted-foreground text-sm hover:text-primary transition-colors">
+            <HelpCircle className="h-5 w-5" />
+            Help Center
+          </button>
+          <button
+            onClick={signOut}
+            className="flex items-center gap-3 text-muted-foreground text-sm hover:text-destructive transition-colors"
+          >
+            <LogOut className="h-5 w-5" />
+            {t("logout")}
+          </button>
         </div>
-        <Button size="sm" variant="ghost" className="justify-start text-sidebar-foreground hover:bg-sidebar-accent" onClick={signOut}>
-          <LogOut className="h-4 w-4" />{!collapsed && <span className="ml-2">{t("logout")}</span>}
-        </Button>
-      </SidebarFooter>
-    </Sidebar>
+      </div>
+    </aside>
   );
 }
