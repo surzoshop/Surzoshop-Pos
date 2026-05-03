@@ -380,10 +380,23 @@ export default function POS() {
                     </Select>
                   </div>
                 </div>
-                <div className="flex justify-between text-xs pt-2 border-t border-secondary/30">
-                  <span className="text-muted-foreground">EMI/{t("months")}</span>
-                  <span className="font-bold">{fmt(emi)}</span>
+                <div className="space-y-1 pt-2 border-t border-secondary/30 text-xs">
+                  <div className="flex justify-between"><span className="text-muted-foreground">মোট সুদ</span><span className="font-bold">{fmt(interestAmount)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">EMI / {t("months")}</span><span className="font-bold text-primary">{fmt(emi)}</span></div>
                 </div>
+                {schedulePreview.length > 0 && (
+                  <details className="text-xs rounded-lg bg-[hsl(var(--surface-container-lowest))] p-2">
+                    <summary className="cursor-pointer font-bold flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> {t("schedule")} preview ({schedulePreview.length})</summary>
+                    <div className="max-h-32 overflow-y-auto mt-2 space-y-1">
+                      {schedulePreview.map(s => (
+                        <div key={s.no} className="flex justify-between border-b border-dashed border-muted/50 py-0.5">
+                          <span>#{s.no} · {s.date}</span>
+                          <span className="font-mono font-bold">{fmt(s.amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
               </div>
             )}
           </>
