@@ -256,7 +256,11 @@ export default function POS() {
             <button key={p.id} onClick={() => addToCart(p)}
               className="bg-[hsl(var(--surface-container-lowest))] p-3 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col gap-2 text-left">
               <div className="aspect-square rounded-lg overflow-hidden bg-[hsl(var(--surface-container-high))] relative flex items-center justify-center">
-                <Package className="h-12 w-12 text-muted-foreground/40 group-hover:scale-110 transition-transform duration-500" />
+                {p.image_url ? (
+                  <img src={p.image_url} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                ) : (
+                  <Package className="h-12 w-12 text-muted-foreground/40 group-hover:scale-110 transition-transform duration-500" />
+                )}
                 {p.stock <= 5 && p.stock > 0 && (
                   <span className="absolute top-2 right-2 bg-secondary text-[hsl(var(--secondary-foreground))] text-[10px] font-bold px-2 py-1 rounded-md">
                     {t("lowStock")}
