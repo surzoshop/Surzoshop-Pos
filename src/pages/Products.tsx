@@ -153,24 +153,33 @@ export default function Products() {
         <div className="md:hidden space-y-2">
           {filtered.length === 0 && <div className="py-12 text-center text-muted-foreground text-sm">{t("noResults")}</div>}
           {filtered.map(p => (
-            <div key={p.id} className="bg-[hsl(var(--surface-container-low))] p-3 rounded-xl">
-              <div className="flex justify-between items-start gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="font-bold text-foreground truncate">{p.name}</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{catName(p.category_id)} · {p.barcode ?? "—"}</p>
-                </div>
-                {isAdmin && (
-                  <div className="flex shrink-0">
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEdit(p)}><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => del(p.id)}><Trash2 className="h-4 w-4" /></Button>
-                  </div>
+            <div key={p.id} className="bg-[hsl(var(--surface-container-low))] p-3 rounded-xl flex gap-3">
+              <div className="w-16 h-16 rounded-lg overflow-hidden bg-[hsl(var(--surface-container-high))] shrink-0 flex items-center justify-center">
+                {p.image_url ? (
+                  <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+                ) : (
+                  <Package className="h-6 w-6 text-muted-foreground/50" />
                 )}
               </div>
-              <div className="flex items-center justify-between mt-2">
-                <span className="font-bold text-primary text-sm">{fmt(p.price)}</span>
-                {p.stock === 0 ? <StatusPill tone="destructive">{t("outOfStock")}</StatusPill>
-                  : p.stock <= 5 ? <StatusPill tone="warning">{p.stock} {p.unit}</StatusPill>
-                  : <span className="text-xs text-foreground/70 font-medium">{p.stock} {p.unit}</span>}
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-foreground truncate">{p.name}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{catName(p.category_id)} · {p.barcode ?? "—"}</p>
+                  </div>
+                  {isAdmin && (
+                    <div className="flex shrink-0">
+                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEdit(p)}><Pencil className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => del(p.id)}><Trash2 className="h-4 w-4" /></Button>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center justify-between mt-1.5">
+                  <span className="font-bold text-primary text-sm">{fmt(p.price)}</span>
+                  {p.stock === 0 ? <StatusPill tone="destructive">{t("outOfStock")}</StatusPill>
+                    : p.stock <= 5 ? <StatusPill tone="warning">{p.stock} {p.unit}</StatusPill>
+                    : <span className="text-xs text-foreground/70 font-medium">{p.stock} {p.unit}</span>}
+                </div>
               </div>
             </div>
           ))}
