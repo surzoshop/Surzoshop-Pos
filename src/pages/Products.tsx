@@ -58,6 +58,7 @@ export default function Products() {
       stock: Number(form.stock) || 0,
       unit: form.unit || "pcs",
       category_id: form.category_id || null,
+      image_url: form.image_url || null,
     };
     if (!editing) {
       // auto-generate unique barcode for new product
