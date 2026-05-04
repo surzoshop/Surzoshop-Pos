@@ -89,52 +89,49 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {isSuperAdmin && (
-          <NavLink
-            to="/shops"
-            className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-[15px] mb-1 ${
-              pathname === "/shops"
-                ? "bg-primary text-primary-foreground font-extrabold shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.5)]"
-                : "text-foreground/85 font-bold hover:bg-primary/10 hover:text-primary hover:translate-x-0.5"
-            }`}
-          >
-            <span className={`shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-lg transition-all duration-300 ${
-              pathname === "/shops"
-                ? "bg-[hsl(var(--primary-foreground)/0.18)]"
-                : "bg-primary/10 text-primary group-hover:bg-[linear-gradient(135deg,hsl(var(--primary-glow)),hsl(var(--primary)))] group-hover:text-[hsl(var(--primary-foreground))] group-hover:scale-110 group-hover:-rotate-6 group-hover:shadow-[0_6px_16px_-6px_hsl(var(--primary)/0.5)]"
-            }`}>
-              <Store className="h-[18px] w-[18px] transition-transform duration-300 group-hover:scale-110" />
-            </span>
-            <span className="truncate">Multiple Shops</span>
-          </NavLink>
-        )}
+        {isSuperAdmin && (() => {
+          const T = ICON_THEMES.fuchsia;
+          const active = pathname === "/shops";
+          return (
+            <NavLink
+              to="/shops"
+              className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 text-[15px] mb-1 ${
+                active
+                  ? "bg-primary/10 text-primary font-extrabold ring-1 ring-primary/30"
+                  : "text-foreground/85 font-bold hover:bg-muted/60 hover:-translate-y-0.5 hover:shadow-md"
+              }`}
+            >
+              <span className={`shrink-0 inline-flex items-center justify-center h-9 w-9 rounded-xl text-white shadow-lg transition-all duration-300 ${T.grad} ${T.shadow} group-hover:scale-110 group-hover:-rotate-6 group-active:rotate-0 group-active:scale-95`}>
+                <Store className="h-[18px] w-[18px]" />
+              </span>
+              <span className="truncate">Multiple Shops</span>
+            </NavLink>
+          );
+        })()}
         {items.map((item) => {
           const active = pathname === item.url;
           const isProducts = item.url === "/products";
           const productsActive = pathname.startsWith("/products");
+          const T = ICON_THEMES[item.tone] ?? ICON_THEMES.indigo;
           return (
             <div key={item.url}>
               <NavLink
                 to={item.url}
-                className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-[15px] ${
+                className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 text-[15px] ${
                   active
-                    ? "bg-primary text-primary-foreground font-extrabold shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.5)]"
-                    : "text-foreground/85 font-bold hover:bg-primary/10 hover:text-primary hover:translate-x-0.5"
+                    ? "bg-primary/10 text-primary font-extrabold ring-1 ring-primary/30"
+                    : "text-foreground/85 font-bold hover:bg-muted/60 hover:-translate-y-0.5 hover:shadow-md"
                 }`}
               >
-                <span className={`shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-lg transition-all duration-300 ${
-                  active
-                    ? "bg-[hsl(var(--primary-foreground)/0.18)]"
-                    : "bg-primary/10 text-primary group-hover:bg-[linear-gradient(135deg,hsl(var(--primary-glow)),hsl(var(--primary)))] group-hover:text-[hsl(var(--primary-foreground))] group-hover:scale-110 group-hover:-rotate-6 group-hover:shadow-[0_6px_16px_-6px_hsl(var(--primary)/0.5)]"
-                }`}>
-                  <item.icon className="h-[18px] w-[18px] transition-transform duration-300 group-hover:scale-110" />
+                <span className={`shrink-0 inline-flex items-center justify-center h-9 w-9 rounded-xl text-white shadow-lg transition-all duration-300 ${T.grad} ${T.shadow} group-hover:scale-110 group-hover:-rotate-6 group-active:rotate-0 group-active:scale-95`}>
+                  <item.icon className="h-[18px] w-[18px]" />
                 </span>
                 <span className="truncate">{item.label}</span>
               </NavLink>
               {isProducts && productsActive && (
                 <NavLink
                   to="/products/barcodes"
-                  className={`flex items-center gap-2 ml-11 mt-1 px-3 py-1.5 rounded-lg text-[12px] transition-all ${
+                  className={`flex items-center gap-2 ml-12 mt-1 px-3 py-1.5 rounded-lg text-[12px] transition-all ${
                     pathname === "/products/barcodes"
                       ? "bg-primary/15 text-primary font-bold"
                       : "text-foreground/70 hover:text-primary hover:bg-primary/5"
@@ -147,23 +144,25 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
             </div>
           );
         })}
-        <NavLink
-          to="/scanner"
-          className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-[15px] ${
-            pathname === "/scanner"
-              ? "bg-primary text-primary-foreground font-extrabold shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.5)]"
-              : "text-foreground/85 font-bold hover:bg-primary/10 hover:text-primary hover:translate-x-0.5"
-          }`}
-        >
-          <span className={`shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-lg transition-all duration-300 ${
-            pathname === "/scanner"
-              ? "bg-[hsl(var(--primary-foreground)/0.18)]"
-              : "bg-primary/10 text-primary group-hover:bg-[linear-gradient(135deg,hsl(var(--primary-glow)),hsl(var(--primary)))] group-hover:text-[hsl(var(--primary-foreground))] group-hover:scale-110 group-hover:-rotate-6 group-hover:shadow-[0_6px_16px_-6px_hsl(var(--primary)/0.5)]"
-          }`}>
-            <Smartphone className="h-[18px] w-[18px] transition-transform duration-300 group-hover:scale-110" />
-          </span>
-          <span className="truncate">Scanner App</span>
-        </NavLink>
+        {(() => {
+          const T = ICON_THEMES.slate;
+          const active = pathname === "/scanner";
+          return (
+            <NavLink
+              to="/scanner"
+              className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 text-[15px] ${
+                active
+                  ? "bg-primary/10 text-primary font-extrabold ring-1 ring-primary/30"
+                  : "text-foreground/85 font-bold hover:bg-muted/60 hover:-translate-y-0.5 hover:shadow-md"
+              }`}
+            >
+              <span className={`shrink-0 inline-flex items-center justify-center h-9 w-9 rounded-xl text-white shadow-lg transition-all duration-300 ${T.grad} ${T.shadow} group-hover:scale-110 group-hover:-rotate-6 group-active:rotate-0 group-active:scale-95`}>
+                <Smartphone className="h-[18px] w-[18px]" />
+              </span>
+              <span className="truncate">Scanner App</span>
+            </NavLink>
+          );
+        })()}
       </nav>
 
       {/* Footer */}
