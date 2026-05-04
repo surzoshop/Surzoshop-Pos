@@ -6,6 +6,8 @@ import {
   Calendar, Wallet, ShoppingBag, AlertTriangle, PlusCircle, ScanLine,
   UserPlus, TrendingUp, Headset, Package,
 } from "lucide-react";
+import { AddProductSheet } from "@/components/AddProductSheet";
+import { AddCustomerSheet } from "@/components/AddCustomerSheet";
 
 export default function Dashboard() {
   const { t, fmt, lang } = useT();
@@ -17,6 +19,8 @@ export default function Dashboard() {
   const [topProducts, setTopProducts] = useState<{ name: string; qty: number; revenue: number }[]>([]);
   const [recent, setRecent] = useState<any[]>([]);
   const [salesTrend, setSalesTrend] = useState(0);
+  const [productSheet, setProductSheet] = useState(false);
+  const [customerSheet, setCustomerSheet] = useState(false);
 
   useEffect(() => { void loadAll(); }, []);
 
@@ -86,11 +90,15 @@ export default function Dashboard() {
           <h2 className="text-3xl font-bold tracking-tight text-foreground">{t("dashboardOverview")}</h2>
           <p className="text-muted-foreground mt-1">{t("dashboardSubtitle")}</p>
         </div>
-        <div className="flex gap-3">
-          <Link to="/products" className="flex items-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-5 py-3 rounded-xl font-semibold shadow-sm hover:bg-[hsl(var(--surface-container))] active:scale-95 transition-all">
+        <div className="flex gap-3 flex-wrap">
+          <button onClick={() => setProductSheet(true)} className="flex items-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-5 py-3 rounded-xl font-semibold shadow-sm hover:bg-[hsl(var(--surface-container))] active:scale-95 transition-all">
             <PlusCircle className="h-5 w-5 text-primary" />
             {t("addProduct")}
-          </Link>
+          </button>
+          <button onClick={() => setCustomerSheet(true)} className="flex items-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-5 py-3 rounded-xl font-semibold shadow-sm hover:bg-[hsl(var(--surface-container))] active:scale-95 transition-all">
+            <UserPlus className="h-5 w-5 text-info" />
+            {t("addCustomer")}
+          </button>
           <Link to="/pos" className="flex items-center gap-2 gradient-primary text-primary-foreground px-6 py-3 rounded-xl font-bold shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.4)] hover:brightness-110 active:scale-95 transition-all">
             <ShoppingBag className="h-5 w-5" />
             {t("newSale")}
@@ -242,7 +250,7 @@ export default function Dashboard() {
             <h3 className="text-lg font-bold mb-6">{t("quickActions")}</h3>
             <div className="grid grid-cols-2 gap-4">
               <QAButton to="/pos" icon={<ScanLine className="h-7 w-7 text-[hsl(var(--primary-fixed))]" />} label={t("scan")} />
-              <QAButton to="/customers" icon={<UserPlus className="h-7 w-7 text-secondary" />} label={t("newCustomerShort")} />
+              <QAButton onClick={() => setCustomerSheet(true)} icon={<UserPlus className="h-7 w-7 text-secondary" />} label={t("newCustomerShort")} />
               <QAButton to="/reports" icon={<TrendingUp className="h-7 w-7 text-[hsl(var(--primary-fixed))]" />} label={t("reports")} />
               <QAButton to="/installments" icon={<Headset className="h-7 w-7 text-secondary" />} label={t("support")} />
             </div>
