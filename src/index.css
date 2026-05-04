@@ -195,3 +195,8 @@
   @page { size: 80mm auto; margin: 0; }
 }
 
+
+@keyframes growUp {
+  from { height: 0%; opacity: 0; }
+  to { opacity: 1; }
+}
