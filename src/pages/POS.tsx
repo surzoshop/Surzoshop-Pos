@@ -261,7 +261,7 @@ export default function POS() {
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 pb-4">
+        <div className="lg:flex-1 lg:overflow-y-auto pr-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 pb-4">
           {visible.length === 0 && (
             <div className="col-span-full text-center text-muted-foreground py-16">{t("noResults")}</div>
           )}
