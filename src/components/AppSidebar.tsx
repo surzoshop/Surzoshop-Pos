@@ -28,6 +28,7 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
     { url: "/pos", icon: ShoppingCart, label: t("pos"), key: "pos" },
     { url: "/sales", icon: Receipt, label: t("salesLedger"), key: "sales" },
     { url: "/customers", icon: Users, label: t("customers"), key: "customers" },
+    { url: "/contacts", icon: Contact, label: "যোগাযোগ", key: "customers" },
     { url: "/installments", icon: Wallet, label: t("installments"), key: "installments" },
     { url: "/products", icon: Package, label: t("productCatalog"), key: "products" },
     { url: "/suppliers", icon: Truck, label: t("suppliers"), key: "suppliers" },
