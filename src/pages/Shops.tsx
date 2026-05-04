@@ -19,12 +19,22 @@ import { ALL_PAGES, PageKey } from "@/hooks/useShop";
 import { useT } from "@/i18n/LanguageContext";
 
 const PAGE_LABELS: Record<PageKey, string> = {
-  dashboard: "Dashboard", pos: "POS", sales: "Sales", customers: "Customers",
-  installments: "Installments", products: "Products", suppliers: "Suppliers",
-  purchases: "Purchases", "stock-adjustments": "Stock Adjustments",
-  expenses: "Expenses", reports: "Reports", staff: "Staff",
-  attendance: "Attendance", shops: "Shops",
+  dashboard: "ড্যাশবোর্ড", pos: "POS (বিক্রয়)", sales: "বিক্রয় খাতা",
+  customers: "ক্রেতা", contacts: "যোগাযোগ", installments: "কিস্তি",
+  products: "পণ্য তালিকা", warranty: "ওয়ারেন্টি",
+  suppliers: "সরবরাহকারী", purchases: "ক্রয়", "stock-adjustments": "স্টক সমন্বয়",
+  expenses: "খরচ", reports: "রিপোর্ট", staff: "কর্মী",
+  attendance: "হাজিরা", shops: "শপ",
 };
+
+// Default access for a new Staff (per user requirement)
+const DEFAULT_STAFF_PERMS: Partial<Record<PageKey, boolean>> = {
+  dashboard: true, pos: true, sales: true, customers: true,
+  installments: true, products: true, warranty: true,
+};
+
+// Pages a Staff is NEVER allowed to see (admin-only / sensitive)
+const STAFF_RESTRICTED: PageKey[] = ["shops", "staff", "reports", "expenses"];
 
 type ShopStats = {
   shop_id: string | null;
