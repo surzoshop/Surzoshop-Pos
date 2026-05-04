@@ -317,9 +317,9 @@ export default function Dashboard() {
           </div>
 
           {/* Top Selling */}
-          <div className="bg-[hsl(var(--surface-container-lowest))] p-8 rounded-2xl">
-            <h3 className="text-lg font-bold text-foreground mb-6">{t("topProducts")}</h3>
-            <div className="space-y-6">
+          <div className="bg-[hsl(var(--surface-container-lowest))] p-5 md:p-8 rounded-2xl">
+            <h3 className="text-base md:text-lg font-bold text-foreground mb-4 md:mb-6">{t("topProducts")}</h3>
+            <div className="space-y-4 md:space-y-6">
               {topProducts.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">{t("noResults")}</p>}
               {topProducts.map(p => (
                 <div key={p.name} className="flex items-center gap-4">
