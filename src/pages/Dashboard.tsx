@@ -101,16 +101,17 @@ export default function Dashboard() {
           <p className="text-muted-foreground text-sm mt-1">{t("dashboardSubtitle")}</p>
         </div>
         <div className="grid grid-cols-2 lg:flex gap-2 md:gap-3 w-full lg:w-auto">
-          <button onClick={() => setProductSheet(true)} className="flex items-center justify-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-3 md:px-5 py-2.5 md:py-3 rounded-xl font-semibold shadow-sm hover:bg-[hsl(var(--surface-container))] active:scale-95 transition-all text-xs md:text-sm">
-            <PlusCircle className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+          <button onClick={() => setProductSheet(true)} className="group relative overflow-hidden flex items-center justify-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-3 md:px-5 py-2.5 md:py-3 rounded-xl font-semibold shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-300 text-xs md:text-sm border border-transparent hover:border-primary/30">
+            <PlusCircle className="h-4 w-4 md:h-5 md:w-5 text-primary transition-transform duration-300 group-hover:rotate-90" />
             <span className="truncate">{t("addProduct")}</span>
           </button>
-          <button onClick={() => setCustomerSheet(true)} className="flex items-center justify-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-3 md:px-5 py-2.5 md:py-3 rounded-xl font-semibold shadow-sm hover:bg-[hsl(var(--surface-container))] active:scale-95 transition-all text-xs md:text-sm">
-            <UserPlus className="h-4 w-4 md:h-5 md:w-5 text-info" />
+          <button onClick={() => setCustomerSheet(true)} className="group relative overflow-hidden flex items-center justify-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-3 md:px-5 py-2.5 md:py-3 rounded-xl font-semibold shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-300 text-xs md:text-sm border border-transparent hover:border-info/30">
+            <UserPlus className="h-4 w-4 md:h-5 md:w-5 text-info transition-transform duration-300 group-hover:scale-110" />
             <span className="truncate">{t("addCustomer")}</span>
           </button>
-          <Link to="/pos" className="col-span-2 flex items-center justify-center gap-2 gradient-primary text-primary-foreground px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-bold shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.4)] hover:brightness-110 active:scale-95 transition-all text-xs md:text-sm">
-            <ShoppingBag className="h-4 w-4 md:h-5 md:w-5" />
+          <Link to="/pos" className="group relative overflow-hidden col-span-2 flex items-center justify-center gap-2 gradient-primary text-primary-foreground px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-bold shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.5)] hover:shadow-[0_15px_40px_-10px_hsl(var(--primary)/0.7)] hover:-translate-y-0.5 hover:brightness-110 active:scale-95 transition-all duration-300 text-xs md:text-sm">
+            <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+            <ShoppingBag className="h-4 w-4 md:h-5 md:w-5 transition-transform duration-300 group-hover:scale-110" />
             {t("newSale")}
           </Link>
         </div>
