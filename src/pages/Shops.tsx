@@ -199,7 +199,7 @@ export default function Shops() {
                     {active ? "Selected" : "Switch"}
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => setOpenStaff(s.id)} className="transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]">
-                    <Users className="h-4 w-4 mr-1" /> Staff
+                    <UserPlus className="h-4 w-4 mr-1" /> কর্মী
                   </Button>
                 </div>
               </Card>
