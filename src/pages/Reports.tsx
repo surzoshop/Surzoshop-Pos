@@ -14,6 +14,7 @@ import autoTable from "jspdf-autotable";
 /* Types                                                              */
 /* ------------------------------------------------------------------ */
 type Period = "today" | "week" | "month" | "lastMonth" | "year" | "custom" | "selectMonth";
+type PrintTarget = "all" | "sales" | "purchases" | "expenses" | "pl";
 
 type ReportData = {
   sales: any[];
@@ -237,7 +238,17 @@ export default function Reports() {
   }, [data, start, lang]);
 
   /* ----------------------------- Print ----------------------------- */
-  const handlePrint = () => window.print();
+  const handlePrint = (target: PrintTarget = "all") => {
+    const body = document.body;
+    const cleanup = () => {
+      body.removeAttribute("data-report-print");
+      window.removeEventListener("afterprint", cleanup);
+    };
+
+    body.setAttribute("data-report-print", target);
+    window.addEventListener("afterprint", cleanup, { once: true });
+    requestAnimationFrame(() => setTimeout(() => window.print(), 40));
+  };
 
   /* ----------------------------- PDF ------------------------------- */
   const handlePDF = () => {
