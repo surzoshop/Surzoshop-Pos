@@ -19,12 +19,22 @@ import { ALL_PAGES, PageKey } from "@/hooks/useShop";
 import { useT } from "@/i18n/LanguageContext";
 
 const PAGE_LABELS: Record<PageKey, string> = {
-  dashboard: "Dashboard", pos: "POS", sales: "Sales", customers: "Customers",
-  installments: "Installments", products: "Products", suppliers: "Suppliers",
-  purchases: "Purchases", "stock-adjustments": "Stock Adjustments",
-  expenses: "Expenses", reports: "Reports", staff: "Staff",
-  attendance: "Attendance", shops: "Shops",
+  dashboard: "ড্যাশবোর্ড", pos: "POS (বিক্রয়)", sales: "বিক্রয় খাতা",
+  customers: "ক্রেতা", contacts: "যোগাযোগ", installments: "কিস্তি",
+  products: "পণ্য তালিকা", warranty: "ওয়ারেন্টি",
+  suppliers: "সরবরাহকারী", purchases: "ক্রয়", "stock-adjustments": "স্টক সমন্বয়",
+  expenses: "খরচ", reports: "রিপোর্ট", staff: "কর্মী",
+  attendance: "হাজিরা", shops: "শপ",
 };
+
+// Default access for a new Staff (per user requirement)
+const DEFAULT_STAFF_PERMS: Partial<Record<PageKey, boolean>> = {
+  dashboard: true, pos: true, sales: true, customers: true,
+  installments: true, products: true, warranty: true,
+};
+
+// Pages a Staff is NEVER allowed to see (admin-only / sensitive)
+const STAFF_RESTRICTED: PageKey[] = ["shops", "staff", "reports", "expenses"];
 
 type ShopStats = {
   shop_id: string | null;
@@ -189,7 +199,7 @@ export default function Shops() {
                     {active ? "Selected" : "Switch"}
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => setOpenStaff(s.id)} className="transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]">
-                    <Users className="h-4 w-4 mr-1" /> Staff
+                    <UserPlus className="h-4 w-4 mr-1" /> কর্মী
                   </Button>
                 </div>
               </Card>
@@ -326,7 +336,7 @@ function StaffAccessDialog({ shopId, onClose }: { shopId: string; onClose: () =>
                   <Button size="sm" variant="ghost" onClick={() => removeMember(m.id)}>Remove</Button>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {ALL_PAGES.filter(p => p !== "shops").map(p => (
+                  {ALL_PAGES.filter(p => !STAFF_RESTRICTED.includes(p)).map(p => (
                     <label key={p} className="flex items-center gap-2 text-sm bg-muted/40 px-3 py-2 rounded-lg">
                       <Switch checked={!!m.permissions?.[p]} onCheckedChange={() => togglePerm(m.id, p, m.permissions)} />
                       <span>{PAGE_LABELS[p]}</span>
@@ -347,48 +357,77 @@ function StaffAccessDialog({ shopId, onClose }: { shopId: string; onClose: () =>
 function CreateStaffDialog({ shopId, onClose }: { shopId: string; onClose: () => void; }) {
   const { toast } = useToast();
   const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
-  const [name, setName] = useState(""); const [busy, setBusy] = useState(false);
-  const [perms, setPerms] = useState<Record<string, boolean>>({ dashboard: true, pos: true, sales: true, customers: true });
+  const [name, setName] = useState(""); const [position, setPosition] = useState("Staff");
+  const [busy, setBusy] = useState(false);
+  const [perms, setPerms] = useState<Record<string, boolean>>({ ...DEFAULT_STAFF_PERMS } as Record<string, boolean>);
 
   const togglePerm = (p: PageKey) => setPerms(prev => ({ ...prev, [p]: !prev[p] }));
 
   const submit = async () => {
     if (!email || !password) return toast({ title: "Email ও password দিন", variant: "destructive" });
+    if (password.length < 6) return toast({ title: "Password কমপক্ষে ৬ অক্ষরের হতে হবে", variant: "destructive" });
     setBusy(true);
     const { data, error } = await supabase.functions.invoke("create-shop-user", {
-      body: { email, password, full_name: name, shop_id: shopId, permissions: perms },
+      body: { email, password, full_name: name || email, shop_id: shopId, permissions: perms },
     });
     setBusy(false);
     if (error || (data as any)?.error) {
       return toast({ title: "Error", description: error?.message || (data as any)?.error, variant: "destructive" });
     }
-    toast({ title: "Staff তৈরি হয়েছে", description: `${email} এই shop-এ যুক্ত হয়েছেন` });
+    toast({ title: "কর্মী তৈরি হয়েছে", description: `${email} এই shop-এ যুক্ত হয়েছেন` });
     onClose();
   };
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>নতুন Staff Account</DialogTitle></DialogHeader>
-        <div className="space-y-3">
-          <div><Label>নাম</Label><Input value={name} onChange={e => setName(e.target.value)} /></div>
-          <div><Label>Email</Label><Input type="email" value={email} onChange={e => setEmail(e.target.value)} /></div>
-          <div><Label>Password</Label><Input type="password" value={password} onChange={e => setPassword(e.target.value)} /></div>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5 text-primary" /> নতুন কর্মী যোগ করুন
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 bg-primary/10 border border-primary/30 rounded-lg px-3 py-2">
+            <ShieldCheck className="h-4 w-4 text-primary" />
+            <span className="text-sm font-bold text-primary">ভূমিকা: Staff (এই shop-এ locked)</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div><Label>পূর্ণ নাম</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="যেমন: রহিম উদ্দিন" /></div>
+            <div><Label>পদবি</Label><Input value={position} onChange={e => setPosition(e.target.value)} placeholder="Staff / Cashier / Manager" /></div>
+            <div><Label>Email (login)</Label><Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="staff@example.com" /></div>
+            <div><Label>Password</Label><Input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="কমপক্ষে ৬ অক্ষর" /></div>
+          </div>
 
           <div>
-            <p className="text-sm font-semibold mb-2">Page Access (custom)</p>
-            <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
-              {ALL_PAGES.filter(p => p !== "shops").map(p => (
-                <label key={p} className="flex items-center gap-2 text-sm bg-muted/40 px-3 py-2 rounded-lg">
+            <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+              <p className="text-sm font-bold">পেজ অ্যাক্সেস (Page Access)</p>
+              <div className="flex gap-1">
+                <Button size="sm" variant="outline" type="button" onClick={() => setPerms({ ...DEFAULT_STAFF_PERMS } as Record<string, boolean>)}>Default</Button>
+                <Button size="sm" variant="outline" type="button" onClick={() => {
+                  const all: Record<string, boolean> = {};
+                  ALL_PAGES.filter(p => !STAFF_RESTRICTED.includes(p)).forEach(p => { all[p] = true; });
+                  setPerms(all);
+                }}>সব দিন</Button>
+                <Button size="sm" variant="outline" type="button" onClick={() => setPerms({})}>কিছু না</Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-72 overflow-y-auto bg-muted/20 p-3 rounded-lg">
+              {ALL_PAGES.filter(p => !STAFF_RESTRICTED.includes(p)).map(p => (
+                <label key={p} className="flex items-center gap-2 text-sm bg-background px-3 py-2 rounded-lg border border-border cursor-pointer hover:border-primary/50 transition-colors">
                   <Switch checked={!!perms[p]} onCheckedChange={() => togglePerm(p)} />
-                  <span>{PAGE_LABELS[p]}</span>
+                  <span className="font-medium">{PAGE_LABELS[p]}</span>
                 </label>
               ))}
             </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              ⚠️ Staff <b>শপ লিস্ট, কর্মী, রিপোর্ট ও খরচ</b> দেখতে পাবে না (super admin only)।
+            </p>
           </div>
 
           <Button onClick={submit} disabled={busy} className="w-full">
-            {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Create Staff
+            {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}কর্মী তৈরি করুন
           </Button>
         </div>
       </DialogContent>
