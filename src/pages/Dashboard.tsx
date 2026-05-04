@@ -402,26 +402,62 @@ export default function Dashboard() {
   );
 }
 
-function StatCard({ to, icon, iconBg, chip, chipClass, label, value, sub }: any) {
+const THEMES: Record<string, { grad: string; chip: string; icon: string; ring: string; glow: string; border: string; text: string }> = {
+  emerald: { grad: "from-emerald-500/15 via-emerald-500/5 to-transparent", chip: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30", icon: "bg-gradient-to-br from-emerald-500 to-teal-500", ring: "hover:border-emerald-500/40", glow: "hover:shadow-emerald-500/20", border: "border-emerald-500/15", text: "text-emerald-600 dark:text-emerald-400" },
+  violet:  { grad: "from-violet-500/15 via-violet-500/5 to-transparent",   chip: "bg-violet-500/15 text-violet-700 dark:text-violet-300 border-violet-500/30",     icon: "bg-gradient-to-br from-violet-500 to-purple-500", ring: "hover:border-violet-500/40", glow: "hover:shadow-violet-500/20", border: "border-violet-500/15", text: "text-violet-600 dark:text-violet-400" },
+  sky:     { grad: "from-sky-500/15 via-sky-500/5 to-transparent",         chip: "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30",                 icon: "bg-gradient-to-br from-sky-500 to-cyan-500",      ring: "hover:border-sky-500/40",    glow: "hover:shadow-sky-500/20",    border: "border-sky-500/15",    text: "text-sky-600 dark:text-sky-400" },
+  amber:   { grad: "from-amber-500/15 via-amber-500/5 to-transparent",     chip: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",         icon: "bg-gradient-to-br from-amber-500 to-orange-500",  ring: "hover:border-amber-500/40",  glow: "hover:shadow-amber-500/20",  border: "border-amber-500/15",  text: "text-amber-600 dark:text-amber-400" },
+  indigo:  { grad: "from-indigo-500/15 via-indigo-500/5 to-transparent",   chip: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-500/30",     icon: "bg-gradient-to-br from-indigo-500 to-blue-500",   ring: "hover:border-indigo-500/40", glow: "hover:shadow-indigo-500/20", border: "border-indigo-500/15", text: "text-indigo-600 dark:text-indigo-400" },
+  teal:    { grad: "from-teal-500/15 via-teal-500/5 to-transparent",       chip: "bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/30",             icon: "bg-gradient-to-br from-teal-500 to-cyan-500",     ring: "hover:border-teal-500/40",   glow: "hover:shadow-teal-500/20",   border: "border-teal-500/15",   text: "text-teal-600 dark:text-teal-400" },
+  pink:    { grad: "from-pink-500/15 via-pink-500/5 to-transparent",       chip: "bg-pink-500/15 text-pink-700 dark:text-pink-300 border-pink-500/30",             icon: "bg-gradient-to-br from-pink-500 to-fuchsia-500",  ring: "hover:border-pink-500/40",   glow: "hover:shadow-pink-500/20",   border: "border-pink-500/15",   text: "text-pink-600 dark:text-pink-400" },
+  rose:    { grad: "from-rose-500/15 via-rose-500/5 to-transparent",       chip: "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30",             icon: "bg-gradient-to-br from-rose-500 to-red-500",      ring: "hover:border-rose-500/40",   glow: "hover:shadow-rose-500/20",   border: "border-rose-500/15",   text: "text-rose-600 dark:text-rose-400" },
+};
+
+function ColorStatCard({ to, theme, icon, chip, label, value, sub }: any) {
+  const T = THEMES[theme] ?? THEMES.violet;
   return (
-    <Link to={to ?? "#"} className="bg-[hsl(var(--surface-container-lowest))] p-3 md:p-6 rounded-2xl transition-all hover:-translate-y-1 block hover:shadow-lg">
-      <div className="flex justify-between items-start mb-3 md:mb-4">
-        <div className={`p-2 md:p-3 ${iconBg} rounded-xl`}>{icon}</div>
-        <span className={`text-[9px] md:text-xs font-bold ${chipClass} px-1.5 md:px-2 py-0.5 md:py-1 rounded`}>{chip}</span>
+    <Link
+      to={to ?? "#"}
+      className={`group relative overflow-hidden bg-[hsl(var(--surface-container-lowest))] p-3 md:p-5 rounded-2xl block border ${T.border} ${T.ring} ${T.glow}
+        shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-out`}
+    >
+      <div className={`absolute inset-0 bg-gradient-to-br ${T.grad} opacity-60 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`} />
+      <div className={`absolute -top-12 -right-12 h-28 w-28 rounded-full bg-gradient-to-br ${T.grad} blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none`} />
+
+      <div className="relative flex justify-between items-start mb-3 md:mb-4">
+        <div className={`h-9 w-9 md:h-11 md:w-11 ${T.icon} rounded-xl shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 flex items-center justify-center text-white [&>svg]:h-4 [&>svg]:w-4 md:[&>svg]:h-5 md:[&>svg]:w-5`}>
+          {icon}
+        </div>
+        <span className={`text-[9px] md:text-[10px] font-black ${T.chip} border px-1.5 md:px-2 py-0.5 md:py-1 rounded-full uppercase tracking-wider whitespace-nowrap`}>{chip}</span>
       </div>
-      <p className="text-muted-foreground text-[11px] md:text-sm font-medium truncate">{label}</p>
-      <h3 className="text-base md:text-2xl font-bold mt-1 text-foreground truncate">{value}</h3>
-      <p className="text-[9px] md:text-[10px] text-muted-foreground mt-1 md:mt-2 truncate">{sub}</p>
+      <p className="relative text-muted-foreground text-[11px] md:text-xs font-semibold truncate uppercase tracking-wide">{label}</p>
+      <h3 className={`relative text-base md:text-2xl font-black mt-1 ${T.text} truncate`}>{value}</h3>
+      <p className="relative text-[9px] md:text-[10px] text-muted-foreground mt-1 md:mt-2 truncate">{sub}</p>
     </Link>
   );
 }
 
-function QAButton({ to, onClick, icon, label }: any) {
-  const cls = "group bg-white/10 hover:bg-white/20 p-3 md:p-4 rounded-xl flex flex-col items-center gap-1.5 md:gap-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:scale-95 border border-white/5 hover:border-white/20";
+const QA_TONES: Record<string, string> = {
+  emerald: "from-emerald-500/30 to-emerald-500/10 hover:from-emerald-500/50 hover:to-emerald-500/20 border-emerald-400/20 hover:border-emerald-400/50 hover:shadow-emerald-500/30",
+  sky:     "from-sky-500/30 to-sky-500/10 hover:from-sky-500/50 hover:to-sky-500/20 border-sky-400/20 hover:border-sky-400/50 hover:shadow-sky-500/30",
+  amber:   "from-amber-500/30 to-amber-500/10 hover:from-amber-500/50 hover:to-amber-500/20 border-amber-400/20 hover:border-amber-400/50 hover:shadow-amber-500/30",
+  fuchsia: "from-fuchsia-500/30 to-fuchsia-500/10 hover:from-fuchsia-500/50 hover:to-fuchsia-500/20 border-fuchsia-400/20 hover:border-fuchsia-400/50 hover:shadow-fuchsia-500/30",
+};
+const QA_ICON: Record<string, string> = {
+  emerald: "text-emerald-300",
+  sky: "text-sky-300",
+  amber: "text-amber-300",
+  fuchsia: "text-fuchsia-300",
+};
+
+function QAButton({ to, onClick, icon, label, tone = "emerald" }: any) {
+  const t = QA_TONES[tone] ?? QA_TONES.emerald;
+  const cls = `group relative overflow-hidden bg-gradient-to-br ${t} p-3 md:p-4 rounded-xl flex flex-col items-center gap-1.5 md:gap-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:scale-95 border`;
   const inner = (
     <>
-      <div className="transition-transform duration-300 group-hover:scale-110">{icon}</div>
-      <span className="text-[10px] md:text-xs font-medium text-center leading-tight">{label}</span>
+      <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      <div className={`relative transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3 ${QA_ICON[tone] ?? QA_ICON.emerald}`}>{icon}</div>
+      <span className="relative text-[10px] md:text-xs font-bold text-center leading-tight text-white/90">{label}</span>
     </>
   );
   if (onClick) return <button onClick={onClick} className={cls}>{inner}</button>;
