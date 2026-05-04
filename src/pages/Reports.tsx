@@ -245,9 +245,14 @@ export default function Reports() {
       window.removeEventListener("afterprint", cleanup);
     };
 
+    if (target === "all") {
+      setOpen({ sales: true, purchases: true, expenses: true, pl: true });
+    } else {
+      setOpen(prev => ({ ...prev, [target]: true }));
+    }
     body.setAttribute("data-report-print", target);
     window.addEventListener("afterprint", cleanup, { once: true });
-    requestAnimationFrame(() => setTimeout(() => window.print(), 40));
+    requestAnimationFrame(() => setTimeout(() => window.print(), 100));
   };
 
   /* ----------------------------- PDF ------------------------------- */
