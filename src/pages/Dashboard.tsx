@@ -117,7 +117,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Bento Grid */}
-      <div className="grid grid-cols-2 gap-3 md:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
         <StatCard
           to="/sales"
           icon={<Calendar className="h-4 w-4 md:h-6 md:w-6 text-primary" />}
@@ -148,8 +148,7 @@ export default function Dashboard() {
           value={`${stats.orderCount}`}
           sub={`${t("deliveredToday")}: ${stats.deliveredToday}`}
         />
-        
-        <Link to="/products" className="bg-secondary/20 p-3 md:p-6 rounded-2xl transition-all hover:-translate-y-1 border-l-4 border-secondary block">
+        <Link to="/products" className="bg-secondary/20 p-3 md:p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border-l-4 border-secondary block">
           <div className="flex justify-between items-start mb-3 md:mb-4">
             <div className="p-2 md:p-3 bg-secondary text-[hsl(var(--secondary-foreground))] rounded-xl">
               <AlertTriangle className="h-4 w-4 md:h-6 md:w-6" />
@@ -163,6 +162,51 @@ export default function Dashboard() {
             {String(stats.lowStockCount).padStart(2, "0")} {t("productsLow")}
           </h3>
           <p className="text-[9px] md:text-[10px] text-[hsl(var(--secondary-foreground))]/70 mt-1 md:mt-2 truncate">{t("needsRefill")}</p>
+        </Link>
+
+        {/* Row 2 — extended insights */}
+        <StatCard
+          to="/products"
+          icon={<Boxes className="h-4 w-4 md:h-6 md:w-6 text-primary" />}
+          iconBg="bg-primary/10"
+          chip={t("info")}
+          chipClass="text-primary bg-primary/10"
+          label={t("totalProducts")}
+          value={`${stats.totalProducts}`}
+          sub={t("activeItems")}
+        />
+        <StatCard
+          to="/products"
+          icon={<Package className="h-4 w-4 md:h-6 md:w-6 text-info" />}
+          iconBg="bg-info/10"
+          chip={t("live")}
+          chipClass="text-info bg-info/10"
+          label={t("stockValue")}
+          value={fmt(stats.stockValue)}
+          sub={t("inventoryWorth")}
+        />
+        <StatCard
+          to="/customers"
+          icon={<Users className="h-4 w-4 md:h-6 md:w-6 text-[hsl(var(--secondary-foreground))]" />}
+          iconBg="bg-secondary/30"
+          chip={t("growth")}
+          chipClass="text-[hsl(var(--secondary-foreground))] bg-secondary/30"
+          label={t("totalCustomers")}
+          value={`${stats.totalCustomers}`}
+          sub={t("registeredBuyers")}
+        />
+        <Link to="/installments" className="bg-destructive/10 p-3 md:p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border-l-4 border-destructive block">
+          <div className="flex justify-between items-start mb-3 md:mb-4">
+            <div className="p-2 md:p-3 bg-destructive/20 text-destructive rounded-xl">
+              <CircleDollarSign className="h-4 w-4 md:h-6 md:w-6" />
+            </div>
+            <span className="text-[9px] md:text-xs font-bold text-destructive bg-destructive/20 px-1.5 md:px-2 py-0.5 md:py-1 rounded">
+              {t("urgent")}
+            </span>
+          </div>
+          <p className="text-muted-foreground text-[11px] md:text-sm font-medium truncate">{t("pendingDue")}</p>
+          <h3 className="text-base md:text-2xl font-bold mt-1 text-destructive truncate">{fmt(stats.totalDue)}</h3>
+          <p className="text-[9px] md:text-[10px] text-destructive/70 mt-1 md:mt-2 truncate">{t("uncollected")}</p>
         </Link>
       </div>
 
