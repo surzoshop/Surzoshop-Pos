@@ -67,13 +67,13 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
         {isSuperAdmin && (
           <NavLink
             to="/shops"
-            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-150 text-[13px] mb-1 ${
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-150 text-[15px] mb-1 ${
               pathname === "/shops"
-                ? "bg-primary text-primary-foreground font-bold shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.5)]"
-                : "text-foreground/85 font-medium hover:bg-primary/10 hover:text-primary"
+                ? "bg-primary text-primary-foreground font-extrabold shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.5)]"
+                : "text-foreground/85 font-bold hover:bg-primary/10 hover:text-primary"
             }`}
           >
-            <Store className={`h-[18px] w-[18px] shrink-0 ${pathname === "/shops" ? "" : "text-primary"}`} />
+            <Store className={`h-5 w-5 shrink-0 ${pathname === "/shops" ? "" : "text-primary"}`} />
             <span className="truncate">Multiple Shops</span>
           </NavLink>
         )}
@@ -85,13 +85,13 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
             <div key={item.url}>
               <NavLink
                 to={item.url}
-                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-150 text-[13px] ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-150 text-[15px] ${
                   active
-                    ? "bg-primary text-primary-foreground font-bold shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.5)]"
-                    : "text-foreground/85 font-medium hover:bg-primary/10 hover:text-primary"
+                    ? "bg-primary text-primary-foreground font-extrabold shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.5)]"
+                    : "text-foreground/85 font-bold hover:bg-primary/10 hover:text-primary"
                 }`}
               >
-                <item.icon className={`h-[18px] w-[18px] shrink-0 ${active ? "" : "text-primary"}`} />
+                <item.icon className={`h-5 w-5 shrink-0 ${active ? "" : "text-primary"}`} />
                 <span className="truncate">{item.label}</span>
               </NavLink>
               {isProducts && productsActive && (
@@ -112,13 +112,13 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
         })}
         <NavLink
           to="/scanner"
-          className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-150 text-[13px] ${
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-150 text-[15px] ${
             pathname === "/scanner"
-              ? "bg-primary text-primary-foreground font-bold shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.5)]"
-              : "text-foreground/85 font-medium hover:bg-primary/10 hover:text-primary"
+              ? "bg-primary text-primary-foreground font-extrabold shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.5)]"
+              : "text-foreground/85 font-bold hover:bg-primary/10 hover:text-primary"
           }`}
         >
-          <Smartphone className={`h-[18px] w-[18px] shrink-0 ${pathname === "/scanner" ? "" : "text-primary"}`} />
+          <Smartphone className={`h-5 w-5 shrink-0 ${pathname === "/scanner" ? "" : "text-primary"}`} />
           <span className="truncate">Scanner App</span>
         </NavLink>
       </nav>
