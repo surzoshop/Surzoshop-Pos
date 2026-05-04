@@ -2,7 +2,7 @@ import { NavLink, useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, Package, Receipt, Warehouse, Users, ShoppingCart,
   HelpCircle, LogOut, Truck, ShoppingBag, Wallet, ClipboardList,
-  UserCog, CalendarCheck, BarChart3, Store, X, Smartphone, Printer,
+  UserCog, CalendarCheck, BarChart3, Store, X, Smartphone, Printer, Contact,
 } from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
