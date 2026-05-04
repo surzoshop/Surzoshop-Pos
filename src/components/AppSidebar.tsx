@@ -2,7 +2,7 @@ import { NavLink, useLocation, Link } from "react-router-dom";
 import {
   LayoutDashboard, Package, Receipt, Warehouse, Users, ShoppingCart,
   HelpCircle, LogOut, Truck, ShoppingBag, Wallet, ClipboardList,
-  UserCog, CalendarCheck, BarChart3, Store, X, Smartphone, Printer, Contact,
+  UserCog, CalendarCheck, BarChart3, Store, X, Smartphone, Printer, Contact, ShieldCheck,
 } from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -31,6 +31,7 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
     { url: "/contacts", icon: Contact, label: "যোগাযোগ", key: "customers" },
     { url: "/installments", icon: Wallet, label: t("installments"), key: "installments" },
     { url: "/products", icon: Package, label: t("productCatalog"), key: "products" },
+    { url: "/warranty", icon: ShieldCheck, label: "ওয়ারেন্টি", key: "products" },
     { url: "/suppliers", icon: Truck, label: t("suppliers"), key: "suppliers" },
     { url: "/purchases", icon: ShoppingBag, label: t("purchases"), key: "purchases" },
     { url: "/stock-adjustments", icon: Warehouse, label: t("stockAdjustments"), key: "stock-adjustments" },
