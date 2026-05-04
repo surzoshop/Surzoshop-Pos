@@ -686,15 +686,37 @@ export default function Reports() {
       <style>{`
         @media print {
           @page { size: A4; margin: 14mm 10mm; }
-          body { background: white !important; }
-          .no-print, nav, aside, header, footer, [role="navigation"] { display: none !important; }
+          html, body { background: hsl(0 0% 100%) !important; }
+          body[data-report-print] * { visibility: hidden !important; }
+          body[data-report-print] .report-print-root,
+          body[data-report-print] .report-print-root * { visibility: visible !important; }
+          body[data-report-print] .no-print,
+          body[data-report-print] .no-print * { display: none !important; visibility: hidden !important; }
+          body[data-report-print] nav, body[data-report-print] aside, body[data-report-print] header,
+          body[data-report-print] footer, body[data-report-print] [role="navigation"] { display: none !important; }
+          body[data-report-print] .report-print-root {
+            position: absolute !important;
+            inset: 0 auto auto 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: hsl(0 0% 100%) !important;
+          }
+          body[data-report-print]:not([data-report-print="all"]) .print-summary-grid { display: none !important; }
+          body[data-report-print="sales"] .section-card:not([data-print-section="sales"]),
+          body[data-report-print="purchases"] .section-card:not([data-print-section="purchases"]),
+          body[data-report-print="expenses"] .section-card:not([data-print-section="expenses"]),
+          body[data-report-print="pl"] .section-card:not([data-print-section="pl"]) { display: none !important; }
           .print-area { display: block !important; }
-          .print-area * { color: #000 !important; box-shadow: none !important; }
-          .print-area table { page-break-inside: auto; }
+          .print-area * { color: hsl(0 0% 0%) !important; box-shadow: none !important; }
+          .print-area table { page-break-inside: auto; width: 100% !important; }
           .print-area tr { page-break-inside: avoid; page-break-after: auto; }
           .print-area thead { display: table-header-group; }
-          .print-area .section-card { break-inside: avoid; box-shadow: none !important; border: 1px solid #ccc !important; }
-          .print-area .kpi-card { border: 1px solid #ddd !important; }
+          .print-area .section-card { break-inside: auto; box-shadow: none !important; border: 1px solid hsl(0 0% 78%) !important; border-radius: 8px !important; margin-bottom: 12px !important; }
+          .print-area .section-card > div:first-child { background: hsl(0 0% 96%) !important; border-bottom: 1px solid hsl(0 0% 78%) !important; }
+          .print-area .kpi-card { border: 1px solid hsl(0 0% 86%) !important; border-radius: 8px !important; }
+          .print-area th { background: hsl(0 0% 93%) !important; font-weight: 800 !important; }
+          .print-area th, .print-area td { border-color: hsl(0 0% 76%) !important; padding: 6px 8px !important; }
         }
       `}</style>
     </div>
