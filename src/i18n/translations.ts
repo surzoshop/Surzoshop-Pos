@@ -281,6 +281,16 @@ const base = {
     showSection: "Show", hideSection: "Hide", currentStock: "Current Stock",
     stockReport: "Stock Report", productName: "Product Name",
     purchaseValue: "Purchase Value", saleValue: "Sale Value",
+    // P&L statement extras
+    plStatementTitle: "Profit & Loss Statement",
+    revenue: "Revenue", cogs: "Cost of Goods Sold (COGS)",
+    operatingExpenses: "Operating Expenses", grossMargin: "Gross Margin",
+    netMargin: "Net Margin", lessDiscount: "Less: Discount",
+    netRevenue: "Net Revenue", grossProfitLoss: "Gross Profit / (Loss)",
+    netProfitLoss: "Net Profit / (Loss)", particulars: "Particulars",
+    debit: "Debit", credit: "Credit", percentage: "%",
+    summary: "Summary", workbookSheet: "Workbook",
+    excelStylePreview: "Excel-style Preview",
   },
 } as const;
 
