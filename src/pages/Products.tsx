@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Search, Package, Tag, Printer } from "lucide-react";
 import { PageHeader, StatusPill, SurfaceCard, PrimaryButton } from "@/components/PageHeader";
 import { ImageUpload } from "@/components/ImageUpload";
+import { AddProductSheet } from "@/components/AddProductSheet";
 
 // short, scan-friendly barcode generator (CODE128, ~12 chars)
 function generateBarcode() {
@@ -29,6 +30,7 @@ export default function Products() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
+  const [addSheet, setAddSheet] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [newCat, setNewCat] = useState("");
   const isAdmin = role === "admin";
@@ -47,7 +49,7 @@ export default function Products() {
   useEffect(() => { load(); }, []);
 
   const startEdit = (p: any) => { setEditing(p); setForm({ ...p, category_id: p.category_id ?? "", image_url: p.image_url ?? "" }); setOpen(true); };
-  const startNew = () => { setEditing(null); setForm(empty); setOpen(true); };
+  const startNew = () => { setAddSheet(true); };
 
   const save = async () => {
     if (!form.name?.trim()) return toast({ title: "নাম দিন", variant: "destructive" });
@@ -304,6 +306,8 @@ export default function Products() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AddProductSheet open={addSheet} onOpenChange={setAddSheet} onSaved={load} />
     </div>
   );
 }
