@@ -61,8 +61,10 @@ export function AddProductSheet({ open, onOpenChange, onSaved }: Props) {
       return toast({ title: "Warranty কত মাসের সেটি দিন", variant: "destructive" });
     }
     setSaving(true);
+    const productName = form.name.trim();
+    const barcode = await generateBarcode(productName);
     const { error } = await supabase.from("products").insert({
-      name: form.name.trim(),
+      name: productName,
       sku: form.sku?.trim() || null,
       price: Number(form.price) || 0,
       cost: Number(form.cost) || 0,
@@ -70,7 +72,7 @@ export function AddProductSheet({ open, onOpenChange, onSaved }: Props) {
       unit: form.unit || "pcs",
       category_id: form.category_id || null,
       image_url: form.image_url || null,
-      barcode: generateBarcode(),
+      barcode,
       has_warranty: !!form.has_warranty,
       warranty_months: form.has_warranty ? Number(form.warranty_months) : null,
     });
