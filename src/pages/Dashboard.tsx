@@ -138,7 +138,7 @@ export default function Dashboard() {
           value={`${stats.orderCount}`}
           sub={`${t("deliveredToday")}: ${stats.deliveredToday}`}
         />
-        search
+        
         <Link to="/products" className="bg-secondary/20 p-3 md:p-6 rounded-2xl transition-all hover:-translate-y-1 border-l-4 border-secondary block">
           <div className="flex justify-between items-start mb-3 md:mb-4">
             <div className="p-2 md:p-3 bg-secondary text-[hsl(var(--secondary-foreground))] rounded-xl">
