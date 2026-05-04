@@ -23,22 +23,23 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
   // close mobile drawer on route change
   useEffect(() => { if (mobileOpen) onCloseMobile?.(); /* eslint-disable-next-line */ }, [pathname]);
 
-  const allItems: { url: string; icon: any; label: string; key: PageKey }[] = [
-    { url: "/", icon: LayoutDashboard, label: t("dashboard"), key: "dashboard" },
-    { url: "/pos", icon: ShoppingCart, label: t("pos"), key: "pos" },
-    { url: "/sales", icon: Receipt, label: t("salesLedger"), key: "sales" },
-    { url: "/customers", icon: Users, label: t("customers"), key: "customers" },
-    { url: "/contacts", icon: Contact, label: "যোগাযোগ", key: "contacts" },
-    { url: "/installments", icon: Wallet, label: t("installments"), key: "installments" },
-    { url: "/products", icon: Package, label: t("productCatalog"), key: "products" },
-    { url: "/warranty", icon: ShieldCheck, label: "ওয়ারেন্টি", key: "warranty" },
-    { url: "/suppliers", icon: Truck, label: t("suppliers"), key: "suppliers" },
-    { url: "/purchases", icon: ShoppingBag, label: t("purchases"), key: "purchases" },
-    { url: "/stock-adjustments", icon: Warehouse, label: t("stockAdjustments"), key: "stock-adjustments" },
-    { url: "/expenses", icon: ClipboardList, label: t("expenses"), key: "expenses" },
-    { url: "/reports", icon: BarChart3, label: t("reports"), key: "reports" },
-    { url: "/staff", icon: UserCog, label: t("staff"), key: "staff" },
-    { url: "/attendance", icon: CalendarCheck, label: t("attendance"), key: "attendance" },
+  type Tone = "emerald" | "violet" | "sky" | "amber" | "indigo" | "teal" | "pink" | "rose" | "cyan" | "lime" | "fuchsia" | "orange" | "blue" | "purple";
+  const allItems: { url: string; icon: any; label: string; key: PageKey; tone: Tone }[] = [
+    { url: "/", icon: LayoutDashboard, label: t("dashboard"), key: "dashboard", tone: "indigo" },
+    { url: "/pos", icon: ShoppingCart, label: t("pos"), key: "pos", tone: "emerald" },
+    { url: "/sales", icon: Receipt, label: t("salesLedger"), key: "sales", tone: "violet" },
+    { url: "/customers", icon: Users, label: t("customers"), key: "customers", tone: "sky" },
+    { url: "/contacts", icon: Contact, label: "যোগাযোগ", key: "contacts", tone: "cyan" },
+    { url: "/installments", icon: Wallet, label: t("installments"), key: "installments", tone: "amber" },
+    { url: "/products", icon: Package, label: t("productCatalog"), key: "products", tone: "teal" },
+    { url: "/warranty", icon: ShieldCheck, label: "ওয়ারেন্টি", key: "warranty", tone: "lime" },
+    { url: "/suppliers", icon: Truck, label: t("suppliers"), key: "suppliers", tone: "orange" },
+    { url: "/purchases", icon: ShoppingBag, label: t("purchases"), key: "purchases", tone: "fuchsia" },
+    { url: "/stock-adjustments", icon: Warehouse, label: t("stockAdjustments"), key: "stock-adjustments", tone: "blue" },
+    { url: "/expenses", icon: ClipboardList, label: t("expenses"), key: "expenses", tone: "rose" },
+    { url: "/reports", icon: BarChart3, label: t("reports"), key: "reports", tone: "purple" },
+    { url: "/staff", icon: UserCog, label: t("staff"), key: "staff", tone: "pink" },
+    { url: "/attendance", icon: CalendarCheck, label: t("attendance"), key: "attendance", tone: "emerald" },
   ];
   const items = allItems.filter(i => canAccess(i.key));
 
