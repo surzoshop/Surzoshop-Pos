@@ -9,6 +9,25 @@ import { useAuth } from "@/hooks/useAuth";
 import { useShop, PageKey } from "@/hooks/useShop";
 import { useEffect } from "react";
 
+// Per-icon color theme — visible at rest, intensified on hover (Dashboard parity)
+const ICON_THEMES: Record<string, { grad: string; shadow: string; ring: string }> = {
+  emerald: { grad: "bg-gradient-to-br from-emerald-400 to-emerald-600", shadow: "shadow-emerald-500/40 group-hover:shadow-emerald-500/60", ring: "ring-emerald-500/20" },
+  violet:  { grad: "bg-gradient-to-br from-violet-400 to-violet-600",   shadow: "shadow-violet-500/40 group-hover:shadow-violet-500/60",   ring: "ring-violet-500/20" },
+  sky:     { grad: "bg-gradient-to-br from-sky-400 to-sky-600",         shadow: "shadow-sky-500/40 group-hover:shadow-sky-500/60",         ring: "ring-sky-500/20" },
+  amber:   { grad: "bg-gradient-to-br from-amber-400 to-orange-500",    shadow: "shadow-amber-500/40 group-hover:shadow-amber-500/60",     ring: "ring-amber-500/20" },
+  indigo:  { grad: "bg-gradient-to-br from-indigo-400 to-indigo-600",   shadow: "shadow-indigo-500/40 group-hover:shadow-indigo-500/60",   ring: "ring-indigo-500/20" },
+  teal:    { grad: "bg-gradient-to-br from-teal-400 to-teal-600",       shadow: "shadow-teal-500/40 group-hover:shadow-teal-500/60",       ring: "ring-teal-500/20" },
+  pink:    { grad: "bg-gradient-to-br from-pink-400 to-fuchsia-600",    shadow: "shadow-pink-500/40 group-hover:shadow-pink-500/60",       ring: "ring-pink-500/20" },
+  rose:    { grad: "bg-gradient-to-br from-rose-400 to-red-600",        shadow: "shadow-rose-500/40 group-hover:shadow-rose-500/60",       ring: "ring-rose-500/20" },
+  cyan:    { grad: "bg-gradient-to-br from-cyan-400 to-cyan-600",       shadow: "shadow-cyan-500/40 group-hover:shadow-cyan-500/60",       ring: "ring-cyan-500/20" },
+  lime:    { grad: "bg-gradient-to-br from-lime-400 to-green-600",      shadow: "shadow-lime-500/40 group-hover:shadow-lime-500/60",       ring: "ring-lime-500/20" },
+  fuchsia: { grad: "bg-gradient-to-br from-fuchsia-400 to-purple-600",  shadow: "shadow-fuchsia-500/40 group-hover:shadow-fuchsia-500/60", ring: "ring-fuchsia-500/20" },
+  orange:  { grad: "bg-gradient-to-br from-orange-400 to-red-500",      shadow: "shadow-orange-500/40 group-hover:shadow-orange-500/60",   ring: "ring-orange-500/20" },
+  blue:    { grad: "bg-gradient-to-br from-blue-400 to-blue-600",       shadow: "shadow-blue-500/40 group-hover:shadow-blue-500/60",       ring: "ring-blue-500/20" },
+  purple:  { grad: "bg-gradient-to-br from-purple-400 to-purple-600",   shadow: "shadow-purple-500/40 group-hover:shadow-purple-500/60",   ring: "ring-purple-500/20" },
+  slate:   { grad: "bg-gradient-to-br from-slate-400 to-slate-600",     shadow: "shadow-slate-500/40 group-hover:shadow-slate-500/60",     ring: "ring-slate-500/20" },
+};
+
 interface Props {
   mobileOpen?: boolean;
   onCloseMobile?: () => void;
