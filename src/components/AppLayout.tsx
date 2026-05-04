@@ -6,7 +6,8 @@ import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useShop } from "@/hooks/useShop";
 import { useStandalone } from "@/hooks/useStandalone";
-import { Search, Bell, Languages, Sun, Moon, Store, ChevronDown, Menu } from "lucide-react";
+import { Bell, Languages, Sun, Moon, Store, ChevronDown, Menu } from "lucide-react";
+import { GlobalSearch } from "@/components/GlobalSearch";
 import { useEffect, useState } from "react";
 
 export default function AppLayout() {
@@ -31,14 +32,7 @@ export default function AppLayout() {
       {/* Desktop / tablet Top App Bar — glassmorphic */}
       <header className="hidden md:flex fixed top-0 right-0 left-72 h-16 glass z-30 justify-between items-center px-8 shadow-[0_10px_40px_-10px_hsl(var(--foreground)/0.06)]">
         <div className="flex items-center flex-1 gap-2">
-          <div className="relative w-full max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder={t("searchDashboard")}
-              className="w-full bg-[hsl(var(--surface-container-low))] border-none rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
+          <GlobalSearch />
           <nav className="hidden lg:flex items-center ml-8 gap-6">
             <NavLink to="/" end className={({ isActive }) =>
               isActive ? "text-primary border-b-2 border-primary pb-1 text-sm font-medium"
