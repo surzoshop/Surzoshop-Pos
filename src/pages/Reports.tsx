@@ -465,7 +465,7 @@ export default function Reports() {
       </div>
 
       {/* Print area */}
-      <div ref={printAreaRef} className="print-area space-y-5 md:space-y-6">
+      <div ref={printAreaRef} className="report-print-root print-area space-y-5 md:space-y-6">
 
         {/* Print header — only visible in print */}
         <div className="hidden print:block text-center mb-4">
@@ -477,7 +477,7 @@ export default function Reports() {
         </div>
 
         {/* KPI cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <div className="print-summary-grid grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <Kpi tone="emerald" icon={<TrendingUp />} label={t("totalSales")} value={fmt(k.totalSales)} sub={`${data.sales.length} ${t("invoice")}`} />
           <Kpi tone="violet"  icon={<Wallet />}     label={t("grossProfit")} value={fmt(k.grossProfit)} sub={t("revenueShort")} />
           <Kpi tone="amber"   icon={<ShoppingCart />} label={t("totalPurchase")} value={fmt(k.totalPurchase)} sub={`${data.purchases.length} ${t("billNo")}`} />
