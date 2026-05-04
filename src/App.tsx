@@ -29,6 +29,7 @@ import Shops from "./pages/Shops";
 import InstallApp from "./pages/InstallApp";
 import ScannerCompanion from "./pages/ScannerCompanion";
 import Contacts from "./pages/Contacts";
+import Warranty from "./pages/Warranty";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +62,7 @@ const App = () => (
                     <Route path="/staff" element={<PageGate page="staff"><Staff /></PageGate>} />
                     <Route path="/attendance" element={<PageGate page="attendance"><Attendance /></PageGate>} />
                     <Route path="/contacts" element={<Contacts />} />
+                    <Route path="/warranty" element={<Warranty />} />
                     <Route path="/shops" element={<Shops />} />
                     <Route path="/install" element={<InstallApp />} />
                     <Route path="/scanner" element={<ScannerCompanion />} />
