@@ -136,6 +136,16 @@ const base = {
     showSection: "দেখান", hideSection: "লুকান", currentStock: "বর্তমান স্টক",
     stockReport: "স্টক রিপোর্ট", productName: "পণ্যের নাম",
     purchaseValue: "ক্রয় মূল্য", saleValue: "বিক্রয় মূল্য",
+    // P&L statement extras
+    plStatementTitle: "লাভ ও ক্ষতি বিবরণী",
+    revenue: "আয় (Revenue)", cogs: "বিক্রিত পণ্যের ব্যয় (COGS)",
+    operatingExpenses: "পরিচালন ব্যয়", grossMargin: "মোট মুনাফার হার",
+    netMargin: "নিট মুনাফার হার", lessDiscount: "বাদ: ছাড়",
+    netRevenue: "নিট আয়", grossProfitLoss: "মোট লাভ/ক্ষতি",
+    netProfitLoss: "নিট লাভ/ক্ষতি", particulars: "বিবরণ",
+    debit: "ডেবিট", credit: "ক্রেডিট", percentage: "শতাংশ",
+    summary: "সারসংক্ষেপ", workbookSheet: "ওয়ার্কবুক",
+    excelStylePreview: "Excel-style প্রিভিউ",
   },
   en: {
     appName: "Surjo Shop", appTagline: "POS & Installment Manager",
