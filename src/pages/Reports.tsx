@@ -14,6 +14,7 @@ import autoTable from "jspdf-autotable";
 /* Types                                                              */
 /* ------------------------------------------------------------------ */
 type Period = "today" | "week" | "month" | "lastMonth" | "year" | "custom" | "selectMonth";
+type PrintTarget = "all" | "sales" | "purchases" | "expenses" | "pl";
 
 type ReportData = {
   sales: any[];
@@ -237,7 +238,22 @@ export default function Reports() {
   }, [data, start, lang]);
 
   /* ----------------------------- Print ----------------------------- */
-  const handlePrint = () => window.print();
+  const handlePrint = (target: PrintTarget = "all") => {
+    const body = document.body;
+    const cleanup = () => {
+      body.removeAttribute("data-report-print");
+      window.removeEventListener("afterprint", cleanup);
+    };
+
+    if (target === "all") {
+      setOpen({ sales: true, purchases: true, expenses: true, pl: true });
+    } else {
+      setOpen(prev => ({ ...prev, [target]: true }));
+    }
+    body.setAttribute("data-report-print", target);
+    window.addEventListener("afterprint", cleanup, { once: true });
+    requestAnimationFrame(() => setTimeout(() => window.print(), 100));
+  };
 
   /* ----------------------------- PDF ------------------------------- */
   const handlePDF = () => {
@@ -437,7 +453,7 @@ export default function Reports() {
         )}
 
         <div className="flex flex-wrap gap-2 pt-2 border-t border-[hsl(var(--border))]">
-          <button onClick={handlePrint}
+          <button onClick={() => handlePrint("all")}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold text-sm hover:opacity-95 active:scale-95 transition-all shadow-[var(--shadow-primary)]">
             <Printer className="h-4 w-4" /> {t("printAll")}
           </button>
@@ -454,7 +470,7 @@ export default function Reports() {
       </div>
 
       {/* Print area */}
-      <div ref={printAreaRef} className="print-area space-y-5 md:space-y-6">
+      <div ref={printAreaRef} className="report-print-root print-area space-y-5 md:space-y-6">
 
         {/* Print header — only visible in print */}
         <div className="hidden print:block text-center mb-4">
@@ -466,7 +482,7 @@ export default function Reports() {
         </div>
 
         {/* KPI cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <div className="print-summary-grid grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <Kpi tone="emerald" icon={<TrendingUp />} label={t("totalSales")} value={fmt(k.totalSales)} sub={`${data.sales.length} ${t("invoice")}`} />
           <Kpi tone="violet"  icon={<Wallet />}     label={t("grossProfit")} value={fmt(k.grossProfit)} sub={t("revenueShort")} />
           <Kpi tone="amber"   icon={<ShoppingCart />} label={t("totalPurchase")} value={fmt(k.totalPurchase)} sub={`${data.purchases.length} ${t("billNo")}`} />
@@ -485,7 +501,8 @@ export default function Reports() {
           toggle={() => setOpen(s => ({ ...s, sales: !s.sales }))}
           title={t("salesSummary")}
           accent="emerald"
-          onPrint={handlePrint}
+          printTarget="sales"
+          onPrint={() => handlePrint("sales")}
           onCsv={() => downloadCSV(
             `Sales_${start.toISOString().slice(0,10)}.csv`,
             ["Invoice", "Date", "Customer", "Total", "Paid", "Due", "Status"],
@@ -544,7 +561,8 @@ export default function Reports() {
           toggle={() => setOpen(s => ({ ...s, purchases: !s.purchases }))}
           title={t("purchaseSummary")}
           accent="amber"
-          onPrint={handlePrint}
+          printTarget="purchases"
+          onPrint={() => handlePrint("purchases")}
           onCsv={() => downloadCSV(
             `Purchases_${start.toISOString().slice(0,10)}.csv`,
             ["Bill No", "Date", "Supplier", "Total", "Paid", "Due"],
@@ -574,7 +592,8 @@ export default function Reports() {
           toggle={() => setOpen(s => ({ ...s, expenses: !s.expenses }))}
           title={t("expenseSummary")}
           accent="sky"
-          onPrint={handlePrint}
+          printTarget="expenses"
+          onPrint={() => handlePrint("expenses")}
           onCsv={() => downloadCSV(
             `Expenses_${start.toISOString().slice(0,10)}.csv`,
             ["Date", "Title", "Category", "Method", "Amount"],
@@ -609,7 +628,8 @@ export default function Reports() {
           toggle={() => setOpen(s => ({ ...s, pl: !s.pl }))}
           title={t("profitLoss")}
           accent="violet"
-          onPrint={handlePrint}
+          printTarget="pl"
+          onPrint={() => handlePrint("pl")}
           onCsv={() => downloadCSV(
             `Stock_${new Date().toISOString().slice(0,10)}.csv`,
             ["Product", "SKU", "Stock", "Cost", "Price", "Stock Value (cost)", "Stock Value (sale)"],
@@ -666,15 +686,37 @@ export default function Reports() {
       <style>{`
         @media print {
           @page { size: A4; margin: 14mm 10mm; }
-          body { background: white !important; }
-          .no-print, nav, aside, header, footer, [role="navigation"] { display: none !important; }
+          html, body { background: hsl(0 0% 100%) !important; }
+          body[data-report-print] * { visibility: hidden !important; }
+          body[data-report-print] .report-print-root,
+          body[data-report-print] .report-print-root * { visibility: visible !important; }
+          body[data-report-print] .no-print,
+          body[data-report-print] .no-print * { display: none !important; visibility: hidden !important; }
+          body[data-report-print] nav, body[data-report-print] aside, body[data-report-print] header,
+          body[data-report-print] footer, body[data-report-print] [role="navigation"] { display: none !important; }
+          body[data-report-print] .report-print-root {
+            position: absolute !important;
+            inset: 0 auto auto 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: hsl(0 0% 100%) !important;
+          }
+          body[data-report-print]:not([data-report-print="all"]) .print-summary-grid { display: none !important; }
+          body[data-report-print="sales"] .section-card:not([data-print-section="sales"]),
+          body[data-report-print="purchases"] .section-card:not([data-print-section="purchases"]),
+          body[data-report-print="expenses"] .section-card:not([data-print-section="expenses"]),
+          body[data-report-print="pl"] .section-card:not([data-print-section="pl"]) { display: none !important; }
           .print-area { display: block !important; }
-          .print-area * { color: #000 !important; box-shadow: none !important; }
-          .print-area table { page-break-inside: auto; }
+          .print-area * { color: hsl(0 0% 0%) !important; box-shadow: none !important; }
+          .print-area table { page-break-inside: auto; width: 100% !important; }
           .print-area tr { page-break-inside: avoid; page-break-after: auto; }
           .print-area thead { display: table-header-group; }
-          .print-area .section-card { break-inside: avoid; box-shadow: none !important; border: 1px solid #ccc !important; }
-          .print-area .kpi-card { border: 1px solid #ddd !important; }
+          .print-area .section-card { break-inside: auto; box-shadow: none !important; border: 1px solid hsl(0 0% 78%) !important; border-radius: 8px !important; margin-bottom: 12px !important; }
+          .print-area .section-card > div:first-child { background: hsl(0 0% 96%) !important; border-bottom: 1px solid hsl(0 0% 78%) !important; }
+          .print-area .kpi-card { border: 1px solid hsl(0 0% 86%) !important; border-radius: 8px !important; }
+          .print-area th { background: hsl(0 0% 93%) !important; font-weight: 800 !important; }
+          .print-area th, .print-area td { border-color: hsl(0 0% 76%) !important; padding: 6px 8px !important; }
         }
       `}</style>
     </div>
@@ -712,10 +754,10 @@ function Kpi({ tone, icon, label, value, sub }: any) {
   );
 }
 
-function Section({ open, toggle, title, accent, children, onPrint, onCsv }: any) {
+function Section({ open, toggle, title, accent, children, onPrint, onCsv, printTarget }: any) {
   const T = TONES[accent] ?? TONES.violet;
   return (
-    <div className="section-card bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--border))] rounded-2xl overflow-hidden">
+    <div data-print-section={printTarget} className="section-card bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--border))] rounded-2xl overflow-hidden">
       <div className="flex items-center justify-between gap-3 px-4 md:px-6 py-3 md:py-4 border-b border-[hsl(var(--border))]">
         <button onClick={toggle} className="flex items-center gap-3 text-left flex-1 min-w-0">
           <span className={`h-8 w-1.5 rounded-full ${T.bar}`} />

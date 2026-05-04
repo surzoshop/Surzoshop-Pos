@@ -154,15 +154,16 @@ export default function Shops() {
             const active = currentShop?.id === s.id;
             const st = stats[s.id] ?? { totalSales: 0, totalDue: 0, totalPaid: 0, salesCount: 0, installmentCount: 0, pendingInstallments: 0, totalExpenses: 0, productCount: 0 } as ShopStats;
             return (
-              <Card key={s.id} className={`p-5 transition-all ${active ? "ring-2 ring-primary shadow-lg" : ""}`}>
+              <Card key={s.id} className={`group relative overflow-hidden p-5 border border-[hsl(var(--border))] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg ${active ? "border-[hsl(var(--primary)/0.45)] shadow-md" : "hover:border-[hsl(var(--primary)/0.22)]"}`}>
+                <span className="absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-[linear-gradient(180deg,hsl(var(--primary-glow)),hsl(var(--primary)))] opacity-80 transition-all duration-300 group-hover:top-0 group-hover:bottom-0 group-hover:opacity-100" />
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Store className="h-6 w-6 text-primary" />
+                    <div className="h-12 w-12 rounded-xl bg-[linear-gradient(135deg,hsl(var(--primary-glow)),hsl(var(--primary)))] text-[hsl(var(--primary-foreground))] flex items-center justify-center shadow-lg shadow-[hsl(var(--primary)/0.22)] transition-all duration-300 group-hover:scale-110 group-hover:-rotate-3 group-active:scale-95">
+                      <Store className="h-6 w-6" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-lg">{s.name}</h3>
-                      <p className="text-xs text-muted-foreground">{s.address || "—"}</p>
+                      <h3 className="font-extrabold text-lg text-foreground font-bn">{s.name}</h3>
+                      <p className="text-xs font-medium text-muted-foreground">{s.address || "—"}</p>
                     </div>
                   </div>
                   {active && <StatusPill tone="success">Active</StatusPill>}
@@ -182,12 +183,12 @@ export default function Shops() {
                     size="sm"
                     variant={active ? "secondary" : "default"}
                     onClick={() => setCurrentShopId(s.id)}
-                    className="flex-1"
+                    className="flex-1 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
                   >
                     <ArrowRightCircle className="h-4 w-4 mr-1" />
                     {active ? "Selected" : "Switch"}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => setOpenStaff(s.id)}>
+                  <Button size="sm" variant="outline" onClick={() => setOpenStaff(s.id)} className="transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]">
                     <Users className="h-4 w-4 mr-1" /> Staff
                   </Button>
                 </div>
@@ -213,40 +214,38 @@ export default function Shops() {
 }
 
 function TotalTile({ to, icon, label, value, tone }: { to: string; icon: React.ReactNode; label: string; value: string; tone: "primary" | "success" | "danger" | "warning" | "muted" }) {
-  const toneClass = {
-    primary: "bg-primary/10 text-primary",
-    success: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-    danger: "bg-destructive/10 text-destructive",
-    warning: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-    muted: "bg-muted text-foreground",
-  }[tone];
+  const T = SHOP_TONES[tone] ?? SHOP_TONES.primary;
   return (
     <Link
       to={to}
-      className="group bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-4 hover:-translate-y-0.5 hover:shadow-lg transition-all border border-transparent hover:border-primary/20"
+      className={`group relative overflow-hidden bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-4 pl-5 hover:-translate-y-1 hover:shadow-lg active:translate-y-0 active:scale-[0.98] transition-all duration-300 border border-[hsl(var(--border))] ${T.accent}`}
     >
-      <div className={`h-9 w-9 rounded-xl flex items-center justify-center mb-2 ${toneClass}`}>{icon}</div>
-      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{label}</p>
-      <p className="text-lg font-bold text-foreground mt-1 group-hover:text-primary transition-colors">{value}</p>
+      <span className={`absolute left-0 top-2 bottom-2 w-1 rounded-r-full ${T.bar} opacity-80 transition-all duration-300 group-hover:top-0 group-hover:bottom-0 group-hover:opacity-100`} />
+      <div className={`h-9 w-9 rounded-xl flex items-center justify-center mb-2 text-[hsl(var(--primary-foreground))] ${T.iconGrad} shadow-lg ${T.iconShadow} transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6 group-active:rotate-0 group-active:scale-95`}>{icon}</div>
+      <p className="text-[11px] font-extrabold text-foreground/80 uppercase tracking-wide font-bn truncate">{label}</p>
+      <p className={`text-lg font-extrabold text-foreground mt-1 font-bn truncate transition-colors duration-300 ${T.valueText}`}>{value}</p>
     </Link>
   );
 }
 
 function ShopStatTile({ label, value, tone }: { label: string; value: string; tone: "primary" | "success" | "danger" | "warning" | "muted" }) {
-  const toneClass = {
-    primary: "border-primary/30 bg-primary/5",
-    success: "border-emerald-500/30 bg-emerald-500/5",
-    danger: "border-destructive/30 bg-destructive/5",
-    warning: "border-amber-500/30 bg-amber-500/5",
-    muted: "border-border bg-muted/30",
-  }[tone];
+  const T = SHOP_TONES[tone] ?? SHOP_TONES.primary;
   return (
-    <div className={`rounded-xl border px-3 py-2 ${toneClass}`}>
-      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
-      <p className="text-sm font-bold text-foreground mt-0.5">{value}</p>
+    <div className={`group/stat relative overflow-hidden rounded-xl border bg-[hsl(var(--surface-container-lowest))] px-3 py-2.5 pl-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${T.accent}`}>
+      <span className={`absolute left-0 top-2 bottom-2 w-0.5 rounded-r-full ${T.bar} opacity-75 transition-all duration-300 group-hover/stat:top-0 group-hover/stat:bottom-0`} />
+      <p className="text-[10px] font-extrabold text-foreground/75 uppercase tracking-wider font-bn truncate">{label}</p>
+      <p className={`text-sm font-extrabold text-foreground mt-0.5 font-bn truncate transition-colors duration-300 ${T.valueText}`}>{value}</p>
     </div>
   );
 }
+
+const SHOP_TONES: Record<"primary" | "success" | "danger" | "warning" | "muted", { iconGrad: string; iconShadow: string; accent: string; bar: string; valueText: string }> = {
+  primary: { iconGrad: "bg-[linear-gradient(135deg,hsl(var(--primary-glow)),hsl(var(--primary)))]", iconShadow: "shadow-[hsl(var(--primary)/0.28)]", accent: "hover:border-[hsl(var(--primary)/0.45)]", bar: "bg-[linear-gradient(180deg,hsl(var(--primary-glow)),hsl(var(--primary)))]", valueText: "group-hover:text-[hsl(var(--primary))] group-hover/stat:text-[hsl(var(--primary))]" },
+  success: { iconGrad: "bg-[linear-gradient(135deg,hsl(var(--success)/0.72),hsl(var(--success)))]", iconShadow: "shadow-[hsl(var(--success)/0.24)]", accent: "hover:border-[hsl(var(--success)/0.42)]", bar: "bg-[linear-gradient(180deg,hsl(var(--success)/0.72),hsl(var(--success)))]", valueText: "group-hover:text-[hsl(var(--success))] group-hover/stat:text-[hsl(var(--success))]" },
+  danger: { iconGrad: "bg-[linear-gradient(135deg,hsl(var(--destructive)/0.72),hsl(var(--destructive)))]", iconShadow: "shadow-[hsl(var(--destructive)/0.24)]", accent: "hover:border-[hsl(var(--destructive)/0.38)]", bar: "bg-[linear-gradient(180deg,hsl(var(--destructive)/0.72),hsl(var(--destructive)))]", valueText: "group-hover:text-[hsl(var(--destructive))] group-hover/stat:text-[hsl(var(--destructive))]" },
+  warning: { iconGrad: "bg-[linear-gradient(135deg,hsl(var(--warning)),hsl(var(--secondary)))]", iconShadow: "shadow-[hsl(var(--warning)/0.24)]", accent: "hover:border-[hsl(var(--warning)/0.48)]", bar: "bg-[linear-gradient(180deg,hsl(var(--warning)),hsl(var(--secondary)))]", valueText: "group-hover:text-[hsl(var(--warning-foreground))] group-hover/stat:text-[hsl(var(--warning-foreground))]" },
+  muted: { iconGrad: "bg-[linear-gradient(135deg,hsl(var(--info)/0.78),hsl(var(--primary)))]", iconShadow: "shadow-[hsl(var(--info)/0.20)]", accent: "hover:border-[hsl(var(--info)/0.36)]", bar: "bg-[linear-gradient(180deg,hsl(var(--info)/0.78),hsl(var(--primary)))]", valueText: "group-hover:text-[hsl(var(--info))] group-hover/stat:text-[hsl(var(--info))]" },
+};
 
 function CreateShopDialog({ open, onOpenChange, ownerId, onCreated }: { open: boolean; onOpenChange: (v: boolean) => void; ownerId: string | null; onCreated: () => void; }) {
   const { toast } = useToast();
