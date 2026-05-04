@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import {
   Calendar, Wallet, ShoppingBag, AlertTriangle, PlusCircle, ScanLine,
-  UserPlus, TrendingUp, Headset, Package,
+  UserPlus, TrendingUp, Headset, Package, Users, Boxes, CircleDollarSign,
 } from "lucide-react";
 import { AddProductSheet } from "@/components/AddProductSheet";
 import { AddCustomerSheet } from "@/components/AddCustomerSheet";
@@ -14,6 +14,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState({
     todaySales: 0, todayCount: 0, monthSales: 0, monthProfit: 0,
     orderCount: 0, deliveredToday: 0, lowStockCount: 0,
+    totalProducts: 0, stockValue: 0, totalCustomers: 0, totalDue: 0,
   });
   const [weekly, setWeekly] = useState<{ day: string; total: number }[]>([]);
   const [topProducts, setTopProducts] = useState<{ name: string; qty: number; revenue: number }[]>([]);
@@ -31,7 +32,7 @@ export default function Dashboard() {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const weekStart = new Date(today); weekStart.setDate(weekStart.getDate() - 6);
 
-    const [salesToday, salesYest, salesMonth, salesWeek, itemsMonth, items30, lowStockData, recentSales] = await Promise.all([
+    const [salesToday, salesYest, salesMonth, salesWeek, itemsMonth, items30, lowStockData, recentSales, productsAll, customersCount, duesData] = await Promise.all([
       supabase.from("sales").select("total,due").gte("created_at", today.toISOString()),
       supabase.from("sales").select("total").gte("created_at", yest.toISOString()).lt("created_at", today.toISOString()),
       supabase.from("sales").select("total").gte("created_at", monthStart.toISOString()),
@@ -40,6 +41,9 @@ export default function Dashboard() {
       supabase.from("sale_items").select("product_name,qty,subtotal,sales!inner(created_at)").gte("sales.created_at", weekStart.toISOString()),
       supabase.from("products").select("id", { count: "exact", head: true }).lte("stock", 5),
       supabase.from("sales").select("id,invoice_no,total,due,created_at,customers(name)").order("created_at", { ascending: false }).limit(4),
+      supabase.from("products").select("stock,cost", { count: "exact" }).eq("is_active", true),
+      supabase.from("customers").select("id", { count: "exact", head: true }),
+      supabase.from("sales").select("due").gt("due", 0),
     ]);
 
     const todayTotal = (salesToday.data ?? []).reduce((a, b) => a + Number(b.total), 0);
@@ -71,12 +75,18 @@ export default function Dashboard() {
     });
     setTopProducts([...map.entries()].map(([name, v]) => ({ name, ...v })).sort((a, b) => b.qty - a.qty).slice(0, 3));
     setRecent(recentSales.data ?? []);
+    const stockValue = (productsAll.data ?? []).reduce((a: number, p: any) => a + Number(p.stock) * Number(p.cost), 0);
+    const totalDue = (duesData.data ?? []).reduce((a: number, d: any) => a + Number(d.due), 0);
     setStats({
       todaySales: todayTotal, todayCount: salesToday.data?.length ?? 0,
       monthSales, monthProfit,
       orderCount: salesMonth.data?.length ?? 0,
       deliveredToday: salesToday.data?.length ?? 0,
       lowStockCount: lowStockData.count ?? 0,
+      totalProducts: productsAll.count ?? 0,
+      stockValue,
+      totalCustomers: customersCount.count ?? 0,
+      totalDue,
     });
   };
 
