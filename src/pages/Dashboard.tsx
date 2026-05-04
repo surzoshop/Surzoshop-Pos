@@ -83,31 +83,61 @@ export default function Dashboard() {
   const maxWeek = Math.max(1, ...weekly.map(d => d.total));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 md:space-y-8">
       {/* Page Header + Quick Actions */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 lg:gap-6">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">{t("dashboardOverview")}</h2>
-          <p className="text-muted-foreground mt-1">{t("dashboardSubtitle")}</p>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{t("dashboardOverview")}</h2>
+          <p className="text-muted-foreground text-sm mt-1">{t("dashboardSubtitle")}</p>
         </div>
-        <div className="flex gap-3 flex-wrap">
-          <button onClick={() => setProductSheet(true)} className="flex items-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-5 py-3 rounded-xl font-semibold shadow-sm hover:bg-[hsl(var(--surface-container))] active:scale-95 transition-all">
-            <PlusCircle className="h-5 w-5 text-primary" />
-            {t("addProduct")}
+        <div className="grid grid-cols-2 lg:flex gap-2 md:gap-3 w-full lg:w-auto">
+          <button onClick={() => setProductSheet(true)} className="flex items-center justify-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-3 md:px-5 py-2.5 md:py-3 rounded-xl font-semibold shadow-sm hover:bg-[hsl(var(--surface-container))] active:scale-95 transition-all text-xs md:text-sm">
+            <PlusCircle className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+            <span className="truncate">{t("addProduct")}</span>
           </button>
-          <button onClick={() => setCustomerSheet(true)} className="flex items-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-5 py-3 rounded-xl font-semibold shadow-sm hover:bg-[hsl(var(--surface-container))] active:scale-95 transition-all">
-            <UserPlus className="h-5 w-5 text-info" />
-            {t("addCustomer")}
+          <button onClick={() => setCustomerSheet(true)} className="flex items-center justify-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-3 md:px-5 py-2.5 md:py-3 rounded-xl font-semibold shadow-sm hover:bg-[hsl(var(--surface-container))] active:scale-95 transition-all text-xs md:text-sm">
+            <UserPlus className="h-4 w-4 md:h-5 md:w-5 text-info" />
+            <span className="truncate">{t("addCustomer")}</span>
           </button>
-          <Link to="/pos" className="flex items-center gap-2 gradient-primary text-primary-foreground px-6 py-3 rounded-xl font-bold shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.4)] hover:brightness-110 active:scale-95 transition-all">
-            <ShoppingBag className="h-5 w-5" />
+          <Link to="/pos" className="col-span-2 flex items-center justify-center gap-2 gradient-primary text-primary-foreground px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-bold shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.4)] hover:brightness-110 active:scale-95 transition-all text-xs md:text-sm">
+            <ShoppingBag className="h-4 w-4 md:h-5 md:w-5" />
             {t("newSale")}
           </Link>
         </div>
       </div>
 
       {/* Stats Bento Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+        <StatCard
+          to="/sales"
+          icon={<Calendar className="h-4 w-4 md:h-6 md:w-6 text-primary" />}
+          iconBg="bg-primary/10"
+          chip={`${salesTrend >= 0 ? "+" : ""}${salesTrend}%`}
+          chipClass="text-primary bg-primary/10"
+          label={t("todaySales")}
+          value={fmt(stats.todaySales)}
+          sub={t("increaseFromYesterday")}
+        />
+        <StatCard
+          to="/reports"
+          icon={<Wallet className="h-4 w-4 md:h-6 md:w-6 text-[hsl(var(--secondary-foreground))]" />}
+          iconBg="bg-secondary/30"
+          chip={t("monthTarget")}
+          chipClass="text-[hsl(var(--secondary-foreground))] bg-secondary/30"
+          label={t("totalRevenue")}
+          value={fmt(stats.monthSales)}
+          sub={t("monthlyProfit")}
+        />
+        <StatCard
+          to="/sales"
+          icon={<ShoppingBag className="h-4 w-4 md:h-6 md:w-6 text-info" />}
+          iconBg="bg-info/10"
+          chip={`${stats.todayCount} ${t("newOrders")}`}
+          chipClass="text-info bg-info/10"
+          label={t("orderCount")}
+          value={`${stats.orderCount}`}
+          sub={`${t("deliveredToday")}: ${stats.deliveredToday}`}
+        />
         <StatCard
           to="/sales"
           icon={<Calendar className="h-6 w-6 text-primary" />}
@@ -138,40 +168,40 @@ export default function Dashboard() {
           value={`${stats.orderCount}`}
           sub={`${t("deliveredToday")}: ${stats.deliveredToday}`}
         />
-        <Link to="/products" className="bg-secondary/20 p-6 rounded-2xl transition-all hover:-translate-y-1 border-l-4 border-secondary block">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-secondary text-[hsl(var(--secondary-foreground))] rounded-xl">
-              <AlertTriangle className="h-6 w-6" />
+        <Link to="/products" className="bg-secondary/20 p-3 md:p-6 rounded-2xl transition-all hover:-translate-y-1 border-l-4 border-secondary block">
+          <div className="flex justify-between items-start mb-3 md:mb-4">
+            <div className="p-2 md:p-3 bg-secondary text-[hsl(var(--secondary-foreground))] rounded-xl">
+              <AlertTriangle className="h-4 w-4 md:h-6 md:w-6" />
             </div>
-            <span className="text-xs font-bold text-[hsl(var(--secondary-foreground))] bg-secondary px-2 py-1 rounded">
+            <span className="text-[9px] md:text-xs font-bold text-[hsl(var(--secondary-foreground))] bg-secondary px-1.5 md:px-2 py-0.5 md:py-1 rounded">
               {t("urgent")}
             </span>
           </div>
-          <p className="text-muted-foreground text-sm font-medium">{t("lowStockTitle")}</p>
-          <h3 className="text-2xl font-bold mt-1 text-[hsl(var(--secondary-foreground))]">
+          <p className="text-muted-foreground text-[11px] md:text-sm font-medium truncate">{t("lowStockTitle")}</p>
+          <h3 className="text-base md:text-2xl font-bold mt-1 text-[hsl(var(--secondary-foreground))]">
             {String(stats.lowStockCount).padStart(2, "0")} {t("productsLow")}
           </h3>
-          <p className="text-[10px] text-[hsl(var(--secondary-foreground))]/70 mt-2">{t("needsRefill")}</p>
+          <p className="text-[9px] md:text-[10px] text-[hsl(var(--secondary-foreground))]/70 mt-1 md:mt-2 truncate">{t("needsRefill")}</p>
         </Link>
       </div>
 
       {/* Main Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-8">
         {/* LEFT: Chart + Transactions */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="lg:col-span-2 space-y-5 md:space-y-8">
           {/* Weekly Chart */}
-          <div className="bg-[hsl(var(--surface-container-lowest))] p-8 rounded-2xl">
-            <div className="flex justify-between items-center mb-10">
+          <div className="bg-[hsl(var(--surface-container-lowest))] p-4 md:p-8 rounded-2xl">
+            <div className="flex justify-between items-center mb-6 md:mb-10">
               <div>
-                <h3 className="text-xl font-bold text-foreground">{t("weeklySalesAnalysis")}</h3>
-                <p className="text-sm text-muted-foreground">{t("last7DaysReport")}</p>
+                <h3 className="text-base md:text-xl font-bold text-foreground">{t("weeklySalesAnalysis")}</h3>
+                <p className="text-xs md:text-sm text-muted-foreground">{t("last7DaysReport")}</p>
               </div>
-              <select className="bg-[hsl(var(--surface-container-low))] border-none rounded-lg text-xs font-bold py-2 px-4 outline-none focus:ring-2 focus:ring-primary/20">
+              <select className="bg-[hsl(var(--surface-container-low))] border-none rounded-lg text-[11px] md:text-xs font-bold py-1.5 md:py-2 px-3 md:px-4 outline-none focus:ring-2 focus:ring-primary/20">
                 <option>{t("thisWeek")}</option>
                 <option>{t("lastWeek")}</option>
               </select>
             </div>
-            <div className="h-64 flex items-end justify-between gap-4 relative">
+            <div className="h-44 md:h-64 flex items-end justify-between gap-2 md:gap-4 relative">
               <div className="absolute inset-0 flex flex-col justify-between py-1 pointer-events-none">
                 {[0,1,2,3].map(i => <div key={i} className="border-b border-[hsl(var(--surface-container-high))] w-full" />)}
               </div>
@@ -197,12 +227,42 @@ export default function Dashboard() {
           </div>
 
           {/* Recent Transactions */}
-          <div className="bg-[hsl(var(--surface-container-lowest))] p-8 rounded-2xl overflow-hidden">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-foreground">{t("recentTransactions")}</h3>
-              <Link to="/sales" className="text-primary text-sm font-bold hover:underline">{t("viewAll")}</Link>
+          <div className="bg-[hsl(var(--surface-container-lowest))] p-4 md:p-8 rounded-2xl overflow-hidden">
+            <div className="flex justify-between items-center mb-4 md:mb-6">
+              <h3 className="text-base md:text-xl font-bold text-foreground">{t("recentTransactions")}</h3>
+              <Link to="/sales" className="text-primary text-xs md:text-sm font-bold hover:underline">{t("viewAll")}</Link>
             </div>
-            <div className="overflow-x-auto">
+
+            {/* Mobile: cards */}
+            <div className="md:hidden space-y-2">
+              {recent.length === 0 && <div className="py-8 text-center text-muted-foreground text-sm">{t("noResults")}</div>}
+              {recent.map((r: any) => {
+                const due = Number(r.due);
+                const total = Number(r.total);
+                const status = due === 0 ? "paid" : due === total ? "pending" : "partial";
+                const statusMap = {
+                  paid: { label: t("completed"), cls: "bg-primary/10 text-primary" },
+                  pending: { label: t("pending"), cls: "bg-secondary/30 text-[hsl(var(--secondary-foreground))]" },
+                  partial: { label: t("partial"), cls: "bg-destructive/10 text-destructive" },
+                } as const;
+                const s = statusMap[status];
+                return (
+                  <div key={r.id} className="bg-[hsl(var(--surface-container-low))] p-3 rounded-xl flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-sm truncate">{r.customers?.name ?? t("walkInCustomer")}</p>
+                      <p className="text-[11px] text-muted-foreground">{new Date(r.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US")}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-bold text-sm">{fmt(total)}</p>
+                      <span className={`${s.cls} text-[9px] font-black px-2 py-0.5 rounded-full uppercase`}>{s.label}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="text-[11px] uppercase tracking-widest text-muted-foreground">
@@ -244,22 +304,22 @@ export default function Dashboard() {
         </div>
 
         {/* RIGHT: Quick actions + Top selling */}
-        <div className="space-y-8">
+        <div className="space-y-5 md:space-y-8">
           {/* Quick Actions — dark inverse card */}
-          <div className="bg-[hsl(var(--inverse-surface))] p-8 rounded-2xl text-[hsl(var(--inverse-on-surface))] shadow-xl">
-            <h3 className="text-lg font-bold mb-6">{t("quickActions")}</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <QAButton to="/pos" icon={<ScanLine className="h-7 w-7 text-[hsl(var(--primary-fixed))]" />} label={t("scan")} />
-              <QAButton onClick={() => setCustomerSheet(true)} icon={<UserPlus className="h-7 w-7 text-secondary" />} label={t("newCustomerShort")} />
-              <QAButton to="/reports" icon={<TrendingUp className="h-7 w-7 text-[hsl(var(--primary-fixed))]" />} label={t("reports")} />
-              <QAButton to="/installments" icon={<Headset className="h-7 w-7 text-secondary" />} label={t("support")} />
+          <div className="bg-[hsl(var(--inverse-surface))] p-5 md:p-8 rounded-2xl text-[hsl(var(--inverse-on-surface))] shadow-xl">
+            <h3 className="text-base md:text-lg font-bold mb-4 md:mb-6">{t("quickActions")}</h3>
+            <div className="grid grid-cols-4 lg:grid-cols-2 gap-3 md:gap-4">
+              <QAButton to="/pos" icon={<ScanLine className="h-6 w-6 md:h-7 md:w-7 text-[hsl(var(--primary-fixed))]" />} label={t("scan")} />
+              <QAButton onClick={() => setCustomerSheet(true)} icon={<UserPlus className="h-6 w-6 md:h-7 md:w-7 text-secondary" />} label={t("newCustomerShort")} />
+              <QAButton to="/reports" icon={<TrendingUp className="h-6 w-6 md:h-7 md:w-7 text-[hsl(var(--primary-fixed))]" />} label={t("reports")} />
+              <QAButton to="/installments" icon={<Headset className="h-6 w-6 md:h-7 md:w-7 text-secondary" />} label={t("support")} />
             </div>
           </div>
 
           {/* Top Selling */}
-          <div className="bg-[hsl(var(--surface-container-lowest))] p-8 rounded-2xl">
-            <h3 className="text-lg font-bold text-foreground mb-6">{t("topProducts")}</h3>
-            <div className="space-y-6">
+          <div className="bg-[hsl(var(--surface-container-lowest))] p-5 md:p-8 rounded-2xl">
+            <h3 className="text-base md:text-lg font-bold text-foreground mb-4 md:mb-6">{t("topProducts")}</h3>
+            <div className="space-y-4 md:space-y-6">
               {topProducts.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">{t("noResults")}</p>}
               {topProducts.map(p => (
                 <div key={p.name} className="flex items-center gap-4">
@@ -289,32 +349,32 @@ export default function Dashboard() {
 
 function StatCard({ to, icon, iconBg, chip, chipClass, label, value, sub }: any) {
   return (
-    <Link to={to ?? "#"} className="bg-[hsl(var(--surface-container-lowest))] p-6 rounded-2xl transition-all hover:-translate-y-1 block hover:shadow-lg">
-      <div className="flex justify-between items-start mb-4">
-        <div className={`p-3 ${iconBg} rounded-xl`}>{icon}</div>
-        <span className={`text-xs font-bold ${chipClass} px-2 py-1 rounded`}>{chip}</span>
+    <Link to={to ?? "#"} className="bg-[hsl(var(--surface-container-lowest))] p-3 md:p-6 rounded-2xl transition-all hover:-translate-y-1 block hover:shadow-lg">
+      <div className="flex justify-between items-start mb-3 md:mb-4">
+        <div className={`p-2 md:p-3 ${iconBg} rounded-xl`}>{icon}</div>
+        <span className={`text-[9px] md:text-xs font-bold ${chipClass} px-1.5 md:px-2 py-0.5 md:py-1 rounded`}>{chip}</span>
       </div>
-      <p className="text-muted-foreground text-sm font-medium">{label}</p>
-      <h3 className="text-2xl font-bold mt-1 text-foreground">{value}</h3>
-      <p className="text-[10px] text-muted-foreground mt-2">{sub}</p>
+      <p className="text-muted-foreground text-[11px] md:text-sm font-medium truncate">{label}</p>
+      <h3 className="text-base md:text-2xl font-bold mt-1 text-foreground truncate">{value}</h3>
+      <p className="text-[9px] md:text-[10px] text-muted-foreground mt-1 md:mt-2 truncate">{sub}</p>
     </Link>
   );
 }
 
 function QAButton({ to, onClick, icon, label }: any) {
-  const cls = "bg-white/10 hover:bg-white/20 p-4 rounded-xl flex flex-col items-center gap-2 transition-all";
+  const cls = "bg-white/10 hover:bg-white/20 p-3 md:p-4 rounded-xl flex flex-col items-center gap-1.5 md:gap-2 transition-all";
   if (onClick) {
     return (
       <button onClick={onClick} className={cls}>
         {icon}
-        <span className="text-xs font-medium">{label}</span>
+        <span className="text-[10px] md:text-xs font-medium text-center leading-tight">{label}</span>
       </button>
     );
   }
   return (
     <Link to={to} className={cls}>
       {icon}
-      <span className="text-xs font-medium">{label}</span>
+      <span className="text-[10px] md:text-xs font-medium text-center leading-tight">{label}</span>
     </Link>
   );
 }
