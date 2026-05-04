@@ -10,10 +10,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Package, Tag, DollarSign, Layers, ShieldCheck } from "lucide-react";
 
-function generateBarcode() {
-  const ts = Date.now().toString(36).toUpperCase();
-  const rnd = Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `SS${ts}${rnd}`;
+function namePrefix(name: string): string {
+  const ascii = (name || "").replace(/[^A-Za-z]/g, "");
+  if (ascii.length >= 2) return ascii.slice(0, 2).toUpperCase();
+  if (ascii.length === 1) return (ascii + "X").toUpperCase();
+  return "PR";
+}
+async function generateBarcode(name: string): Promise<string> {
+  const { data } = await supabase.rpc("next_barcode_serial");
+  const serial = data ?? Date.now();
+  return `${namePrefix(name)}-${serial}`;
 }
 
 interface Props {
@@ -55,8 +61,10 @@ export function AddProductSheet({ open, onOpenChange, onSaved }: Props) {
       return toast({ title: "Warranty কত মাসের সেটি দিন", variant: "destructive" });
     }
     setSaving(true);
+    const productName = form.name.trim();
+    const barcode = await generateBarcode(productName);
     const { error } = await supabase.from("products").insert({
-      name: form.name.trim(),
+      name: productName,
       sku: form.sku?.trim() || null,
       price: Number(form.price) || 0,
       cost: Number(form.cost) || 0,
@@ -64,7 +72,7 @@ export function AddProductSheet({ open, onOpenChange, onSaved }: Props) {
       unit: form.unit || "pcs",
       category_id: form.category_id || null,
       image_url: form.image_url || null,
-      barcode: generateBarcode(),
+      barcode,
       has_warranty: !!form.has_warranty,
       warranty_months: form.has_warranty ? Number(form.warranty_months) : null,
     });

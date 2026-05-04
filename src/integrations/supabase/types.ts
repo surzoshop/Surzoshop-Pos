@@ -909,6 +909,7 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      next_barcode_serial: { Args: never; Returns: number }
       user_can_access_shop: {
         Args: { _shop_id: string; _user_id: string }
         Returns: boolean

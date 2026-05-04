@@ -210,8 +210,8 @@ export default function POS() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-[calc(100vh-8rem)]">
-      <section className="lg:col-span-3 flex flex-col gap-4 min-h-0">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:h-[calc(100vh-8rem)]">
+      <section className="lg:col-span-3 flex flex-col gap-4 lg:min-h-0">
         <div className="bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-4 shadow-sm space-y-3">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -261,7 +261,7 @@ export default function POS() {
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto pr-2 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 pb-4">
+        <div className="lg:flex-1 lg:overflow-y-auto pr-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 pb-4">
           {visible.length === 0 && (
             <div className="col-span-full text-center text-muted-foreground py-16">{t("noResults")}</div>
           )}
@@ -299,7 +299,7 @@ export default function POS() {
         </div>
       </section>
 
-      <section className="lg:col-span-2 flex flex-col bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-6 min-h-0 shadow-sm">
+      <section className="lg:col-span-2 flex flex-col bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-4 sm:p-6 lg:min-h-0 shadow-sm">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-extrabold flex items-center gap-2 text-foreground">
             <ShoppingCart className="h-6 w-6 text-primary" />
@@ -313,7 +313,7 @@ export default function POS() {
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+        <div className="lg:flex-1 lg:overflow-y-auto space-y-3 mb-4 max-h-[60vh] lg:max-h-none overflow-y-auto">
           {cart.length === 0 && (
             <div className="text-center text-muted-foreground py-12">{t("emptyCart")}</div>
           )}
