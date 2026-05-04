@@ -101,53 +101,53 @@ export default function Dashboard() {
           <p className="text-muted-foreground text-sm mt-1">{t("dashboardSubtitle")}</p>
         </div>
         <div className="grid grid-cols-2 lg:flex gap-2.5 md:gap-3 w-full lg:w-auto">
-          {/* Add Product — emerald accent */}
+          {/* Add Product — Emerald */}
           <button
             onClick={() => setProductSheet(true)}
             className="group relative overflow-hidden flex items-center justify-center gap-2 pl-4 pr-3 md:pl-5 md:pr-5 py-2.5 md:py-3 rounded-xl font-semibold text-xs md:text-sm
-              bg-gradient-to-br from-[hsl(var(--surface-container-lowest))] to-[hsl(var(--surface-container-low))]
-              text-foreground border border-[hsl(var(--surface-container-high))]
-              shadow-[0_1px_2px_rgba(0,0,0,0.04),inset_3px_0_0_hsl(var(--primary))]
-              hover:shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.35),inset_4px_0_0_hsl(var(--primary))]
-              hover:-translate-y-0.5 hover:border-primary/30 active:translate-y-0 active:scale-[0.98]
+              bg-gradient-to-br from-emerald-50 to-emerald-100/60 dark:from-emerald-950/40 dark:to-emerald-900/20
+              text-emerald-900 dark:text-emerald-100 border border-emerald-200/70 dark:border-emerald-800/40
+              shadow-[0_1px_2px_rgba(0,0,0,0.04),inset_3px_0_0_rgb(16,185,129)]
+              hover:shadow-[0_8px_20px_-8px_rgba(16,185,129,0.45),inset_4px_0_0_rgb(16,185,129)]
+              hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]
               transition-all duration-300 ease-out"
           >
-            <span className="absolute inset-y-0 left-0 w-0 bg-primary/5 group-hover:w-full transition-all duration-500 ease-out" />
-            <span className="relative flex items-center justify-center h-7 w-7 rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors duration-300">
-              <PlusCircle className="h-4 w-4 text-primary transition-transform duration-500 group-hover:rotate-180" />
+            <span className="absolute inset-y-0 left-0 w-0 bg-emerald-500/10 group-hover:w-full transition-all duration-500 ease-out" />
+            <span className="relative flex items-center justify-center h-7 w-7 rounded-lg bg-emerald-500/15 group-hover:bg-emerald-500/25 transition-colors duration-300">
+              <PlusCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400 transition-transform duration-500 group-hover:rotate-180" />
             </span>
             <span className="relative truncate">{t("addProduct")}</span>
           </button>
 
-          {/* Add Customer — info accent */}
+          {/* Add Customer — Sky/Blue */}
           <button
             onClick={() => setCustomerSheet(true)}
             className="group relative overflow-hidden flex items-center justify-center gap-2 pl-4 pr-3 md:pl-5 md:pr-5 py-2.5 md:py-3 rounded-xl font-semibold text-xs md:text-sm
-              bg-gradient-to-br from-[hsl(var(--surface-container-lowest))] to-[hsl(var(--surface-container-low))]
-              text-foreground border border-[hsl(var(--surface-container-high))]
-              shadow-[0_1px_2px_rgba(0,0,0,0.04),inset_3px_0_0_hsl(var(--info))]
-              hover:shadow-[0_8px_20px_-8px_hsl(var(--info)/0.35),inset_4px_0_0_hsl(var(--info))]
-              hover:-translate-y-0.5 hover:border-info/30 active:translate-y-0 active:scale-[0.98]
+              bg-gradient-to-br from-sky-50 to-sky-100/60 dark:from-sky-950/40 dark:to-sky-900/20
+              text-sky-900 dark:text-sky-100 border border-sky-200/70 dark:border-sky-800/40
+              shadow-[0_1px_2px_rgba(0,0,0,0.04),inset_3px_0_0_rgb(14,165,233)]
+              hover:shadow-[0_8px_20px_-8px_rgba(14,165,233,0.45),inset_4px_0_0_rgb(14,165,233)]
+              hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]
               transition-all duration-300 ease-out"
           >
-            <span className="absolute inset-y-0 left-0 w-0 bg-info/5 group-hover:w-full transition-all duration-500 ease-out" />
-            <span className="relative flex items-center justify-center h-7 w-7 rounded-lg bg-info/10 group-hover:bg-info/15 transition-colors duration-300">
-              <UserPlus className="h-4 w-4 text-info transition-transform duration-300 group-hover:scale-110" />
+            <span className="absolute inset-y-0 left-0 w-0 bg-sky-500/10 group-hover:w-full transition-all duration-500 ease-out" />
+            <span className="relative flex items-center justify-center h-7 w-7 rounded-lg bg-sky-500/15 group-hover:bg-sky-500/25 transition-colors duration-300">
+              <UserPlus className="h-4 w-4 text-sky-600 dark:text-sky-400 transition-transform duration-300 group-hover:scale-110" />
             </span>
             <span className="relative truncate">{t("addCustomer")}</span>
           </button>
 
-          {/* New Sale — primary CTA */}
+          {/* New Sale — Violet → Fuchsia gradient CTA */}
           <Link
             to="/pos"
             className="group relative overflow-hidden col-span-2 flex items-center justify-center gap-2 px-5 md:px-6 py-2.5 md:py-3 rounded-xl font-bold text-xs md:text-sm
-              gradient-primary text-primary-foreground border border-white/10
-              shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.55),inset_0_1px_0_rgba(255,255,255,0.2)]
-              hover:shadow-[0_18px_40px_-12px_hsl(var(--primary)/0.75),inset_0_1px_0_rgba(255,255,255,0.3)]
+              bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 text-white border border-white/15
+              shadow-[0_10px_30px_-10px_rgba(217,70,239,0.6),inset_0_1px_0_rgba(255,255,255,0.25)]
+              hover:shadow-[0_18px_40px_-12px_rgba(217,70,239,0.8),inset_0_1px_0_rgba(255,255,255,0.35)]
               hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]
               transition-all duration-300 ease-out"
           >
-            <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+            <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out bg-gradient-to-r from-transparent via-white/30 to-transparent" />
             <ShoppingBag className="relative h-4 w-4 md:h-5 md:w-5 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6" />
             <span className="relative">{t("newSale")}</span>
           </Link>
