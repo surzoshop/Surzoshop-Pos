@@ -388,19 +388,13 @@ function StatCard({ to, icon, iconBg, chip, chipClass, label, value, sub }: any)
 }
 
 function QAButton({ to, onClick, icon, label }: any) {
-  const cls = "bg-white/10 hover:bg-white/20 p-3 md:p-4 rounded-xl flex flex-col items-center gap-1.5 md:gap-2 transition-all";
-  if (onClick) {
-    return (
-      <button onClick={onClick} className={cls}>
-        {icon}
-        <span className="text-[10px] md:text-xs font-medium text-center leading-tight">{label}</span>
-      </button>
-    );
-  }
-  return (
-    <Link to={to} className={cls}>
-      {icon}
+  const cls = "group bg-white/10 hover:bg-white/20 p-3 md:p-4 rounded-xl flex flex-col items-center gap-1.5 md:gap-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:scale-95 border border-white/5 hover:border-white/20";
+  const inner = (
+    <>
+      <div className="transition-transform duration-300 group-hover:scale-110">{icon}</div>
       <span className="text-[10px] md:text-xs font-medium text-center leading-tight">{label}</span>
-    </Link>
+    </>
   );
+  if (onClick) return <button onClick={onClick} className={cls}>{inner}</button>;
+  return <Link to={to} className={cls}>{inner}</Link>;
 }
