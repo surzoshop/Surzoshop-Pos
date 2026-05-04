@@ -186,22 +186,22 @@ export default function Dashboard() {
       </div>
 
       {/* Main Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-8">
         {/* LEFT: Chart + Transactions */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="lg:col-span-2 space-y-5 md:space-y-8">
           {/* Weekly Chart */}
-          <div className="bg-[hsl(var(--surface-container-lowest))] p-8 rounded-2xl">
-            <div className="flex justify-between items-center mb-10">
+          <div className="bg-[hsl(var(--surface-container-lowest))] p-4 md:p-8 rounded-2xl">
+            <div className="flex justify-between items-center mb-6 md:mb-10">
               <div>
-                <h3 className="text-xl font-bold text-foreground">{t("weeklySalesAnalysis")}</h3>
-                <p className="text-sm text-muted-foreground">{t("last7DaysReport")}</p>
+                <h3 className="text-base md:text-xl font-bold text-foreground">{t("weeklySalesAnalysis")}</h3>
+                <p className="text-xs md:text-sm text-muted-foreground">{t("last7DaysReport")}</p>
               </div>
-              <select className="bg-[hsl(var(--surface-container-low))] border-none rounded-lg text-xs font-bold py-2 px-4 outline-none focus:ring-2 focus:ring-primary/20">
+              <select className="bg-[hsl(var(--surface-container-low))] border-none rounded-lg text-[11px] md:text-xs font-bold py-1.5 md:py-2 px-3 md:px-4 outline-none focus:ring-2 focus:ring-primary/20">
                 <option>{t("thisWeek")}</option>
                 <option>{t("lastWeek")}</option>
               </select>
             </div>
-            <div className="h-64 flex items-end justify-between gap-4 relative">
+            <div className="h-44 md:h-64 flex items-end justify-between gap-2 md:gap-4 relative">
               <div className="absolute inset-0 flex flex-col justify-between py-1 pointer-events-none">
                 {[0,1,2,3].map(i => <div key={i} className="border-b border-[hsl(var(--surface-container-high))] w-full" />)}
               </div>
@@ -227,12 +227,42 @@ export default function Dashboard() {
           </div>
 
           {/* Recent Transactions */}
-          <div className="bg-[hsl(var(--surface-container-lowest))] p-8 rounded-2xl overflow-hidden">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-foreground">{t("recentTransactions")}</h3>
-              <Link to="/sales" className="text-primary text-sm font-bold hover:underline">{t("viewAll")}</Link>
+          <div className="bg-[hsl(var(--surface-container-lowest))] p-4 md:p-8 rounded-2xl overflow-hidden">
+            <div className="flex justify-between items-center mb-4 md:mb-6">
+              <h3 className="text-base md:text-xl font-bold text-foreground">{t("recentTransactions")}</h3>
+              <Link to="/sales" className="text-primary text-xs md:text-sm font-bold hover:underline">{t("viewAll")}</Link>
             </div>
-            <div className="overflow-x-auto">
+
+            {/* Mobile: cards */}
+            <div className="md:hidden space-y-2">
+              {recent.length === 0 && <div className="py-8 text-center text-muted-foreground text-sm">{t("noResults")}</div>}
+              {recent.map((r: any) => {
+                const due = Number(r.due);
+                const total = Number(r.total);
+                const status = due === 0 ? "paid" : due === total ? "pending" : "partial";
+                const statusMap = {
+                  paid: { label: t("completed"), cls: "bg-primary/10 text-primary" },
+                  pending: { label: t("pending"), cls: "bg-secondary/30 text-[hsl(var(--secondary-foreground))]" },
+                  partial: { label: t("partial"), cls: "bg-destructive/10 text-destructive" },
+                } as const;
+                const s = statusMap[status];
+                return (
+                  <div key={r.id} className="bg-[hsl(var(--surface-container-low))] p-3 rounded-xl flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-sm truncate">{r.customers?.name ?? t("walkInCustomer")}</p>
+                      <p className="text-[11px] text-muted-foreground">{new Date(r.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US")}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-bold text-sm">{fmt(total)}</p>
+                      <span className={`${s.cls} text-[9px] font-black px-2 py-0.5 rounded-full uppercase`}>{s.label}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="text-[11px] uppercase tracking-widest text-muted-foreground">
@@ -274,15 +304,15 @@ export default function Dashboard() {
         </div>
 
         {/* RIGHT: Quick actions + Top selling */}
-        <div className="space-y-8">
+        <div className="space-y-5 md:space-y-8">
           {/* Quick Actions — dark inverse card */}
-          <div className="bg-[hsl(var(--inverse-surface))] p-8 rounded-2xl text-[hsl(var(--inverse-on-surface))] shadow-xl">
-            <h3 className="text-lg font-bold mb-6">{t("quickActions")}</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <QAButton to="/pos" icon={<ScanLine className="h-7 w-7 text-[hsl(var(--primary-fixed))]" />} label={t("scan")} />
-              <QAButton onClick={() => setCustomerSheet(true)} icon={<UserPlus className="h-7 w-7 text-secondary" />} label={t("newCustomerShort")} />
-              <QAButton to="/reports" icon={<TrendingUp className="h-7 w-7 text-[hsl(var(--primary-fixed))]" />} label={t("reports")} />
-              <QAButton to="/installments" icon={<Headset className="h-7 w-7 text-secondary" />} label={t("support")} />
+          <div className="bg-[hsl(var(--inverse-surface))] p-5 md:p-8 rounded-2xl text-[hsl(var(--inverse-on-surface))] shadow-xl">
+            <h3 className="text-base md:text-lg font-bold mb-4 md:mb-6">{t("quickActions")}</h3>
+            <div className="grid grid-cols-4 lg:grid-cols-2 gap-3 md:gap-4">
+              <QAButton to="/pos" icon={<ScanLine className="h-6 w-6 md:h-7 md:w-7 text-[hsl(var(--primary-fixed))]" />} label={t("scan")} />
+              <QAButton onClick={() => setCustomerSheet(true)} icon={<UserPlus className="h-6 w-6 md:h-7 md:w-7 text-secondary" />} label={t("newCustomerShort")} />
+              <QAButton to="/reports" icon={<TrendingUp className="h-6 w-6 md:h-7 md:w-7 text-[hsl(var(--primary-fixed))]" />} label={t("reports")} />
+              <QAButton to="/installments" icon={<Headset className="h-6 w-6 md:h-7 md:w-7 text-secondary" />} label={t("support")} />
             </div>
           </div>
 
