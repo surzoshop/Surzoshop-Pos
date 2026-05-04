@@ -154,146 +154,119 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stats Bento Grid */}
+      {/* Stats Bento Grid — colorful */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
-        <StatCard
-          to="/sales"
-          icon={<Calendar className="h-4 w-4 md:h-6 md:w-6 text-primary" />}
-          iconBg="bg-primary/10"
+        <ColorStatCard
+          to="/sales" theme="emerald" icon={<Calendar />}
           chip={`${salesTrend >= 0 ? "+" : ""}${salesTrend}%`}
-          chipClass="text-primary bg-primary/10"
-          label={t("todaySales")}
-          value={fmt(stats.todaySales)}
-          sub={t("increaseFromYesterday")}
+          label={t("todaySales")} value={fmt(stats.todaySales)} sub={t("increaseFromYesterday")}
         />
-        <StatCard
-          to="/reports"
-          icon={<Wallet className="h-4 w-4 md:h-6 md:w-6 text-[hsl(var(--secondary-foreground))]" />}
-          iconBg="bg-secondary/30"
+        <ColorStatCard
+          to="/reports" theme="violet" icon={<Wallet />}
           chip={t("monthTarget")}
-          chipClass="text-[hsl(var(--secondary-foreground))] bg-secondary/30"
-          label={t("totalRevenue")}
-          value={fmt(stats.monthSales)}
-          sub={t("monthlyProfit")}
+          label={t("totalRevenue")} value={fmt(stats.monthSales)} sub={t("monthlyProfit")}
         />
-        <StatCard
-          to="/sales"
-          icon={<ShoppingBag className="h-4 w-4 md:h-6 md:w-6 text-info" />}
-          iconBg="bg-info/10"
+        <ColorStatCard
+          to="/sales" theme="sky" icon={<ShoppingBag />}
           chip={`${stats.todayCount} ${t("newOrders")}`}
-          chipClass="text-info bg-info/10"
-          label={t("orderCount")}
-          value={`${stats.orderCount}`}
-          sub={`${t("deliveredToday")}: ${stats.deliveredToday}`}
+          label={t("orderCount")} value={`${stats.orderCount}`} sub={`${t("deliveredToday")}: ${stats.deliveredToday}`}
         />
-        <Link to="/products" className="bg-secondary/20 p-3 md:p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border-l-4 border-secondary block">
-          <div className="flex justify-between items-start mb-3 md:mb-4">
-            <div className="p-2 md:p-3 bg-secondary text-[hsl(var(--secondary-foreground))] rounded-xl">
-              <AlertTriangle className="h-4 w-4 md:h-6 md:w-6" />
-            </div>
-            <span className="text-[9px] md:text-xs font-bold text-[hsl(var(--secondary-foreground))] bg-secondary px-1.5 md:px-2 py-0.5 md:py-1 rounded">
-              {t("urgent")}
-            </span>
-          </div>
-          <p className="text-muted-foreground text-[11px] md:text-sm font-medium truncate">{t("lowStockTitle")}</p>
-          <h3 className="text-base md:text-2xl font-bold mt-1 text-[hsl(var(--secondary-foreground))]">
-            {String(stats.lowStockCount).padStart(2, "0")} {t("productsLow")}
-          </h3>
-          <p className="text-[9px] md:text-[10px] text-[hsl(var(--secondary-foreground))]/70 mt-1 md:mt-2 truncate">{t("needsRefill")}</p>
-        </Link>
-
-        {/* Row 2 — extended insights */}
-        <StatCard
-          to="/products"
-          icon={<Boxes className="h-4 w-4 md:h-6 md:w-6 text-primary" />}
-          iconBg="bg-primary/10"
+        <ColorStatCard
+          to="/products" theme="amber" icon={<AlertTriangle />}
+          chip={t("urgent")}
+          label={t("lowStockTitle")}
+          value={`${String(stats.lowStockCount).padStart(2, "0")} ${t("productsLow")}`}
+          sub={t("needsRefill")}
+        />
+        <ColorStatCard
+          to="/products" theme="indigo" icon={<Boxes />}
           chip={t("info")}
-          chipClass="text-primary bg-primary/10"
-          label={t("totalProducts")}
-          value={`${stats.totalProducts}`}
-          sub={t("activeItems")}
+          label={t("totalProducts")} value={`${stats.totalProducts}`} sub={t("activeItems")}
         />
-        <StatCard
-          to="/products"
-          icon={<Package className="h-4 w-4 md:h-6 md:w-6 text-info" />}
-          iconBg="bg-info/10"
+        <ColorStatCard
+          to="/products" theme="teal" icon={<Package />}
           chip={t("live")}
-          chipClass="text-info bg-info/10"
-          label={t("stockValue")}
-          value={fmt(stats.stockValue)}
-          sub={t("inventoryWorth")}
+          label={t("stockValue")} value={fmt(stats.stockValue)} sub={t("inventoryWorth")}
         />
-        <StatCard
-          to="/customers"
-          icon={<Users className="h-4 w-4 md:h-6 md:w-6 text-[hsl(var(--secondary-foreground))]" />}
-          iconBg="bg-secondary/30"
+        <ColorStatCard
+          to="/customers" theme="pink" icon={<Users />}
           chip={t("growth")}
-          chipClass="text-[hsl(var(--secondary-foreground))] bg-secondary/30"
-          label={t("totalCustomers")}
-          value={`${stats.totalCustomers}`}
-          sub={t("registeredBuyers")}
+          label={t("totalCustomers")} value={`${stats.totalCustomers}`} sub={t("registeredBuyers")}
         />
-        <Link to="/installments" className="bg-destructive/10 p-3 md:p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border-l-4 border-destructive block">
-          <div className="flex justify-between items-start mb-3 md:mb-4">
-            <div className="p-2 md:p-3 bg-destructive/20 text-destructive rounded-xl">
-              <CircleDollarSign className="h-4 w-4 md:h-6 md:w-6" />
-            </div>
-            <span className="text-[9px] md:text-xs font-bold text-destructive bg-destructive/20 px-1.5 md:px-2 py-0.5 md:py-1 rounded">
-              {t("urgent")}
-            </span>
-          </div>
-          <p className="text-muted-foreground text-[11px] md:text-sm font-medium truncate">{t("pendingDue")}</p>
-          <h3 className="text-base md:text-2xl font-bold mt-1 text-destructive truncate">{fmt(stats.totalDue)}</h3>
-          <p className="text-[9px] md:text-[10px] text-destructive/70 mt-1 md:mt-2 truncate">{t("uncollected")}</p>
-        </Link>
+        <ColorStatCard
+          to="/installments" theme="rose" icon={<CircleDollarSign />}
+          chip={t("urgent")}
+          label={t("pendingDue")} value={fmt(stats.totalDue)} sub={t("uncollected")}
+        />
       </div>
 
       {/* Main Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-8">
         {/* LEFT: Chart + Transactions */}
         <div className="lg:col-span-2 space-y-5 md:space-y-8">
-          {/* Weekly Chart */}
-          <div className="bg-[hsl(var(--surface-container-lowest))] p-4 md:p-8 rounded-2xl">
-            <div className="flex justify-between items-center mb-6 md:mb-10">
-              <div>
-                <h3 className="text-base md:text-xl font-bold text-foreground">{t("weeklySalesAnalysis")}</h3>
-                <p className="text-xs md:text-sm text-muted-foreground">{t("last7DaysReport")}</p>
+          {/* Weekly Chart — advanced gradient bars */}
+          <div className="relative bg-[hsl(var(--surface-container-lowest))] p-4 md:p-8 rounded-2xl border border-[hsl(var(--surface-container-high))]/40 overflow-hidden">
+            <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-violet-500/5 blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none" />
+
+            <div className="relative flex justify-between items-center mb-6 md:mb-10">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
+                  <TrendingUp className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-base md:text-xl font-bold text-foreground">{t("weeklySalesAnalysis")}</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground">{t("last7DaysReport")}</p>
+                </div>
               </div>
-              <select className="bg-[hsl(var(--surface-container-low))] border-none rounded-lg text-[11px] md:text-xs font-bold py-1.5 md:py-2 px-3 md:px-4 outline-none focus:ring-2 focus:ring-primary/20">
+              <select className="bg-[hsl(var(--surface-container-low))] border border-[hsl(var(--surface-container-high))]/40 rounded-lg text-[11px] md:text-xs font-bold py-1.5 md:py-2 px-3 md:px-4 outline-none focus:ring-2 focus:ring-violet-500/30 cursor-pointer">
                 <option>{t("thisWeek")}</option>
                 <option>{t("lastWeek")}</option>
               </select>
             </div>
-            <div className="h-44 md:h-64 flex items-end justify-between gap-2 md:gap-4 relative">
+
+            <div className="relative h-44 md:h-64 flex items-end justify-between gap-2 md:gap-4">
               <div className="absolute inset-0 flex flex-col justify-between py-1 pointer-events-none">
-                {[0,1,2,3].map(i => <div key={i} className="border-b border-[hsl(var(--surface-container-high))] w-full" />)}
+                {[0,1,2,3].map(i => <div key={i} className="border-b border-dashed border-[hsl(var(--surface-container-high))]/60 w-full" />)}
               </div>
               {weekly.map((d, i) => {
                 const isMax = d.total === maxWeek && d.total > 0;
                 const h = Math.max(4, (d.total / maxWeek) * 100);
                 return (
-                  <div key={i} className={`flex-1 rounded-t-lg transition-all relative group ${
-                    isMax ? "bg-primary/20 border-t-4 border-primary" : "bg-primary/10 hover:bg-primary/30"
-                  }`} style={{ height: `${h}%` }}>
-                    {isMax && (
-                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-foreground text-background text-[10px] py-1 px-2 rounded whitespace-nowrap">
+                  <div key={i} className="flex-1 h-full flex items-end relative group/bar">
+                    <div
+                      style={{ height: `${h}%`, animation: `growUp 0.7s ${i * 0.06}s ease-out backwards` }}
+                      className={`w-full rounded-t-xl transition-all duration-300 cursor-pointer relative
+                        ${isMax
+                          ? "bg-gradient-to-t from-violet-600 via-fuchsia-500 to-pink-400 shadow-[0_0_20px_rgba(217,70,239,0.4)]"
+                          : "bg-gradient-to-t from-violet-400/30 to-fuchsia-400/40 hover:from-violet-500/60 hover:to-fuchsia-500/70"
+                        }`}
+                    >
+                      <div className="absolute -top-9 left-1/2 -translate-x-1/2 opacity-0 group-hover/bar:opacity-100 transition-opacity bg-foreground text-background text-[10px] font-bold py-1 px-2 rounded-md whitespace-nowrap shadow-lg">
                         {fmt(d.total)}
                       </div>
-                    )}
+                    </div>
                   </div>
                 );
               })}
             </div>
             <div className="flex justify-between mt-4 text-[10px] font-bold text-muted-foreground px-1 uppercase tracking-wider">
-              {weekly.map((d, i) => <span key={i}>{d.day}</span>)}
+              {weekly.map((d, i) => <span key={i} className={d.total === maxWeek && d.total > 0 ? "text-fuchsia-500" : ""}>{d.day}</span>)}
             </div>
           </div>
 
           {/* Recent Transactions */}
-          <div className="bg-[hsl(var(--surface-container-lowest))] p-4 md:p-8 rounded-2xl overflow-hidden">
+          <div className="bg-[hsl(var(--surface-container-lowest))] p-4 md:p-8 rounded-2xl border border-[hsl(var(--surface-container-high))]/40 overflow-hidden">
             <div className="flex justify-between items-center mb-4 md:mb-6">
-              <h3 className="text-base md:text-xl font-bold text-foreground">{t("recentTransactions")}</h3>
-              <Link to="/sales" className="text-primary text-xs md:text-sm font-bold hover:underline">{t("viewAll")}</Link>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-sky-500/30">
+                  <ShoppingBag className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="text-base md:text-xl font-bold text-foreground">{t("recentTransactions")}</h3>
+              </div>
+              <Link to="/sales" className="group inline-flex items-center gap-1 text-sky-600 dark:text-sky-400 text-xs md:text-sm font-bold hover:gap-2 transition-all">
+                {t("viewAll")} <span className="transition-transform group-hover:translate-x-0.5">→</span>
+              </Link>
             </div>
 
             {/* Mobile: cards */}
@@ -303,21 +276,21 @@ export default function Dashboard() {
                 const due = Number(r.due);
                 const total = Number(r.total);
                 const status = due === 0 ? "paid" : due === total ? "pending" : "partial";
-                const statusMap = {
-                  paid: { label: t("completed"), cls: "bg-primary/10 text-primary" },
-                  pending: { label: t("pending"), cls: "bg-secondary/30 text-[hsl(var(--secondary-foreground))]" },
-                  partial: { label: t("partial"), cls: "bg-destructive/10 text-destructive" },
+                const sm = {
+                  paid: { label: t("completed"), cls: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" },
+                  pending: { label: t("pending"), cls: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30" },
+                  partial: { label: t("partial"), cls: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30" },
                 } as const;
-                const s = statusMap[status];
+                const s = sm[status];
                 return (
-                  <div key={r.id} className="bg-[hsl(var(--surface-container-low))] p-3 rounded-xl flex items-center justify-between gap-2">
+                  <div key={r.id} className="bg-[hsl(var(--surface-container-low))] p-3 rounded-xl flex items-center justify-between gap-2 border border-transparent hover:border-sky-500/30 transition-all">
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-sm truncate">{r.customers?.name ?? t("walkInCustomer")}</p>
                       <p className="text-[11px] text-muted-foreground">{new Date(r.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US")}</p>
                     </div>
                     <div className="text-right shrink-0">
                       <p className="font-bold text-sm">{fmt(total)}</p>
-                      <span className={`${s.cls} text-[9px] font-black px-2 py-0.5 rounded-full uppercase`}>{s.label}</span>
+                      <span className={`${s.cls} text-[9px] font-black px-2 py-0.5 rounded-full uppercase border`}>{s.label}</span>
                     </div>
                   </div>
                 );
@@ -328,11 +301,11 @@ export default function Dashboard() {
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                    <th className="pb-6 font-bold">{t("date")}</th>
-                    <th className="pb-6 font-bold">{t("buyerName")}</th>
-                    <th className="pb-6 font-bold">{t("amount")}</th>
-                    <th className="pb-6 font-bold text-right">{t("status")}</th>
+                  <tr className="text-[11px] uppercase tracking-widest text-muted-foreground border-b border-[hsl(var(--surface-container-high))]/40">
+                    <th className="pb-4 font-bold">{t("date")}</th>
+                    <th className="pb-4 font-bold">{t("buyerName")}</th>
+                    <th className="pb-4 font-bold">{t("amount")}</th>
+                    <th className="pb-4 font-bold text-right">{t("status")}</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
@@ -343,19 +316,19 @@ export default function Dashboard() {
                     const due = Number(r.due);
                     const total = Number(r.total);
                     const status = due === 0 ? "paid" : due === total ? "pending" : "partial";
-                    const statusMap = {
-                      paid: { label: t("completed"), cls: "bg-primary/10 text-primary" },
-                      pending: { label: t("pending"), cls: "bg-secondary/30 text-[hsl(var(--secondary-foreground))]" },
-                      partial: { label: t("partial"), cls: "bg-destructive/10 text-destructive" },
+                    const sm = {
+                      paid: { label: t("completed"), cls: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" },
+                      pending: { label: t("pending"), cls: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30" },
+                      partial: { label: t("partial"), cls: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30" },
                     } as const;
-                    const s = statusMap[status];
+                    const s = sm[status];
                     return (
-                      <tr key={r.id} className="hover:bg-[hsl(var(--surface-container-low))] transition-colors">
+                      <tr key={r.id} className="hover:bg-[hsl(var(--surface-container-low))] transition-colors border-b border-[hsl(var(--surface-container-high))]/20 last:border-0">
                         <td className="py-4">{new Date(r.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US")}</td>
                         <td className="py-4 font-semibold">{r.customers?.name ?? t("walkInCustomer")}</td>
                         <td className="py-4 font-bold text-foreground">{fmt(total)}</td>
                         <td className="py-4 text-right">
-                          <span className={`${s.cls} text-[10px] font-black px-3 py-1 rounded-full uppercase`}>{s.label}</span>
+                          <span className={`${s.cls} text-[10px] font-black px-3 py-1 rounded-full uppercase border`}>{s.label}</span>
                         </td>
                       </tr>
                     );
@@ -368,37 +341,56 @@ export default function Dashboard() {
 
         {/* RIGHT: Quick actions + Top selling */}
         <div className="space-y-5 md:space-y-8">
-          {/* Quick Actions — dark inverse card */}
-          <div className="bg-[hsl(var(--inverse-surface))] p-5 md:p-8 rounded-2xl text-[hsl(var(--inverse-on-surface))] shadow-xl">
-            <h3 className="text-base md:text-lg font-bold mb-4 md:mb-6">{t("quickActions")}</h3>
-            <div className="grid grid-cols-4 lg:grid-cols-2 gap-3 md:gap-4">
-              <QAButton to="/pos" icon={<ScanLine className="h-6 w-6 md:h-7 md:w-7 text-[hsl(var(--primary-fixed))]" />} label={t("scan")} />
-              <QAButton onClick={() => setCustomerSheet(true)} icon={<UserPlus className="h-6 w-6 md:h-7 md:w-7 text-secondary" />} label={t("newCustomerShort")} />
-              <QAButton to="/reports" icon={<TrendingUp className="h-6 w-6 md:h-7 md:w-7 text-[hsl(var(--primary-fixed))]" />} label={t("reports")} />
-              <QAButton to="/installments" icon={<Headset className="h-6 w-6 md:h-7 md:w-7 text-secondary" />} label={t("support")} />
+          {/* Quick Actions — colorful tiles */}
+          <div className="relative bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 dark:from-[hsl(var(--inverse-surface))] dark:via-[hsl(var(--inverse-surface))] dark:to-[hsl(var(--inverse-surface))] p-5 md:p-8 rounded-2xl text-white shadow-xl overflow-hidden">
+            <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-fuchsia-500/20 blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-sky-500/20 blur-3xl pointer-events-none" />
+            <h3 className="relative text-base md:text-lg font-bold mb-4 md:mb-6 flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgb(52,211,153)] animate-pulse" />
+              {t("quickActions")}
+            </h3>
+            <div className="relative grid grid-cols-4 lg:grid-cols-2 gap-3 md:gap-4">
+              <QAButton to="/pos" tone="emerald" icon={<ScanLine className="h-6 w-6 md:h-7 md:w-7" />} label={t("scan")} />
+              <QAButton onClick={() => setCustomerSheet(true)} tone="sky" icon={<UserPlus className="h-6 w-6 md:h-7 md:w-7" />} label={t("newCustomerShort")} />
+              <QAButton to="/reports" tone="amber" icon={<TrendingUp className="h-6 w-6 md:h-7 md:w-7" />} label={t("reports")} />
+              <QAButton to="/installments" tone="fuchsia" icon={<Headset className="h-6 w-6 md:h-7 md:w-7" />} label={t("support")} />
             </div>
           </div>
 
           {/* Top Selling */}
-          <div className="bg-[hsl(var(--surface-container-lowest))] p-5 md:p-8 rounded-2xl">
-            <h3 className="text-base md:text-lg font-bold text-foreground mb-4 md:mb-6">{t("topProducts")}</h3>
-            <div className="space-y-4 md:space-y-6">
-              {topProducts.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">{t("noResults")}</p>}
-              {topProducts.map(p => (
-                <div key={p.name} className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-[hsl(var(--surface-container-low))] rounded-lg flex items-center justify-center shrink-0">
-                    <Package className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">{p.qty} {t("soldQty")}</p>
-                  </div>
-                  <p className="text-sm font-bold text-foreground">{fmt(p.revenue)}</p>
-                </div>
-              ))}
+          <div className="bg-[hsl(var(--surface-container-lowest))] p-5 md:p-8 rounded-2xl border border-[hsl(var(--surface-container-high))]/40">
+            <div className="flex items-center gap-3 mb-4 md:mb-6">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                <Package className="h-5 w-5 text-white" />
+              </div>
+              <h3 className="text-base md:text-lg font-bold text-foreground">{t("topProducts")}</h3>
             </div>
-            <Link to="/products" className="mt-6 w-full inline-flex items-center justify-center text-sm font-bold text-foreground border border-[hsl(var(--surface-container-high))] py-3 rounded-xl hover:bg-[hsl(var(--surface-container-low))] transition-all">
+            <div className="space-y-3 md:space-y-4">
+              {topProducts.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">{t("noResults")}</p>}
+              {topProducts.map((p, i) => {
+                const tones = [
+                  "from-amber-500 to-orange-500 shadow-amber-500/30",
+                  "from-sky-500 to-cyan-500 shadow-sky-500/30",
+                  "from-emerald-500 to-teal-500 shadow-emerald-500/30",
+                ];
+                return (
+                  <div key={p.name} className="group flex items-center gap-3 p-2 rounded-xl hover:bg-[hsl(var(--surface-container-low))] transition-all">
+                    <div className={`relative w-11 h-11 bg-gradient-to-br ${tones[i] ?? tones[0]} rounded-xl flex items-center justify-center shrink-0 shadow-lg group-hover:scale-105 transition-transform`}>
+                      <Package className="h-5 w-5 text-white" />
+                      <span className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-foreground text-background text-[10px] font-black flex items-center justify-center">{i + 1}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{p.name}</p>
+                      <p className="text-xs text-muted-foreground">{p.qty} {t("soldQty")}</p>
+                    </div>
+                    <p className="text-sm font-bold text-foreground">{fmt(p.revenue)}</p>
+                  </div>
+                );
+              })}
+            </div>
+            <Link to="/products" className="group mt-6 w-full inline-flex items-center justify-center gap-2 text-sm font-bold text-foreground border border-[hsl(var(--surface-container-high))] py-3 rounded-xl hover:bg-[hsl(var(--surface-container-low))] hover:border-amber-500/40 transition-all">
               {t("checkInventory")}
+              <span className="transition-transform group-hover:translate-x-0.5">→</span>
             </Link>
           </div>
         </div>
