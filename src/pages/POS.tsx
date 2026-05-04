@@ -169,10 +169,20 @@ export default function POS() {
     const { data: sale, error } = await supabase.from("sales").insert(salePayload).select().single();
     if (error) { toast({ title: error.message, variant: "destructive" }); return; }
 
-    const items = cart.map(i => ({
-      sale_id: sale.id, product_id: i.product.id, product_name: i.product.name,
-      qty: i.qty, unit_price: i.product.price, subtotal: i.product.price * i.qty,
-    }));
+    const items = cart.map(i => {
+      const p: any = i.product;
+      const months = p.has_warranty ? Number(p.warranty_months) || null : null;
+      let warranty_until: string | null = null;
+      if (months) {
+        const d = new Date(); d.setMonth(d.getMonth() + months);
+        warranty_until = d.toISOString().slice(0, 10);
+      }
+      return {
+        sale_id: sale.id, product_id: i.product.id, product_name: i.product.name,
+        qty: i.qty, unit_price: i.product.price, subtotal: i.product.price * i.qty,
+        warranty_months: months, warranty_until,
+      };
+    });
     await supabase.from("sale_items").insert(items);
 
     if (paymentType === "installment" && due > 0) {
