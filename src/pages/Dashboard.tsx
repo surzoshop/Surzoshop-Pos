@@ -412,9 +412,9 @@ function ColorStatCard({ to, theme, icon, chip, label, value, sub }: any) {
         </div>
         <span className={`text-[9px] md:text-[10px] font-bold ${T.chip} px-1.5 md:px-2 py-0.5 md:py-1 rounded-full uppercase tracking-wider whitespace-nowrap`}>{chip}</span>
       </div>
-      <p className="relative text-foreground/80 text-[11px] md:text-xs font-bold truncate uppercase tracking-wide font-bn">{label}</p>
-      <h3 className={`relative text-base md:text-2xl font-extrabold mt-1 text-foreground truncate font-bn transition-colors duration-300 ${T.valueText}`}>{value}</h3>
-      <p className="relative text-[9px] md:text-[11px] text-muted-foreground font-semibold mt-1 md:mt-2 truncate font-bn">{sub}</p>
+      <p className="relative text-foreground/85 text-[13px] md:text-xs font-extrabold md:font-bold truncate uppercase tracking-wide font-bn">{label}</p>
+      <h3 className={`relative text-xl md:text-2xl font-black md:font-extrabold mt-1 text-foreground truncate font-bn transition-colors duration-300 ${T.valueText}`}>{value}</h3>
+      <p className="relative text-[11px] md:text-[11px] text-muted-foreground font-bold md:font-semibold mt-1 md:mt-2 truncate font-bn">{sub}</p>
     </Link>
   );
 }
