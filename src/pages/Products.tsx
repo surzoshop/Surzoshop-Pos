@@ -306,6 +306,8 @@ export default function Products() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AddProductSheet open={addSheet} onOpenChange={setAddSheet} onSaved={load} />
     </div>
   );
 }
