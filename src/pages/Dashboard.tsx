@@ -83,24 +83,24 @@ export default function Dashboard() {
   const maxWeek = Math.max(1, ...weekly.map(d => d.total));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 md:space-y-8">
       {/* Page Header + Quick Actions */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 lg:gap-6">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">{t("dashboardOverview")}</h2>
-          <p className="text-muted-foreground mt-1">{t("dashboardSubtitle")}</p>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{t("dashboardOverview")}</h2>
+          <p className="text-muted-foreground text-sm mt-1">{t("dashboardSubtitle")}</p>
         </div>
-        <div className="flex gap-3 flex-wrap">
-          <button onClick={() => setProductSheet(true)} className="flex items-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-5 py-3 rounded-xl font-semibold shadow-sm hover:bg-[hsl(var(--surface-container))] active:scale-95 transition-all">
-            <PlusCircle className="h-5 w-5 text-primary" />
-            {t("addProduct")}
+        <div className="grid grid-cols-2 lg:flex gap-2 md:gap-3 w-full lg:w-auto">
+          <button onClick={() => setProductSheet(true)} className="flex items-center justify-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-3 md:px-5 py-2.5 md:py-3 rounded-xl font-semibold shadow-sm hover:bg-[hsl(var(--surface-container))] active:scale-95 transition-all text-xs md:text-sm">
+            <PlusCircle className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+            <span className="truncate">{t("addProduct")}</span>
           </button>
-          <button onClick={() => setCustomerSheet(true)} className="flex items-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-5 py-3 rounded-xl font-semibold shadow-sm hover:bg-[hsl(var(--surface-container))] active:scale-95 transition-all">
-            <UserPlus className="h-5 w-5 text-info" />
-            {t("addCustomer")}
+          <button onClick={() => setCustomerSheet(true)} className="flex items-center justify-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-3 md:px-5 py-2.5 md:py-3 rounded-xl font-semibold shadow-sm hover:bg-[hsl(var(--surface-container))] active:scale-95 transition-all text-xs md:text-sm">
+            <UserPlus className="h-4 w-4 md:h-5 md:w-5 text-info" />
+            <span className="truncate">{t("addCustomer")}</span>
           </button>
-          <Link to="/pos" className="flex items-center gap-2 gradient-primary text-primary-foreground px-6 py-3 rounded-xl font-bold shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.4)] hover:brightness-110 active:scale-95 transition-all">
-            <ShoppingBag className="h-5 w-5" />
+          <Link to="/pos" className="col-span-2 flex items-center justify-center gap-2 gradient-primary text-primary-foreground px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-bold shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.4)] hover:brightness-110 active:scale-95 transition-all text-xs md:text-sm">
+            <ShoppingBag className="h-4 w-4 md:h-5 md:w-5" />
             {t("newSale")}
           </Link>
         </div>
@@ -108,6 +108,36 @@ export default function Dashboard() {
 
       {/* Stats Bento Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+        <StatCard
+          to="/sales"
+          icon={<Calendar className="h-4 w-4 md:h-6 md:w-6 text-primary" />}
+          iconBg="bg-primary/10"
+          chip={`${salesTrend >= 0 ? "+" : ""}${salesTrend}%`}
+          chipClass="text-primary bg-primary/10"
+          label={t("todaySales")}
+          value={fmt(stats.todaySales)}
+          sub={t("increaseFromYesterday")}
+        />
+        <StatCard
+          to="/reports"
+          icon={<Wallet className="h-4 w-4 md:h-6 md:w-6 text-[hsl(var(--secondary-foreground))]" />}
+          iconBg="bg-secondary/30"
+          chip={t("monthTarget")}
+          chipClass="text-[hsl(var(--secondary-foreground))] bg-secondary/30"
+          label={t("totalRevenue")}
+          value={fmt(stats.monthSales)}
+          sub={t("monthlyProfit")}
+        />
+        <StatCard
+          to="/sales"
+          icon={<ShoppingBag className="h-4 w-4 md:h-6 md:w-6 text-info" />}
+          iconBg="bg-info/10"
+          chip={`${stats.todayCount} ${t("newOrders")}`}
+          chipClass="text-info bg-info/10"
+          label={t("orderCount")}
+          value={`${stats.orderCount}`}
+          sub={`${t("deliveredToday")}: ${stats.deliveredToday}`}
+        />
         <StatCard
           to="/sales"
           icon={<Calendar className="h-6 w-6 text-primary" />}
