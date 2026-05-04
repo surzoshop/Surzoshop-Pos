@@ -154,15 +154,16 @@ export default function Shops() {
             const active = currentShop?.id === s.id;
             const st = stats[s.id] ?? { totalSales: 0, totalDue: 0, totalPaid: 0, salesCount: 0, installmentCount: 0, pendingInstallments: 0, totalExpenses: 0, productCount: 0 } as ShopStats;
             return (
-              <Card key={s.id} className={`p-5 transition-all ${active ? "ring-2 ring-primary shadow-lg" : ""}`}>
+              <Card key={s.id} className={`group relative overflow-hidden p-5 border border-[hsl(var(--border))] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg ${active ? "border-[hsl(var(--primary)/0.45)] shadow-md" : "hover:border-[hsl(var(--primary)/0.22)]"}`}>
+                <span className="absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-[linear-gradient(180deg,hsl(var(--primary-glow)),hsl(var(--primary)))] opacity-80 transition-all duration-300 group-hover:top-0 group-hover:bottom-0 group-hover:opacity-100" />
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Store className="h-6 w-6 text-primary" />
+                    <div className="h-12 w-12 rounded-xl bg-[linear-gradient(135deg,hsl(var(--primary-glow)),hsl(var(--primary)))] text-[hsl(var(--primary-foreground))] flex items-center justify-center shadow-lg shadow-[hsl(var(--primary)/0.22)] transition-all duration-300 group-hover:scale-110 group-hover:-rotate-3 group-active:scale-95">
+                      <Store className="h-6 w-6" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-lg">{s.name}</h3>
-                      <p className="text-xs text-muted-foreground">{s.address || "—"}</p>
+                      <h3 className="font-extrabold text-lg text-foreground font-bn">{s.name}</h3>
+                      <p className="text-xs font-medium text-muted-foreground">{s.address || "—"}</p>
                     </div>
                   </div>
                   {active && <StatusPill tone="success">Active</StatusPill>}
@@ -182,12 +183,12 @@ export default function Shops() {
                     size="sm"
                     variant={active ? "secondary" : "default"}
                     onClick={() => setCurrentShopId(s.id)}
-                    className="flex-1"
+                    className="flex-1 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
                   >
                     <ArrowRightCircle className="h-4 w-4 mr-1" />
                     {active ? "Selected" : "Switch"}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => setOpenStaff(s.id)}>
+                  <Button size="sm" variant="outline" onClick={() => setOpenStaff(s.id)} className="transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]">
                     <Users className="h-4 w-4 mr-1" /> Staff
                   </Button>
                 </div>
