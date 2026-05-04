@@ -29,7 +29,7 @@ export default function AppLayout() {
       <AppMobileHeader />
 
       {/* Desktop / tablet Top App Bar — glassmorphic */}
-      <header className="hidden md:flex fixed top-0 right-0 left-64 h-16 glass z-30 justify-between items-center px-8 shadow-[0_10px_40px_-10px_hsl(var(--foreground)/0.06)]">
+      <header className="hidden md:flex fixed top-0 right-0 left-72 h-16 glass z-30 justify-between items-center px-8 shadow-[0_10px_40px_-10px_hsl(var(--foreground)/0.06)]">
         <div className="flex items-center flex-1 gap-2">
           <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -106,7 +106,7 @@ export default function AppLayout() {
       </header>
 
       {/* Main canvas */}
-      <main className="md:ml-64 pt-14 md:pt-16 pb-24 md:pb-0 min-h-screen">
+      <main className="md:ml-72 pt-14 md:pt-16 pb-24 md:pb-0 min-h-screen">
         <div className="px-3 md:px-8 py-4 md:py-8 animate-fade-in">
           <Outlet />
         </div>
