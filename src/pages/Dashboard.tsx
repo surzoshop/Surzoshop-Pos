@@ -107,7 +107,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Bento Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         <StatCard
           to="/sales"
           icon={<Calendar className="h-6 w-6 text-primary" />}
@@ -138,20 +138,20 @@ export default function Dashboard() {
           value={`${stats.orderCount}`}
           sub={`${t("deliveredToday")}: ${stats.deliveredToday}`}
         />
-        <Link to="/products" className="bg-secondary/20 p-6 rounded-2xl transition-all hover:-translate-y-1 border-l-4 border-secondary block">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-secondary text-[hsl(var(--secondary-foreground))] rounded-xl">
-              <AlertTriangle className="h-6 w-6" />
+        <Link to="/products" className="bg-secondary/20 p-3 md:p-6 rounded-2xl transition-all hover:-translate-y-1 border-l-4 border-secondary block">
+          <div className="flex justify-between items-start mb-3 md:mb-4">
+            <div className="p-2 md:p-3 bg-secondary text-[hsl(var(--secondary-foreground))] rounded-xl">
+              <AlertTriangle className="h-4 w-4 md:h-6 md:w-6" />
             </div>
-            <span className="text-xs font-bold text-[hsl(var(--secondary-foreground))] bg-secondary px-2 py-1 rounded">
+            <span className="text-[9px] md:text-xs font-bold text-[hsl(var(--secondary-foreground))] bg-secondary px-1.5 md:px-2 py-0.5 md:py-1 rounded">
               {t("urgent")}
             </span>
           </div>
-          <p className="text-muted-foreground text-sm font-medium">{t("lowStockTitle")}</p>
-          <h3 className="text-2xl font-bold mt-1 text-[hsl(var(--secondary-foreground))]">
+          <p className="text-muted-foreground text-[11px] md:text-sm font-medium truncate">{t("lowStockTitle")}</p>
+          <h3 className="text-base md:text-2xl font-bold mt-1 text-[hsl(var(--secondary-foreground))]">
             {String(stats.lowStockCount).padStart(2, "0")} {t("productsLow")}
           </h3>
-          <p className="text-[10px] text-[hsl(var(--secondary-foreground))]/70 mt-2">{t("needsRefill")}</p>
+          <p className="text-[9px] md:text-[10px] text-[hsl(var(--secondary-foreground))]/70 mt-1 md:mt-2 truncate">{t("needsRefill")}</p>
         </Link>
       </div>
 
@@ -289,14 +289,14 @@ export default function Dashboard() {
 
 function StatCard({ to, icon, iconBg, chip, chipClass, label, value, sub }: any) {
   return (
-    <Link to={to ?? "#"} className="bg-[hsl(var(--surface-container-lowest))] p-6 rounded-2xl transition-all hover:-translate-y-1 block hover:shadow-lg">
-      <div className="flex justify-between items-start mb-4">
-        <div className={`p-3 ${iconBg} rounded-xl`}>{icon}</div>
-        <span className={`text-xs font-bold ${chipClass} px-2 py-1 rounded`}>{chip}</span>
+    <Link to={to ?? "#"} className="bg-[hsl(var(--surface-container-lowest))] p-3 md:p-6 rounded-2xl transition-all hover:-translate-y-1 block hover:shadow-lg">
+      <div className="flex justify-between items-start mb-3 md:mb-4">
+        <div className={`p-2 md:p-3 ${iconBg} rounded-xl`}>{icon}</div>
+        <span className={`text-[9px] md:text-xs font-bold ${chipClass} px-1.5 md:px-2 py-0.5 md:py-1 rounded`}>{chip}</span>
       </div>
-      <p className="text-muted-foreground text-sm font-medium">{label}</p>
-      <h3 className="text-2xl font-bold mt-1 text-foreground">{value}</h3>
-      <p className="text-[10px] text-muted-foreground mt-2">{sub}</p>
+      <p className="text-muted-foreground text-[11px] md:text-sm font-medium truncate">{label}</p>
+      <h3 className="text-base md:text-2xl font-bold mt-1 text-foreground truncate">{value}</h3>
+      <p className="text-[9px] md:text-[10px] text-muted-foreground mt-1 md:mt-2 truncate">{sub}</p>
     </Link>
   );
 }
