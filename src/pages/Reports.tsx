@@ -727,10 +727,10 @@ function Kpi({ tone, icon, label, value, sub }: any) {
   );
 }
 
-function Section({ open, toggle, title, accent, children, onPrint, onCsv }: any) {
+function Section({ open, toggle, title, accent, children, onPrint, onCsv, printTarget }: any) {
   const T = TONES[accent] ?? TONES.violet;
   return (
-    <div className="section-card bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--border))] rounded-2xl overflow-hidden">
+    <div data-print-section={printTarget} className="section-card bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--border))] rounded-2xl overflow-hidden">
       <div className="flex items-center justify-between gap-3 px-4 md:px-6 py-3 md:py-4 border-b border-[hsl(var(--border))]">
         <button onClick={toggle} className="flex items-center gap-3 text-left flex-1 min-w-0">
           <span className={`h-8 w-1.5 rounded-full ${T.bar}`} />
