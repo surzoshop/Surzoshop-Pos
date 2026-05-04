@@ -44,37 +44,47 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
 
   const content = (
     <>
-      {/* Brand + current shop */}
-      <div className="px-6 pt-6 pb-5 border-b border-[hsl(var(--surface-container-high))] flex items-start justify-between">
-        <div>
-          <h1 className="text-lg font-black text-foreground leading-tight">{t("appName")}</h1>
-          <p className="text-[10px] text-muted-foreground tracking-[0.2em] uppercase mt-1">
+      {/* Brand — height matches top app bar (h-16) so the bottom border lines up with search bar's border */}
+      <div className="h-16 px-6 border-b border-[hsl(var(--surface-container-high))] flex items-center justify-between shrink-0">
+        <div className="min-w-0">
+          <h1 className="text-lg font-black text-foreground leading-tight truncate">{t("appName")}</h1>
+          <p className="text-[9px] text-muted-foreground tracking-[0.2em] uppercase leading-tight">
             {isSuperAdmin ? "Super Admin" : "Staff Terminal"}
           </p>
-          {currentShop && (
-            <div className="mt-3 flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
-              <Store className="h-4 w-4 text-primary shrink-0" />
-              <span className="text-xs font-bold text-foreground truncate">{currentShop.name}</span>
-            </div>
-          )}
         </div>
-        <button onClick={onCloseMobile} className="md:hidden p-2 -mr-2 -mt-1 rounded-lg hover:bg-muted text-muted-foreground" aria-label="Close menu">
+        <button onClick={onCloseMobile} className="md:hidden p-2 -mr-2 rounded-lg hover:bg-muted text-muted-foreground" aria-label="Close menu">
           <X className="h-5 w-5" />
         </button>
       </div>
+
+      {/* Current shop badge — moved out of brand block */}
+      {currentShop && (
+        <div className="px-4 pt-4">
+          <div className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
+            <Store className="h-4 w-4 text-primary shrink-0" />
+            <span className="text-xs font-bold text-foreground truncate">{currentShop.name}</span>
+          </div>
+        </div>
+      )}
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
         {isSuperAdmin && (
           <NavLink
             to="/shops"
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-150 text-[15px] mb-1 ${
+            className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-[15px] mb-1 ${
               pathname === "/shops"
                 ? "bg-primary text-primary-foreground font-extrabold shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.5)]"
-                : "text-foreground/85 font-bold hover:bg-primary/10 hover:text-primary"
+                : "text-foreground/85 font-bold hover:bg-primary/10 hover:text-primary hover:translate-x-0.5"
             }`}
           >
-            <Store className={`h-5 w-5 shrink-0 ${pathname === "/shops" ? "" : "text-primary"}`} />
+            <span className={`shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-lg transition-all duration-300 ${
+              pathname === "/shops"
+                ? "bg-[hsl(var(--primary-foreground)/0.18)]"
+                : "bg-primary/10 text-primary group-hover:bg-[linear-gradient(135deg,hsl(var(--primary-glow)),hsl(var(--primary)))] group-hover:text-[hsl(var(--primary-foreground))] group-hover:scale-110 group-hover:-rotate-6 group-hover:shadow-[0_6px_16px_-6px_hsl(var(--primary)/0.5)]"
+            }`}>
+              <Store className="h-[18px] w-[18px] transition-transform duration-300 group-hover:scale-110" />
+            </span>
             <span className="truncate">Multiple Shops</span>
           </NavLink>
         )}
@@ -86,19 +96,25 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
             <div key={item.url}>
               <NavLink
                 to={item.url}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-150 text-[15px] ${
+                className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-[15px] ${
                   active
                     ? "bg-primary text-primary-foreground font-extrabold shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.5)]"
-                    : "text-foreground/85 font-bold hover:bg-primary/10 hover:text-primary"
+                    : "text-foreground/85 font-bold hover:bg-primary/10 hover:text-primary hover:translate-x-0.5"
                 }`}
               >
-                <item.icon className={`h-5 w-5 shrink-0 ${active ? "" : "text-primary"}`} />
+                <span className={`shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-lg transition-all duration-300 ${
+                  active
+                    ? "bg-[hsl(var(--primary-foreground)/0.18)]"
+                    : "bg-primary/10 text-primary group-hover:bg-[linear-gradient(135deg,hsl(var(--primary-glow)),hsl(var(--primary)))] group-hover:text-[hsl(var(--primary-foreground))] group-hover:scale-110 group-hover:-rotate-6 group-hover:shadow-[0_6px_16px_-6px_hsl(var(--primary)/0.5)]"
+                }`}>
+                  <item.icon className="h-[18px] w-[18px] transition-transform duration-300 group-hover:scale-110" />
+                </span>
                 <span className="truncate">{item.label}</span>
               </NavLink>
               {isProducts && productsActive && (
                 <NavLink
                   to="/products/barcodes"
-                  className={`flex items-center gap-2 ml-9 mt-1 px-3 py-1.5 rounded-lg text-[12px] transition-all ${
+                  className={`flex items-center gap-2 ml-11 mt-1 px-3 py-1.5 rounded-lg text-[12px] transition-all ${
                     pathname === "/products/barcodes"
                       ? "bg-primary/15 text-primary font-bold"
                       : "text-foreground/70 hover:text-primary hover:bg-primary/5"
@@ -113,13 +129,19 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
         })}
         <NavLink
           to="/scanner"
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-150 text-[15px] ${
+          className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-[15px] ${
             pathname === "/scanner"
               ? "bg-primary text-primary-foreground font-extrabold shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.5)]"
-              : "text-foreground/85 font-bold hover:bg-primary/10 hover:text-primary"
+              : "text-foreground/85 font-bold hover:bg-primary/10 hover:text-primary hover:translate-x-0.5"
           }`}
         >
-          <Smartphone className={`h-5 w-5 shrink-0 ${pathname === "/scanner" ? "" : "text-primary"}`} />
+          <span className={`shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-lg transition-all duration-300 ${
+            pathname === "/scanner"
+              ? "bg-[hsl(var(--primary-foreground)/0.18)]"
+              : "bg-primary/10 text-primary group-hover:bg-[linear-gradient(135deg,hsl(var(--primary-glow)),hsl(var(--primary)))] group-hover:text-[hsl(var(--primary-foreground))] group-hover:scale-110 group-hover:-rotate-6 group-hover:shadow-[0_6px_16px_-6px_hsl(var(--primary)/0.5)]"
+          }`}>
+            <Smartphone className="h-[18px] w-[18px] transition-transform duration-300 group-hover:scale-110" />
+          </span>
           <span className="truncate">Scanner App</span>
         </NavLink>
       </nav>
