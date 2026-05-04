@@ -210,8 +210,8 @@ export default function POS() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-[calc(100vh-8rem)]">
-      <section className="lg:col-span-3 flex flex-col gap-4 min-h-0">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:h-[calc(100vh-8rem)]">
+      <section className="lg:col-span-3 flex flex-col gap-4 lg:min-h-0">
         <div className="bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-4 shadow-sm space-y-3">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
