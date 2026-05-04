@@ -30,6 +30,7 @@ export default function Products() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
+  const [addSheet, setAddSheet] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [newCat, setNewCat] = useState("");
   const isAdmin = role === "admin";
@@ -48,7 +49,7 @@ export default function Products() {
   useEffect(() => { load(); }, []);
 
   const startEdit = (p: any) => { setEditing(p); setForm({ ...p, category_id: p.category_id ?? "", image_url: p.image_url ?? "" }); setOpen(true); };
-  const startNew = () => { setEditing(null); setForm(empty); setOpen(true); };
+  const startNew = () => { setAddSheet(true); };
 
   const save = async () => {
     if (!form.name?.trim()) return toast({ title: "নাম দিন", variant: "destructive" });
