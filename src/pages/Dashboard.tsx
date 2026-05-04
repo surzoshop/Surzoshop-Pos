@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import {
   Calendar, Wallet, ShoppingBag, AlertTriangle, PlusCircle, ScanLine,
-  UserPlus, TrendingUp, Headset, Package,
+  UserPlus, TrendingUp, Headset, Package, Users, Boxes, CircleDollarSign,
 } from "lucide-react";
 import { AddProductSheet } from "@/components/AddProductSheet";
 import { AddCustomerSheet } from "@/components/AddCustomerSheet";
@@ -14,6 +14,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState({
     todaySales: 0, todayCount: 0, monthSales: 0, monthProfit: 0,
     orderCount: 0, deliveredToday: 0, lowStockCount: 0,
+    totalProducts: 0, stockValue: 0, totalCustomers: 0, totalDue: 0,
   });
   const [weekly, setWeekly] = useState<{ day: string; total: number }[]>([]);
   const [topProducts, setTopProducts] = useState<{ name: string; qty: number; revenue: number }[]>([]);
@@ -31,7 +32,7 @@ export default function Dashboard() {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const weekStart = new Date(today); weekStart.setDate(weekStart.getDate() - 6);
 
-    const [salesToday, salesYest, salesMonth, salesWeek, itemsMonth, items30, lowStockData, recentSales] = await Promise.all([
+    const [salesToday, salesYest, salesMonth, salesWeek, itemsMonth, items30, lowStockData, recentSales, productsAll, customersCount, duesData] = await Promise.all([
       supabase.from("sales").select("total,due").gte("created_at", today.toISOString()),
       supabase.from("sales").select("total").gte("created_at", yest.toISOString()).lt("created_at", today.toISOString()),
       supabase.from("sales").select("total").gte("created_at", monthStart.toISOString()),
@@ -40,6 +41,9 @@ export default function Dashboard() {
       supabase.from("sale_items").select("product_name,qty,subtotal,sales!inner(created_at)").gte("sales.created_at", weekStart.toISOString()),
       supabase.from("products").select("id", { count: "exact", head: true }).lte("stock", 5),
       supabase.from("sales").select("id,invoice_no,total,due,created_at,customers(name)").order("created_at", { ascending: false }).limit(4),
+      supabase.from("products").select("stock,cost", { count: "exact" }).eq("is_active", true),
+      supabase.from("customers").select("id", { count: "exact", head: true }),
+      supabase.from("sales").select("due").gt("due", 0),
     ]);
 
     const todayTotal = (salesToday.data ?? []).reduce((a, b) => a + Number(b.total), 0);
@@ -71,12 +75,18 @@ export default function Dashboard() {
     });
     setTopProducts([...map.entries()].map(([name, v]) => ({ name, ...v })).sort((a, b) => b.qty - a.qty).slice(0, 3));
     setRecent(recentSales.data ?? []);
+    const stockValue = (productsAll.data ?? []).reduce((a: number, p: any) => a + Number(p.stock) * Number(p.cost), 0);
+    const totalDue = (duesData.data ?? []).reduce((a: number, d: any) => a + Number(d.due), 0);
     setStats({
       todaySales: todayTotal, todayCount: salesToday.data?.length ?? 0,
       monthSales, monthProfit,
       orderCount: salesMonth.data?.length ?? 0,
       deliveredToday: salesToday.data?.length ?? 0,
       lowStockCount: lowStockData.count ?? 0,
+      totalProducts: productsAll.count ?? 0,
+      stockValue,
+      totalCustomers: customersCount.count ?? 0,
+      totalDue,
     });
   };
 
@@ -91,23 +101,24 @@ export default function Dashboard() {
           <p className="text-muted-foreground text-sm mt-1">{t("dashboardSubtitle")}</p>
         </div>
         <div className="grid grid-cols-2 lg:flex gap-2 md:gap-3 w-full lg:w-auto">
-          <button onClick={() => setProductSheet(true)} className="flex items-center justify-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-3 md:px-5 py-2.5 md:py-3 rounded-xl font-semibold shadow-sm hover:bg-[hsl(var(--surface-container))] active:scale-95 transition-all text-xs md:text-sm">
-            <PlusCircle className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+          <button onClick={() => setProductSheet(true)} className="group relative overflow-hidden flex items-center justify-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-3 md:px-5 py-2.5 md:py-3 rounded-xl font-semibold shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-300 text-xs md:text-sm border border-transparent hover:border-primary/30">
+            <PlusCircle className="h-4 w-4 md:h-5 md:w-5 text-primary transition-transform duration-300 group-hover:rotate-90" />
             <span className="truncate">{t("addProduct")}</span>
           </button>
-          <button onClick={() => setCustomerSheet(true)} className="flex items-center justify-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-3 md:px-5 py-2.5 md:py-3 rounded-xl font-semibold shadow-sm hover:bg-[hsl(var(--surface-container))] active:scale-95 transition-all text-xs md:text-sm">
-            <UserPlus className="h-4 w-4 md:h-5 md:w-5 text-info" />
+          <button onClick={() => setCustomerSheet(true)} className="group relative overflow-hidden flex items-center justify-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-3 md:px-5 py-2.5 md:py-3 rounded-xl font-semibold shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-300 text-xs md:text-sm border border-transparent hover:border-info/30">
+            <UserPlus className="h-4 w-4 md:h-5 md:w-5 text-info transition-transform duration-300 group-hover:scale-110" />
             <span className="truncate">{t("addCustomer")}</span>
           </button>
-          <Link to="/pos" className="col-span-2 flex items-center justify-center gap-2 gradient-primary text-primary-foreground px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-bold shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.4)] hover:brightness-110 active:scale-95 transition-all text-xs md:text-sm">
-            <ShoppingBag className="h-4 w-4 md:h-5 md:w-5" />
+          <Link to="/pos" className="group relative overflow-hidden col-span-2 flex items-center justify-center gap-2 gradient-primary text-primary-foreground px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-bold shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.5)] hover:shadow-[0_15px_40px_-10px_hsl(var(--primary)/0.7)] hover:-translate-y-0.5 hover:brightness-110 active:scale-95 transition-all duration-300 text-xs md:text-sm">
+            <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+            <ShoppingBag className="h-4 w-4 md:h-5 md:w-5 transition-transform duration-300 group-hover:scale-110" />
             {t("newSale")}
           </Link>
         </div>
       </div>
 
       {/* Stats Bento Grid */}
-      <div className="grid grid-cols-2 gap-3 md:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
         <StatCard
           to="/sales"
           icon={<Calendar className="h-4 w-4 md:h-6 md:w-6 text-primary" />}
@@ -138,8 +149,7 @@ export default function Dashboard() {
           value={`${stats.orderCount}`}
           sub={`${t("deliveredToday")}: ${stats.deliveredToday}`}
         />
-        
-        <Link to="/products" className="bg-secondary/20 p-3 md:p-6 rounded-2xl transition-all hover:-translate-y-1 border-l-4 border-secondary block">
+        <Link to="/products" className="bg-secondary/20 p-3 md:p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border-l-4 border-secondary block">
           <div className="flex justify-between items-start mb-3 md:mb-4">
             <div className="p-2 md:p-3 bg-secondary text-[hsl(var(--secondary-foreground))] rounded-xl">
               <AlertTriangle className="h-4 w-4 md:h-6 md:w-6" />
@@ -153,6 +163,51 @@ export default function Dashboard() {
             {String(stats.lowStockCount).padStart(2, "0")} {t("productsLow")}
           </h3>
           <p className="text-[9px] md:text-[10px] text-[hsl(var(--secondary-foreground))]/70 mt-1 md:mt-2 truncate">{t("needsRefill")}</p>
+        </Link>
+
+        {/* Row 2 — extended insights */}
+        <StatCard
+          to="/products"
+          icon={<Boxes className="h-4 w-4 md:h-6 md:w-6 text-primary" />}
+          iconBg="bg-primary/10"
+          chip={t("info")}
+          chipClass="text-primary bg-primary/10"
+          label={t("totalProducts")}
+          value={`${stats.totalProducts}`}
+          sub={t("activeItems")}
+        />
+        <StatCard
+          to="/products"
+          icon={<Package className="h-4 w-4 md:h-6 md:w-6 text-info" />}
+          iconBg="bg-info/10"
+          chip={t("live")}
+          chipClass="text-info bg-info/10"
+          label={t("stockValue")}
+          value={fmt(stats.stockValue)}
+          sub={t("inventoryWorth")}
+        />
+        <StatCard
+          to="/customers"
+          icon={<Users className="h-4 w-4 md:h-6 md:w-6 text-[hsl(var(--secondary-foreground))]" />}
+          iconBg="bg-secondary/30"
+          chip={t("growth")}
+          chipClass="text-[hsl(var(--secondary-foreground))] bg-secondary/30"
+          label={t("totalCustomers")}
+          value={`${stats.totalCustomers}`}
+          sub={t("registeredBuyers")}
+        />
+        <Link to="/installments" className="bg-destructive/10 p-3 md:p-6 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg border-l-4 border-destructive block">
+          <div className="flex justify-between items-start mb-3 md:mb-4">
+            <div className="p-2 md:p-3 bg-destructive/20 text-destructive rounded-xl">
+              <CircleDollarSign className="h-4 w-4 md:h-6 md:w-6" />
+            </div>
+            <span className="text-[9px] md:text-xs font-bold text-destructive bg-destructive/20 px-1.5 md:px-2 py-0.5 md:py-1 rounded">
+              {t("urgent")}
+            </span>
+          </div>
+          <p className="text-muted-foreground text-[11px] md:text-sm font-medium truncate">{t("pendingDue")}</p>
+          <h3 className="text-base md:text-2xl font-bold mt-1 text-destructive truncate">{fmt(stats.totalDue)}</h3>
+          <p className="text-[9px] md:text-[10px] text-destructive/70 mt-1 md:mt-2 truncate">{t("uncollected")}</p>
         </Link>
       </div>
 
@@ -333,19 +388,13 @@ function StatCard({ to, icon, iconBg, chip, chipClass, label, value, sub }: any)
 }
 
 function QAButton({ to, onClick, icon, label }: any) {
-  const cls = "bg-white/10 hover:bg-white/20 p-3 md:p-4 rounded-xl flex flex-col items-center gap-1.5 md:gap-2 transition-all";
-  if (onClick) {
-    return (
-      <button onClick={onClick} className={cls}>
-        {icon}
-        <span className="text-[10px] md:text-xs font-medium text-center leading-tight">{label}</span>
-      </button>
-    );
-  }
-  return (
-    <Link to={to} className={cls}>
-      {icon}
+  const cls = "group bg-white/10 hover:bg-white/20 p-3 md:p-4 rounded-xl flex flex-col items-center gap-1.5 md:gap-2 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:scale-95 border border-white/5 hover:border-white/20";
+  const inner = (
+    <>
+      <div className="transition-transform duration-300 group-hover:scale-110">{icon}</div>
       <span className="text-[10px] md:text-xs font-medium text-center leading-tight">{label}</span>
-    </Link>
+    </>
   );
+  if (onClick) return <button onClick={onClick} className={cls}>{inner}</button>;
+  return <Link to={to} className={cls}>{inner}</Link>;
 }
