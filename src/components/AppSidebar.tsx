@@ -148,7 +148,7 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
   return (
     <>
       {/* Desktop */}
-      <aside className="hidden md:flex fixed left-0 top-0 h-screen w-64 bg-[hsl(var(--sidebar-background,var(--surface-container-lowest)))] flex-col z-40 shadow-[0_10px_40px_-10px_hsl(var(--foreground)/0.08)] border-r border-[hsl(var(--surface-container-high))]">
+      <aside className="hidden md:flex fixed left-0 top-0 h-screen w-72 bg-[hsl(var(--sidebar-background,var(--surface-container-lowest)))] flex-col z-40 shadow-[0_10px_40px_-10px_hsl(var(--foreground)/0.08)] border-r border-[hsl(var(--surface-container-high))]">
         {content}
       </aside>
 
