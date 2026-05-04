@@ -100,19 +100,56 @@ export default function Dashboard() {
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{t("dashboardOverview")}</h2>
           <p className="text-muted-foreground text-sm mt-1">{t("dashboardSubtitle")}</p>
         </div>
-        <div className="grid grid-cols-2 lg:flex gap-2 md:gap-3 w-full lg:w-auto">
-          <button onClick={() => setProductSheet(true)} className="group relative overflow-hidden flex items-center justify-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-3 md:px-5 py-2.5 md:py-3 rounded-xl font-semibold shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-300 text-xs md:text-sm border border-transparent hover:border-primary/30">
-            <PlusCircle className="h-4 w-4 md:h-5 md:w-5 text-primary transition-transform duration-300 group-hover:rotate-90" />
-            <span className="truncate">{t("addProduct")}</span>
+        <div className="grid grid-cols-2 lg:flex gap-2.5 md:gap-3 w-full lg:w-auto">
+          {/* Add Product — emerald accent */}
+          <button
+            onClick={() => setProductSheet(true)}
+            className="group relative overflow-hidden flex items-center justify-center gap-2 pl-4 pr-3 md:pl-5 md:pr-5 py-2.5 md:py-3 rounded-xl font-semibold text-xs md:text-sm
+              bg-gradient-to-br from-[hsl(var(--surface-container-lowest))] to-[hsl(var(--surface-container-low))]
+              text-foreground border border-[hsl(var(--surface-container-high))]
+              shadow-[0_1px_2px_rgba(0,0,0,0.04),inset_3px_0_0_hsl(var(--primary))]
+              hover:shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.35),inset_4px_0_0_hsl(var(--primary))]
+              hover:-translate-y-0.5 hover:border-primary/30 active:translate-y-0 active:scale-[0.98]
+              transition-all duration-300 ease-out"
+          >
+            <span className="absolute inset-y-0 left-0 w-0 bg-primary/5 group-hover:w-full transition-all duration-500 ease-out" />
+            <span className="relative flex items-center justify-center h-7 w-7 rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors duration-300">
+              <PlusCircle className="h-4 w-4 text-primary transition-transform duration-500 group-hover:rotate-180" />
+            </span>
+            <span className="relative truncate">{t("addProduct")}</span>
           </button>
-          <button onClick={() => setCustomerSheet(true)} className="group relative overflow-hidden flex items-center justify-center gap-2 bg-[hsl(var(--surface-container-lowest))] text-foreground px-3 md:px-5 py-2.5 md:py-3 rounded-xl font-semibold shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all duration-300 text-xs md:text-sm border border-transparent hover:border-info/30">
-            <UserPlus className="h-4 w-4 md:h-5 md:w-5 text-info transition-transform duration-300 group-hover:scale-110" />
-            <span className="truncate">{t("addCustomer")}</span>
+
+          {/* Add Customer — info accent */}
+          <button
+            onClick={() => setCustomerSheet(true)}
+            className="group relative overflow-hidden flex items-center justify-center gap-2 pl-4 pr-3 md:pl-5 md:pr-5 py-2.5 md:py-3 rounded-xl font-semibold text-xs md:text-sm
+              bg-gradient-to-br from-[hsl(var(--surface-container-lowest))] to-[hsl(var(--surface-container-low))]
+              text-foreground border border-[hsl(var(--surface-container-high))]
+              shadow-[0_1px_2px_rgba(0,0,0,0.04),inset_3px_0_0_hsl(var(--info))]
+              hover:shadow-[0_8px_20px_-8px_hsl(var(--info)/0.35),inset_4px_0_0_hsl(var(--info))]
+              hover:-translate-y-0.5 hover:border-info/30 active:translate-y-0 active:scale-[0.98]
+              transition-all duration-300 ease-out"
+          >
+            <span className="absolute inset-y-0 left-0 w-0 bg-info/5 group-hover:w-full transition-all duration-500 ease-out" />
+            <span className="relative flex items-center justify-center h-7 w-7 rounded-lg bg-info/10 group-hover:bg-info/15 transition-colors duration-300">
+              <UserPlus className="h-4 w-4 text-info transition-transform duration-300 group-hover:scale-110" />
+            </span>
+            <span className="relative truncate">{t("addCustomer")}</span>
           </button>
-          <Link to="/pos" className="group relative overflow-hidden col-span-2 flex items-center justify-center gap-2 gradient-primary text-primary-foreground px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-bold shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.5)] hover:shadow-[0_15px_40px_-10px_hsl(var(--primary)/0.7)] hover:-translate-y-0.5 hover:brightness-110 active:scale-95 transition-all duration-300 text-xs md:text-sm">
-            <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-            <ShoppingBag className="h-4 w-4 md:h-5 md:w-5 transition-transform duration-300 group-hover:scale-110" />
-            {t("newSale")}
+
+          {/* New Sale — primary CTA */}
+          <Link
+            to="/pos"
+            className="group relative overflow-hidden col-span-2 flex items-center justify-center gap-2 px-5 md:px-6 py-2.5 md:py-3 rounded-xl font-bold text-xs md:text-sm
+              gradient-primary text-primary-foreground border border-white/10
+              shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.55),inset_0_1px_0_rgba(255,255,255,0.2)]
+              hover:shadow-[0_18px_40px_-12px_hsl(var(--primary)/0.75),inset_0_1px_0_rgba(255,255,255,0.3)]
+              hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]
+              transition-all duration-300 ease-out"
+          >
+            <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+            <ShoppingBag className="relative h-4 w-4 md:h-5 md:w-5 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6" />
+            <span className="relative">{t("newSale")}</span>
           </Link>
         </div>
       </div>
