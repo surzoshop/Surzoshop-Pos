@@ -107,7 +107,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Bento Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+      <div className="grid grid-cols-1 gap-3 md:gap-6">
         <StatCard
           to="/sales"
           icon={<Calendar className="h-4 w-4 md:h-6 md:w-6 text-primary" />}
