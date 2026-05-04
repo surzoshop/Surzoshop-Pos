@@ -384,15 +384,15 @@ export default function Dashboard() {
   );
 }
 
-const THEMES: Record<string, { icon: string; chip: string; accent: string }> = {
-  emerald: { icon: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10", chip: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300", accent: "hover:border-emerald-500/40" },
-  violet:  { icon: "text-violet-600 dark:text-violet-400 bg-violet-500/10",   chip: "bg-violet-500/10 text-violet-700 dark:text-violet-300",   accent: "hover:border-violet-500/40" },
-  sky:     { icon: "text-sky-600 dark:text-sky-400 bg-sky-500/10",            chip: "bg-sky-500/10 text-sky-700 dark:text-sky-300",            accent: "hover:border-sky-500/40" },
-  amber:   { icon: "text-amber-600 dark:text-amber-400 bg-amber-500/10",      chip: "bg-amber-500/10 text-amber-700 dark:text-amber-300",      accent: "hover:border-amber-500/40" },
-  indigo:  { icon: "text-indigo-600 dark:text-indigo-400 bg-indigo-500/10",   chip: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300",   accent: "hover:border-indigo-500/40" },
-  teal:    { icon: "text-teal-600 dark:text-teal-400 bg-teal-500/10",         chip: "bg-teal-500/10 text-teal-700 dark:text-teal-300",         accent: "hover:border-teal-500/40" },
-  pink:    { icon: "text-pink-600 dark:text-pink-400 bg-pink-500/10",         chip: "bg-pink-500/10 text-pink-700 dark:text-pink-300",         accent: "hover:border-pink-500/40" },
-  rose:    { icon: "text-rose-600 dark:text-rose-400 bg-rose-500/10",         chip: "bg-rose-500/10 text-rose-700 dark:text-rose-300",         accent: "hover:border-rose-500/40" },
+const THEMES: Record<string, { iconGrad: string; iconShadow: string; chip: string; accent: string; bar: string; valueText: string }> = {
+  emerald: { iconGrad: "bg-gradient-to-br from-emerald-400 to-emerald-600", iconShadow: "shadow-emerald-500/40 group-hover:shadow-emerald-500/60", chip: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300", accent: "hover:border-emerald-500/50", bar: "bg-gradient-to-b from-emerald-400 to-emerald-600", valueText: "group-hover:text-emerald-700 dark:group-hover:text-emerald-300" },
+  violet:  { iconGrad: "bg-gradient-to-br from-violet-400 to-violet-600",   iconShadow: "shadow-violet-500/40 group-hover:shadow-violet-500/60",   chip: "bg-violet-500/10 text-violet-700 dark:text-violet-300",   accent: "hover:border-violet-500/50",  bar: "bg-gradient-to-b from-violet-400 to-violet-600",   valueText: "group-hover:text-violet-700 dark:group-hover:text-violet-300" },
+  sky:     { iconGrad: "bg-gradient-to-br from-sky-400 to-sky-600",         iconShadow: "shadow-sky-500/40 group-hover:shadow-sky-500/60",         chip: "bg-sky-500/10 text-sky-700 dark:text-sky-300",            accent: "hover:border-sky-500/50",     bar: "bg-gradient-to-b from-sky-400 to-sky-600",         valueText: "group-hover:text-sky-700 dark:group-hover:text-sky-300" },
+  amber:   { iconGrad: "bg-gradient-to-br from-amber-400 to-orange-500",    iconShadow: "shadow-amber-500/40 group-hover:shadow-amber-500/60",     chip: "bg-amber-500/10 text-amber-700 dark:text-amber-300",      accent: "hover:border-amber-500/50",   bar: "bg-gradient-to-b from-amber-400 to-orange-500",    valueText: "group-hover:text-amber-700 dark:group-hover:text-amber-300" },
+  indigo:  { iconGrad: "bg-gradient-to-br from-indigo-400 to-indigo-600",   iconShadow: "shadow-indigo-500/40 group-hover:shadow-indigo-500/60",   chip: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300",   accent: "hover:border-indigo-500/50",  bar: "bg-gradient-to-b from-indigo-400 to-indigo-600",   valueText: "group-hover:text-indigo-700 dark:group-hover:text-indigo-300" },
+  teal:    { iconGrad: "bg-gradient-to-br from-teal-400 to-teal-600",       iconShadow: "shadow-teal-500/40 group-hover:shadow-teal-500/60",       chip: "bg-teal-500/10 text-teal-700 dark:text-teal-300",         accent: "hover:border-teal-500/50",    bar: "bg-gradient-to-b from-teal-400 to-teal-600",       valueText: "group-hover:text-teal-700 dark:group-hover:text-teal-300" },
+  pink:    { iconGrad: "bg-gradient-to-br from-pink-400 to-fuchsia-600",    iconShadow: "shadow-pink-500/40 group-hover:shadow-pink-500/60",       chip: "bg-pink-500/10 text-pink-700 dark:text-pink-300",         accent: "hover:border-pink-500/50",    bar: "bg-gradient-to-b from-pink-400 to-fuchsia-600",    valueText: "group-hover:text-pink-700 dark:group-hover:text-pink-300" },
+  rose:    { iconGrad: "bg-gradient-to-br from-rose-400 to-red-600",        iconShadow: "shadow-rose-500/40 group-hover:shadow-rose-500/60",       chip: "bg-rose-500/10 text-rose-700 dark:text-rose-300",         accent: "hover:border-rose-500/50",    bar: "bg-gradient-to-b from-rose-400 to-red-600",        valueText: "group-hover:text-rose-700 dark:group-hover:text-rose-300" },
 };
 
 function ColorStatCard({ to, theme, icon, chip, label, value, sub }: any) {
@@ -400,18 +400,21 @@ function ColorStatCard({ to, theme, icon, chip, label, value, sub }: any) {
   return (
     <Link
       to={to ?? "#"}
-      className={`group relative bg-[hsl(var(--surface-container-lowest))] p-3 md:p-5 rounded-2xl block border border-[hsl(var(--border))] ${T.accent}
-        hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 ease-out`}
+      className={`group relative overflow-hidden bg-[hsl(var(--surface-container-lowest))] p-3 md:p-5 pl-4 md:pl-6 rounded-2xl block border border-[hsl(var(--border))] ${T.accent}
+        hover:shadow-lg hover:-translate-y-1 active:translate-y-0 active:scale-[0.98] transition-all duration-300 ease-out`}
     >
+      {/* Side accent bar */}
+      <span className={`absolute left-0 top-2 bottom-2 w-1 rounded-r-full ${T.bar} opacity-80 group-hover:opacity-100 group-hover:top-0 group-hover:bottom-0 transition-all duration-300`} />
+
       <div className="relative flex justify-between items-start mb-3 md:mb-4">
-        <div className={`h-9 w-9 md:h-11 md:w-11 ${T.icon} rounded-xl flex items-center justify-center [&>svg]:h-4 [&>svg]:w-4 md:[&>svg]:h-5 md:[&>svg]:w-5 transition-transform duration-200 group-hover:scale-105`}>
+        <div className={`h-9 w-9 md:h-11 md:w-11 ${T.iconGrad} text-white rounded-xl flex items-center justify-center [&>svg]:h-4 [&>svg]:w-4 md:[&>svg]:h-5 md:[&>svg]:w-5 shadow-lg ${T.iconShadow} transition-all duration-300 group-hover:scale-110 group-hover:-rotate-6 group-active:rotate-0 group-active:scale-95`}>
           {icon}
         </div>
         <span className={`text-[9px] md:text-[10px] font-bold ${T.chip} px-1.5 md:px-2 py-0.5 md:py-1 rounded-full uppercase tracking-wider whitespace-nowrap`}>{chip}</span>
       </div>
-      <p className="relative text-muted-foreground text-[11px] md:text-xs font-semibold truncate uppercase tracking-wide">{label}</p>
-      <h3 className="relative text-base md:text-2xl font-bold mt-1 text-foreground truncate">{value}</h3>
-      <p className="relative text-[9px] md:text-[10px] text-muted-foreground mt-1 md:mt-2 truncate">{sub}</p>
+      <p className="relative text-foreground/80 text-[11px] md:text-xs font-bold truncate uppercase tracking-wide font-bn">{label}</p>
+      <h3 className={`relative text-base md:text-2xl font-extrabold mt-1 text-foreground truncate font-bn transition-colors duration-300 ${T.valueText}`}>{value}</h3>
+      <p className="relative text-[9px] md:text-[11px] text-muted-foreground font-semibold mt-1 md:mt-2 truncate font-bn">{sub}</p>
     </Link>
   );
 }
