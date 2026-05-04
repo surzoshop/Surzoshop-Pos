@@ -189,22 +189,19 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-8">
         {/* LEFT: Chart + Transactions */}
         <div className="lg:col-span-2 space-y-5 md:space-y-8">
-          {/* Weekly Chart — advanced gradient bars */}
-          <div className="relative bg-[hsl(var(--surface-container-lowest))] p-4 md:p-8 rounded-2xl border border-[hsl(var(--surface-container-high))]/40 overflow-hidden">
-            <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-violet-500/5 blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-emerald-500/5 blur-3xl pointer-events-none" />
-
-            <div className="relative flex justify-between items-center mb-6 md:mb-10">
+          {/* Weekly Chart — minimal */}
+          <div className="bg-[hsl(var(--surface-container-lowest))] p-4 md:p-8 rounded-2xl border border-[hsl(var(--border))]">
+            <div className="flex justify-between items-center mb-6 md:mb-10">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
-                  <TrendingUp className="h-5 w-5 text-white" />
+                <div className="h-10 w-10 rounded-xl bg-[hsl(var(--primary)/0.1)] flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-[hsl(var(--primary))]" />
                 </div>
                 <div>
                   <h3 className="text-base md:text-xl font-bold text-foreground">{t("weeklySalesAnalysis")}</h3>
                   <p className="text-xs md:text-sm text-muted-foreground">{t("last7DaysReport")}</p>
                 </div>
               </div>
-              <select className="bg-[hsl(var(--surface-container-low))] border border-[hsl(var(--surface-container-high))]/40 rounded-lg text-[11px] md:text-xs font-bold py-1.5 md:py-2 px-3 md:px-4 outline-none focus:ring-2 focus:ring-violet-500/30 cursor-pointer">
+              <select className="bg-[hsl(var(--surface-container-low))] border border-[hsl(var(--border))] rounded-lg text-[11px] md:text-xs font-semibold py-1.5 md:py-2 px-3 md:px-4 outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.3)] cursor-pointer">
                 <option>{t("thisWeek")}</option>
                 <option>{t("lastWeek")}</option>
               </select>
@@ -212,7 +209,7 @@ export default function Dashboard() {
 
             <div className="relative h-44 md:h-64 flex items-end justify-between gap-2 md:gap-4">
               <div className="absolute inset-0 flex flex-col justify-between py-1 pointer-events-none">
-                {[0,1,2,3].map(i => <div key={i} className="border-b border-dashed border-[hsl(var(--surface-container-high))]/60 w-full" />)}
+                {[0,1,2,3].map(i => <div key={i} className="border-b border-dashed border-[hsl(var(--border))] w-full" />)}
               </div>
               {weekly.map((d, i) => {
                 const isMax = d.total === maxWeek && d.total > 0;
@@ -221,10 +218,10 @@ export default function Dashboard() {
                   <div key={i} className="flex-1 h-full flex items-end relative group/bar">
                     <div
                       style={{ height: `${h}%`, animation: `growUp 0.7s ${i * 0.06}s ease-out backwards` }}
-                      className={`w-full rounded-t-xl transition-all duration-300 cursor-pointer relative
+                      className={`w-full rounded-t-lg transition-all duration-300 cursor-pointer relative
                         ${isMax
-                          ? "bg-gradient-to-t from-violet-600 via-fuchsia-500 to-pink-400 shadow-[0_0_20px_rgba(217,70,239,0.4)]"
-                          : "bg-gradient-to-t from-violet-400/30 to-fuchsia-400/40 hover:from-violet-500/60 hover:to-fuchsia-500/70"
+                          ? "bg-[hsl(var(--primary))]"
+                          : "bg-[hsl(var(--primary)/0.18)] hover:bg-[hsl(var(--primary)/0.35)]"
                         }`}
                     >
                       <div className="absolute -top-9 left-1/2 -translate-x-1/2 opacity-0 group-hover/bar:opacity-100 transition-opacity bg-foreground text-background text-[10px] font-bold py-1 px-2 rounded-md whitespace-nowrap shadow-lg">
@@ -235,8 +232,8 @@ export default function Dashboard() {
                 );
               })}
             </div>
-            <div className="flex justify-between mt-4 text-[10px] font-bold text-muted-foreground px-1 uppercase tracking-wider">
-              {weekly.map((d, i) => <span key={i} className={d.total === maxWeek && d.total > 0 ? "text-fuchsia-500" : ""}>{d.day}</span>)}
+            <div className="flex justify-between mt-4 text-[10px] font-semibold text-muted-foreground px-1 uppercase tracking-wider">
+              {weekly.map((d, i) => <span key={i} className={d.total === maxWeek && d.total > 0 ? "text-[hsl(var(--primary))]" : ""}>{d.day}</span>)}
             </div>
           </div>
 
