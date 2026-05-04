@@ -299,7 +299,7 @@ export default function POS() {
         </div>
       </section>
 
-      <section className="lg:col-span-2 flex flex-col bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-6 min-h-0 shadow-sm">
+      <section className="lg:col-span-2 flex flex-col bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-4 sm:p-6 lg:min-h-0 shadow-sm">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-extrabold flex items-center gap-2 text-foreground">
             <ShoppingCart className="h-6 w-6 text-primary" />
