@@ -107,7 +107,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Bento Grid */}
-      <div className="grid grid-cols-1 gap-3 md:gap-6">
+      <div className="grid grid-cols-2 gap-3 md:gap-6">
         <StatCard
           to="/sales"
           icon={<Calendar className="h-4 w-4 md:h-6 md:w-6 text-primary" />}
@@ -138,36 +138,7 @@ export default function Dashboard() {
           value={`${stats.orderCount}`}
           sub={`${t("deliveredToday")}: ${stats.deliveredToday}`}
         />
-        <StatCard
-          to="/sales"
-          icon={<Calendar className="h-6 w-6 text-primary" />}
-          iconBg="bg-primary/10"
-          chip={`${salesTrend >= 0 ? "+" : ""}${salesTrend}%`}
-          chipClass="text-primary bg-primary/10"
-          label={t("todaySales")}
-          value={fmt(stats.todaySales)}
-          sub={t("increaseFromYesterday")}
-        />
-        <StatCard
-          to="/reports"
-          icon={<Wallet className="h-6 w-6 text-[hsl(var(--secondary-foreground))]" />}
-          iconBg="bg-secondary/30"
-          chip={t("monthTarget")}
-          chipClass="text-[hsl(var(--secondary-foreground))] bg-secondary/30"
-          label={t("totalRevenue")}
-          value={fmt(stats.monthSales)}
-          sub={t("monthlyProfit")}
-        />
-        <StatCard
-          to="/sales"
-          icon={<ShoppingBag className="h-6 w-6 text-info" />}
-          iconBg="bg-info/10"
-          chip={`${stats.todayCount} ${t("newOrders")}`}
-          chipClass="text-info bg-info/10"
-          label={t("orderCount")}
-          value={`${stats.orderCount}`}
-          sub={`${t("deliveredToday")}: ${stats.deliveredToday}`}
-        />
+        search
         <Link to="/products" className="bg-secondary/20 p-3 md:p-6 rounded-2xl transition-all hover:-translate-y-1 border-l-4 border-secondary block">
           <div className="flex justify-between items-start mb-3 md:mb-4">
             <div className="p-2 md:p-3 bg-secondary text-[hsl(var(--secondary-foreground))] rounded-xl">
