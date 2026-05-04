@@ -448,7 +448,7 @@ export default function Reports() {
         )}
 
         <div className="flex flex-wrap gap-2 pt-2 border-t border-[hsl(var(--border))]">
-          <button onClick={handlePrint}
+          <button onClick={() => handlePrint("all")}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-bold text-sm hover:opacity-95 active:scale-95 transition-all shadow-[var(--shadow-primary)]">
             <Printer className="h-4 w-4" /> {t("printAll")}
           </button>
@@ -496,7 +496,8 @@ export default function Reports() {
           toggle={() => setOpen(s => ({ ...s, sales: !s.sales }))}
           title={t("salesSummary")}
           accent="emerald"
-          onPrint={handlePrint}
+          printTarget="sales"
+          onPrint={() => handlePrint("sales")}
           onCsv={() => downloadCSV(
             `Sales_${start.toISOString().slice(0,10)}.csv`,
             ["Invoice", "Date", "Customer", "Total", "Paid", "Due", "Status"],
@@ -555,7 +556,8 @@ export default function Reports() {
           toggle={() => setOpen(s => ({ ...s, purchases: !s.purchases }))}
           title={t("purchaseSummary")}
           accent="amber"
-          onPrint={handlePrint}
+          printTarget="purchases"
+          onPrint={() => handlePrint("purchases")}
           onCsv={() => downloadCSV(
             `Purchases_${start.toISOString().slice(0,10)}.csv`,
             ["Bill No", "Date", "Supplier", "Total", "Paid", "Due"],
@@ -585,7 +587,8 @@ export default function Reports() {
           toggle={() => setOpen(s => ({ ...s, expenses: !s.expenses }))}
           title={t("expenseSummary")}
           accent="sky"
-          onPrint={handlePrint}
+          printTarget="expenses"
+          onPrint={() => handlePrint("expenses")}
           onCsv={() => downloadCSV(
             `Expenses_${start.toISOString().slice(0,10)}.csv`,
             ["Date", "Title", "Category", "Method", "Amount"],
@@ -620,7 +623,8 @@ export default function Reports() {
           toggle={() => setOpen(s => ({ ...s, pl: !s.pl }))}
           title={t("profitLoss")}
           accent="violet"
-          onPrint={handlePrint}
+          printTarget="pl"
+          onPrint={() => handlePrint("pl")}
           onCsv={() => downloadCSV(
             `Stock_${new Date().toISOString().slice(0,10)}.csv`,
             ["Product", "SKU", "Stock", "Cost", "Price", "Stock Value (cost)", "Stock Value (sale)"],
