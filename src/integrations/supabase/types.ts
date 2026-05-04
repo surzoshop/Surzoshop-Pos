@@ -348,6 +348,7 @@ export type Database = {
           category_id: string | null
           cost: number
           created_at: string
+          has_warranty: boolean
           id: string
           image_url: string | null
           is_active: boolean
@@ -358,12 +359,14 @@ export type Database = {
           stock: number
           unit: string | null
           updated_at: string
+          warranty_months: number | null
         }
         Insert: {
           barcode?: string | null
           category_id?: string | null
           cost?: number
           created_at?: string
+          has_warranty?: boolean
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -374,12 +377,14 @@ export type Database = {
           stock?: number
           unit?: string | null
           updated_at?: string
+          warranty_months?: number | null
         }
         Update: {
           barcode?: string | null
           category_id?: string | null
           cost?: number
           created_at?: string
+          has_warranty?: boolean
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -390,6 +395,7 @@ export type Database = {
           stock?: number
           unit?: string | null
           updated_at?: string
+          warranty_months?: number | null
         }
         Relationships: [
           {
@@ -533,6 +539,8 @@ export type Database = {
           shop_id: string | null
           subtotal: number
           unit_price: number
+          warranty_months: number | null
+          warranty_until: string | null
         }
         Insert: {
           created_at?: string
@@ -544,6 +552,8 @@ export type Database = {
           shop_id?: string | null
           subtotal: number
           unit_price: number
+          warranty_months?: number | null
+          warranty_until?: string | null
         }
         Update: {
           created_at?: string
@@ -555,6 +565,8 @@ export type Database = {
           shop_id?: string | null
           subtotal?: number
           unit_price?: number
+          warranty_months?: number | null
+          warranty_until?: string | null
         }
         Relationships: [
           {
