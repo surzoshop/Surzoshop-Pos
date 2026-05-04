@@ -70,7 +70,7 @@ export default function Products() {
     };
     if (!editing) {
       // auto-generate unique barcode for new product
-      payload.barcode = generateBarcode();
+      payload.barcode = await generateBarcode(payload.name);
     }
     const { error } = editing
       ? await supabase.from("products").update(payload).eq("id", editing.id)
