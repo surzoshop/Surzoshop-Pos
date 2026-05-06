@@ -58,6 +58,51 @@ export type Database = {
           },
         ]
       }
+      cash_book: {
+        Row: {
+          amount: number
+          category: string | null
+          created_at: string
+          created_by: string | null
+          entry_date: string
+          entry_type: string
+          id: string
+          notes: string | null
+          party_name: string | null
+          payment_method: string | null
+          reference_no: string | null
+          shop_id: string | null
+        }
+        Insert: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          entry_date?: string
+          entry_type: string
+          id?: string
+          notes?: string | null
+          party_name?: string | null
+          payment_method?: string | null
+          reference_no?: string | null
+          shop_id?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          entry_date?: string
+          entry_type?: string
+          id?: string
+          notes?: string | null
+          party_name?: string | null
+          payment_method?: string | null
+          reference_no?: string | null
+          shop_id?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
