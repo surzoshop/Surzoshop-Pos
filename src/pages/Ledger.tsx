@@ -537,28 +537,27 @@ export default function Ledger() {
 }
 
 function MiniStat({ label, value, icon: Icon, tone, active, onClick }: any) {
-  const tones: Record<string, { ring: string; icon: string; bar: string }> = {
-    income:   { ring: "ring-emerald-500/40", icon: "text-emerald-600 bg-emerald-500/10", bar: "bg-emerald-500" },
-    expense:  { ring: "ring-rose-500/40",    icon: "text-rose-600 bg-rose-500/10",       bar: "bg-rose-500" },
-    balance:  { ring: "ring-primary/40",     icon: "text-primary bg-primary/10",         bar: "bg-primary" },
-    cash:     { ring: "ring-sky-500/40",     icon: "text-sky-600 bg-sky-500/10",         bar: "bg-sky-500" },
-    sales:    { ring: "ring-amber-500/40",   icon: "text-amber-600 bg-amber-500/10",     bar: "bg-amber-500" },
-    purchase: { ring: "ring-violet-500/40",  icon: "text-violet-600 bg-violet-500/10",   bar: "bg-violet-500" },
+  const tones: Record<string, { border: string; bg: string; icon: string; text: string; activeBg: string }> = {
+    income:   { border: "border-emerald-500/60", bg: "bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/40 dark:to-emerald-900/20", icon: "text-white bg-emerald-500", text: "text-emerald-700 dark:text-emerald-300", activeBg: "ring-2 ring-emerald-500" },
+    expense:  { border: "border-rose-500/60",    bg: "bg-gradient-to-br from-rose-50 to-rose-100/50 dark:from-rose-950/40 dark:to-rose-900/20",          icon: "text-white bg-rose-500",    text: "text-rose-700 dark:text-rose-300",    activeBg: "ring-2 ring-rose-500" },
+    balance:  { border: "border-primary/60",     bg: "bg-gradient-to-br from-primary/5 to-primary/15",                                                    icon: "text-primary-foreground bg-primary", text: "text-primary",            activeBg: "ring-2 ring-primary" },
+    cash:     { border: "border-sky-500/60",     bg: "bg-gradient-to-br from-sky-50 to-sky-100/50 dark:from-sky-950/40 dark:to-sky-900/20",              icon: "text-white bg-sky-500",     text: "text-sky-700 dark:text-sky-300",      activeBg: "ring-2 ring-sky-500" },
+    sales:    { border: "border-amber-500/60",   bg: "bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/40 dark:to-amber-900/20",      icon: "text-white bg-amber-500",   text: "text-amber-700 dark:text-amber-300",  activeBg: "ring-2 ring-amber-500" },
+    purchase: { border: "border-violet-500/60",  bg: "bg-gradient-to-br from-violet-50 to-violet-100/50 dark:from-violet-950/40 dark:to-violet-900/20",  icon: "text-white bg-violet-500",  text: "text-violet-700 dark:text-violet-300", activeBg: "ring-2 ring-violet-500" },
   };
   const t = tones[tone] ?? tones.balance;
   return (
     <button onClick={onClick}
-      className={`group relative text-left rounded-xl p-3 bg-card border border-border/60 transition-all hover:shadow-md hover:-translate-y-0.5 ${
-        active ? `ring-2 ${t.ring} shadow-md` : ""
+      className={`group relative text-left rounded-2xl p-4 border-2 ${t.border} ${t.bg} transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:scale-[1.02] ${
+        active ? `${t.activeBg} shadow-lg scale-[1.02]` : "shadow-sm"
       }`}>
-      <span className={`absolute left-0 top-3 bottom-3 w-1 rounded-r ${t.bar} ${active ? "opacity-100" : "opacity-60"}`} />
-      <div className="flex items-start justify-between gap-2 pl-2">
-        <div className="text-[11px] font-bold text-muted-foreground truncate">{label}</div>
-        <div className={`h-7 w-7 rounded-lg grid place-items-center ${t.icon}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className={`text-xs font-bold ${t.text} truncate`}>{label}</div>
+        <div className={`h-9 w-9 rounded-xl grid place-items-center shadow-md ${t.icon} transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6`}>
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      <div className="mt-1 pl-2 text-lg font-black text-foreground truncate">{`৳${Number(value || 0).toLocaleString("bn-BD")}`}</div>
+      <div className="mt-2 text-xl font-black text-foreground truncate">{`৳${Number(value || 0).toLocaleString("bn-BD")}`}</div>
     </button>
   );
 }
