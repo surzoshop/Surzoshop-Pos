@@ -295,71 +295,72 @@ export default function Ledger() {
   }, [lowerFiltered]);
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto">
+    <div className="p-3 sm:p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-black text-foreground">{TAB_META[tab].title}</h1>
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-black text-foreground truncate">{TAB_META[tab].title}</h1>
           <p className="text-xs text-muted-foreground">{TAB_META[tab].subtitle}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
           <Button onClick={() => setDialog("deposit")}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md">
+            className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-md">
             <ArrowDownCircle className="h-4 w-4" /> জমা
           </Button>
           <Button onClick={() => setDialog("withdraw")}
-            className="bg-rose-600 hover:bg-rose-700 text-white shadow-md">
+            className="w-full sm:w-auto bg-rose-600 hover:bg-rose-700 text-white shadow-md">
             <ArrowUpCircle className="h-4 w-4" /> উত্তোলন
           </Button>
         </div>
       </div>
 
-      {/* Top filter card: search + range chips + date range */}
+      {/* Top filter card */}
       <Card className="border-border/60">
-        <CardContent className="p-4 space-y-3">
+        <CardContent className="p-3 sm:p-4 space-y-3">
           <div className="relative">
             <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="ক্যাটাগরি, নোট বা পরিমাণ দিয়ে খুঁজুন..." value={topSearch} onChange={e => setTopSearch(e.target.value)} className="pl-9" />
+            <Input placeholder="খুঁজুন..." value={topSearch} onChange={e => setTopSearch(e.target.value)} className="pl-9" />
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <CalendarDays className="h-5 w-5 text-muted-foreground" />
-            {RANGE_CHIPS.map(c => (
-              <button key={c.key} onClick={() => setTopRange(c.key)}
-                className={`px-4 py-2 rounded-full text-sm font-bold border-2 transition-all ${
-                  topRange === c.key
-                    ? "bg-primary text-primary-foreground border-primary shadow"
-                    : "bg-background text-foreground/80 border-border hover:border-primary/50 hover:text-primary"
-                }`}>{c.label}</button>
-            ))}
-            <div className="flex items-center gap-2 ml-auto">
-              <Input type="date" value={topFrom} onChange={e => { setTopFrom(e.target.value); }} className="w-[150px]" />
-              <span className="text-muted-foreground">—</span>
-              <Input type="date" value={topTo} onChange={e => { setTopTo(e.target.value); }} className="w-[150px]" />
+          <div className="-mx-1 px-1 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-2 min-w-max">
+              <CalendarDays className="h-5 w-5 text-muted-foreground shrink-0" />
+              {RANGE_CHIPS.map(c => (
+                <button key={c.key} onClick={() => setTopRange(c.key)}
+                  className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold border-2 transition-all whitespace-nowrap ${
+                    topRange === c.key
+                      ? "bg-primary text-primary-foreground border-primary shadow"
+                      : "bg-background text-foreground/80 border-border hover:border-primary/50 hover:text-primary"
+                  }`}>{c.label}</button>
+              ))}
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:justify-end">
+            <Input type="date" value={topFrom} onChange={e => setTopFrom(e.target.value)} className="w-full sm:w-[150px]" />
+            <Input type="date" value={topTo}   onChange={e => setTopTo(e.target.value)}   className="w-full sm:w-[150px]" />
           </div>
         </CardContent>
       </Card>
 
       {/* 6 mini stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
         {miniStats.map((s, i) => (
           <MiniStat key={i} {...s} active={tab === s.key} onClick={() => setTab(s.key)} />
         ))}
       </div>
 
-      {/* Tabs row: লেজার / আয় / খরচ / ক্যাশ / বিক্রয় / ক্রয় (page switch) */}
-      <div className="flex flex-wrap gap-1.5 p-1.5 rounded-2xl bg-muted/40 w-fit mx-auto border border-border/60">
+      {/* Tabs row */}
+      <div className="grid grid-cols-3 sm:flex sm:flex-wrap sm:justify-center gap-1.5 p-1.5 rounded-2xl bg-muted/40 border border-border/60">
         {TABS.map(t => {
           const active = tab === t.key;
           return (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
+              className={`inline-flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
                 active
-                  ? "bg-background shadow-md text-primary scale-105"
+                  ? "bg-background shadow-md text-primary scale-[1.03]"
                   : "text-muted-foreground hover:text-foreground hover:bg-background/60"
               }`}>
-              <t.icon className="h-4 w-4" />
-              {t.label}
+              <t.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="truncate">{t.label}</span>
             </button>
           );
         })}
@@ -367,14 +368,14 @@ export default function Ledger() {
 
       {/* Account sub-tabs (only for লেজার) */}
       {tab === "ledger" && (
-        <div className="flex flex-wrap gap-2 justify-center">
+        <div className="grid grid-cols-4 sm:flex sm:flex-wrap sm:justify-center gap-2">
           {ACCOUNT_TABS.map(a => {
             const active = account === a.key;
             return (
               <button key={a.key} onClick={() => setAccount(a.key)}
-                className={`px-5 py-2 rounded-full text-sm font-bold border-2 transition-all duration-200 ${
+                className={`px-2 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-bold border-2 transition-all duration-200 truncate ${
                   active
-                    ? "bg-primary text-primary-foreground border-primary shadow-md scale-105"
+                    ? "bg-primary text-primary-foreground border-primary shadow-md sm:scale-105"
                     : "bg-background text-foreground/80 border-border hover:border-primary/60 hover:text-primary hover:-translate-y-0.5"
                 }`}>{a.label}</button>
             );
@@ -382,54 +383,57 @@ export default function Ledger() {
         </div>
       )}
 
-      {/* 3 totals cards: মোট জমা (Cr) / মোট খরচ (Dr) / নীট ব্যালেন্স */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* 3 totals */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
         <BigStat label="মোট জমা (Cr)" value={fmt(totals.cr)}      icon={<ArrowDownToLine className="h-5 w-5" />} accent="emerald" />
         <BigStat label="মোট খরচ (Dr)" value={fmt(totals.dr)}      icon={<ArrowUpFromLine className="h-5 w-5" />} accent="rose" />
         <BigStat label="নীট ব্যালেন্স"  value={fmt(totals.balance)} icon={<BookOpen className="h-5 w-5" />}        accent="indigo" />
       </div>
 
-      {/* Lower filter row: range chips + dates + search + row filters + export */}
+      {/* Lower filter row */}
       <Card className="border-border/60">
-        <CardContent className="p-4 space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <CalendarDays className="h-5 w-5 text-muted-foreground" />
-            {RANGE_CHIPS.map(c => (
-              <button key={c.key} onClick={() => setLowRange(c.key)}
-                className={`px-4 py-2 rounded-full text-sm font-bold border-2 transition-all ${
-                  lowRange === c.key
-                    ? "bg-primary text-primary-foreground border-primary shadow"
-                    : "bg-background text-foreground/80 border-border hover:border-primary/50 hover:text-primary"
-                }`}>{c.label}</button>
-            ))}
-            <div className="flex items-center gap-2 ml-auto">
-              <Input type="date" value={lowFrom} onChange={e => setLowFrom(e.target.value)} className="w-[150px]" />
-              <span className="text-muted-foreground">—</span>
-              <Input type="date" value={lowTo} onChange={e => setLowTo(e.target.value)} className="w-[150px]" />
+        <CardContent className="p-3 sm:p-4 space-y-3">
+          <div className="-mx-1 px-1 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-2 min-w-max">
+              <CalendarDays className="h-5 w-5 text-muted-foreground shrink-0" />
+              {RANGE_CHIPS.map(c => (
+                <button key={c.key} onClick={() => setLowRange(c.key)}
+                  className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold border-2 transition-all whitespace-nowrap ${
+                    lowRange === c.key
+                      ? "bg-primary text-primary-foreground border-primary shadow"
+                      : "bg-background text-foreground/80 border-border hover:border-primary/50 hover:text-primary"
+                  }`}>{c.label}</button>
+              ))}
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:justify-end">
+            <Input type="date" value={lowFrom} onChange={e => setLowFrom(e.target.value)} className="w-full sm:w-[150px]" />
+            <Input type="date" value={lowTo}   onChange={e => setLowTo(e.target.value)}   className="w-full sm:w-[150px]" />
+          </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div className="relative flex-1 min-w-[200px]">
+            <div className="relative flex-1 min-w-[160px]">
               <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input placeholder="খুঁজুন..." value={lowSearch} onChange={e => setLowSearch(e.target.value)} className="pl-9" />
             </div>
-            <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Button variant="outline" size="sm" onClick={() => window.print()} className="flex-1 sm:flex-none">
               <FileText className="h-4 w-4" /> PDF
             </Button>
-            <Button variant="outline" size="sm" onClick={() => exportCsv(lowerFiltered)}>
+            <Button variant="outline" size="sm" onClick={() => exportCsv(lowerFiltered)} className="flex-1 sm:flex-none">
               <Download className="h-4 w-4" /> CSV
             </Button>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <ListFilter className="h-5 w-5 text-muted-foreground" />
-            {ROW_FILTERS.map(f => (
-              <button key={f.key} onClick={() => setRowFilter(f.key)}
-                className={`px-4 py-1.5 rounded-full text-sm font-bold border-2 transition-all ${
-                  rowFilter === f.key
-                    ? "bg-primary text-primary-foreground border-primary shadow"
-                    : "bg-background text-foreground/80 border-border hover:border-primary/50 hover:text-primary"
-                }`}>{f.label}</button>
-            ))}
+          <div className="-mx-1 px-1 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-2 min-w-max">
+              <ListFilter className="h-5 w-5 text-muted-foreground shrink-0" />
+              {ROW_FILTERS.map(f => (
+                <button key={f.key} onClick={() => setRowFilter(f.key)}
+                  className={`px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold border-2 transition-all whitespace-nowrap ${
+                    rowFilter === f.key
+                      ? "bg-primary text-primary-foreground border-primary shadow"
+                      : "bg-background text-foreground/80 border-border hover:border-primary/50 hover:text-primary"
+                  }`}>{f.label}</button>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
