@@ -195,107 +195,276 @@ export default function Purchases() {
         </div>
       </SurfaceCard>
 
-      {/* === New Purchase Dialog (Bongo-style invoice form) === */}
+      {/* === New Purchase — Bongo-style full-screen sectioned form === */}
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
-        <DialogContent className="bg-[hsl(var(--surface-container-lowest))] max-w-4xl max-h-[92vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><FileText className="h-5 w-5 text-primary" />নতুন ক্রয় বিল</DialogTitle>
-          </DialogHeader>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-[hsl(var(--surface-container-low))] rounded-xl p-4">
-            <div>
-              <Label className="text-xs flex items-center gap-1"><Receipt className="h-3.5 w-3.5" />Bill No</Label>
-              <Input value="(auto)" disabled className="mt-1 bg-background/50" />
+        <DialogContent className="bg-[hsl(var(--surface-container-lowest))] p-0 max-w-5xl w-[96vw] h-[94vh] overflow-hidden flex flex-col gap-0">
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-3 border-b border-[hsl(var(--surface-container-high))]/60 bg-[hsl(var(--surface-container-lowest))]">
+            <div className="flex items-center gap-3">
+              <button onClick={() => { setOpen(false); resetForm(); }} className="h-9 w-9 grid place-items-center rounded-full hover:bg-muted">
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <div className="h-10 w-10 rounded-xl bg-primary/10 grid place-items-center">
+                <Receipt className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <DialogTitle className="text-base font-bold">নতুন ক্রয়</DialogTitle>
+                <p className="text-xs text-muted-foreground">নতুন পারচেজ এন্ট্রি তৈরি করুন</p>
+              </div>
             </div>
-            <div>
-              <Label className="text-xs flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />তারিখ</Label>
-              <Input type="date" value={billDate} onChange={e => setBillDate(e.target.value)} className="mt-1" />
-            </div>
-            <div>
-              <Label className="text-xs">সরবরাহকারী</Label>
-              <select value={supplierId} onChange={e => setSupplierId(e.target.value)}
-                className="w-full h-10 mt-1 rounded-md bg-background px-3 text-sm border border-input">
-                <option value="">— সরবরাহকারী —</option>
-                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">তারিখ:</span>
+              <input type="date" value={billDate} onChange={e => setBillDate(e.target.value)}
+                className="h-8 px-2 rounded-md bg-[hsl(var(--surface-container-low))] text-xs border-none focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              <span className="ml-3 px-3 py-1 rounded-full bg-[hsl(var(--surface-container-low))] text-xs font-bold">আইটেম: {validItems().length}</span>
             </div>
           </div>
 
-          {/* Quick add row */}
-          <div className="border border-dashed border-[hsl(var(--surface-container-high))] rounded-xl p-4 mt-4">
-            <Label className="text-xs uppercase tracking-wider text-muted-foreground">পণ্য যোগ করুন (Barcode / Name)</Label>
-            <div className="grid grid-cols-12 gap-2 mt-2 items-start">
-              <div className="col-span-12 md:col-span-5 relative">
-                <Input placeholder="পণ্য বা বারকোড স্ক্যান..." value={qSearch}
-                  onChange={e => { setQSearch(e.target.value); setQPid(""); }} />
-                {qSearch && !qPid && (
-                  <div className="absolute z-10 left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-lg max-h-56 overflow-y-auto shadow-lg">
-                    {productMatches.map(p => (
-                      <button key={p.id} type="button"
-                        onClick={() => { setQPid(p.id); setQCost(Number(p.cost)); setQSearch(p.name); }}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-muted/60 flex justify-between">
-                        <span>{p.name}</span>
-                        <span className="text-xs text-muted-foreground">{fmt(Number(p.cost))}</span>
-                      </button>
-                    ))}
-                    {productMatches.length === 0 && <div className="px-3 py-2 text-sm text-muted-foreground">কোন পণ্য নেই</div>}
+          {/* Scroll body */}
+          <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+            {/* Supplier card */}
+            <section className="rounded-2xl bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/50 overflow-hidden">
+              <div className="h-1 bg-gradient-to-r from-primary via-primary/70 to-primary/30" />
+              <div className="p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 grid place-items-center">
+                    <Building2 className="h-5 w-5 text-primary" />
                   </div>
-                )}
-              </div>
-              <Input className="col-span-4 md:col-span-2" type="number" placeholder="পরিমাণ" value={qQty} onChange={e => setQQty(+e.target.value)} />
-              <Input className="col-span-4 md:col-span-3" type="number" placeholder="ক্রয়মূল্য" value={qCost} onChange={e => setQCost(+e.target.value)} />
-              <Button className="col-span-4 md:col-span-2 gradient-primary" onClick={addItem}><Plus className="h-4 w-4" />যোগ</Button>
-            </div>
-          </div>
-
-          {/* Items list */}
-          {items.length > 0 && (
-            <div className="mt-4 bg-[hsl(var(--surface-container-low))] rounded-xl overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-[hsl(var(--surface-container))] text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <tr><th className="text-left p-3">পণ্য</th><th className="text-right p-3">পরিমাণ</th><th className="text-right p-3">ক্রয়মূল্য</th><th className="text-right p-3">মোট</th><th className="p-3"></th></tr>
-                </thead>
-                <tbody>
-                  {items.map((i, idx) => (
-                    <tr key={idx} className="border-t border-[hsl(var(--surface-container-high))]/40">
-                      <td className="p-3 font-semibold">{i.product_name}</td>
-                      <td className="p-3 text-right">{i.qty}</td>
-                      <td className="p-3 text-right">{fmt(i.unit_cost)}</td>
-                      <td className="p-3 text-right font-bold text-primary">{fmt(i.subtotal)}</td>
-                      <td className="p-3 text-right">
-                        <button onClick={() => setItems(items.filter((_, x) => x !== idx))} className="text-destructive hover:bg-destructive/10 p-1 rounded">
-                          <Trash2 className="h-4 w-4" />
+                  <div>
+                    <h3 className="font-bold">সরবরাহকারী তথ্য</h3>
+                    <p className="text-xs text-muted-foreground">সাপ্লায়ার সিলেক্ট করুন অথবা নতুন যোগ করুন</p>
+                  </div>
+                </div>
+                <div className="relative">
+                  <Input
+                    placeholder="সাপ্লায়ারের নাম লিখুন বা সিলেক্ট করুন"
+                    value={supplierSearch}
+                    onChange={e => { setSupplierSearch(e.target.value); setSupplierId(""); }}
+                    className="h-11 bg-[hsl(var(--surface-container-low))] border-none pr-28"
+                  />
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded-md bg-muted text-xs text-muted-foreground">তালিকা ▾</span>
+                  {supplierSearch && !supplierId && (
+                    <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl max-h-56 overflow-y-auto shadow-lg">
+                      {supplierMatches.map(s => (
+                        <button key={s.id} type="button"
+                          onClick={() => { setSupplierId(s.id); setSupplierSearch(s.name); }}
+                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted/60 flex justify-between">
+                          <span className="font-medium">{s.name}</span>
+                          <span className="text-xs text-muted-foreground">{s.phone ?? ""}</span>
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Bottom: notes + summary */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div className="space-y-3">
-              <div><Label className="text-xs">নোট</Label><Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="ঐচ্ছিক" /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-xs">{t("discount")}</Label><Input type="number" value={discount} onChange={e => setDiscount(+e.target.value)} /></div>
-                <div><Label className="text-xs">{t("paid")}</Label><Input type="number" value={paid} onChange={e => setPaid(+e.target.value)} /></div>
+                      ))}
+                      {supplierMatches.length === 0 && <div className="px-4 py-3 text-sm text-muted-foreground">কোন সাপ্লায়ার নেই</div>}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-            <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-4 space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">{t("subtotal")}</span><span className="font-semibold">{fmt(subtotal)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">{t("discount")}</span><span>-{fmt(discount)}</span></div>
-              <div className="border-t border-primary/20 pt-2 flex justify-between text-lg font-black"><span>{t("total")}</span><span className="text-primary">{fmt(total)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">{t("paid")}</span><span>{fmt(paid)}</span></div>
-              <div className="flex justify-between text-destructive font-bold"><span>{t("due")}</span><span>{fmt(due)}</span></div>
-            </div>
+            </section>
+
+            {/* Product list card */}
+            <section className="rounded-2xl bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/50 overflow-hidden">
+              <div className="h-1 bg-gradient-to-r from-info via-primary to-primary/40" />
+              <div className="p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-10 w-10 rounded-xl bg-info/10 grid place-items-center">
+                    <Package className="h-5 w-5 text-info" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold">পণ্য তালিকা</h3>
+                    <p className="text-xs text-muted-foreground">ক্রয়কৃত পণ্য যোগ করুন</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {items.map((it, idx) => (
+                    <div key={idx} className="rounded-xl border border-[hsl(var(--surface-container-high))]/60 bg-[hsl(var(--surface-container-low))]/40 p-4 relative">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="inline-flex items-center gap-2 text-sm font-semibold">
+                          <span className="h-6 w-6 grid place-items-center rounded-full bg-primary text-primary-foreground text-[11px] font-bold">{idx + 1}</span>
+                          পণ্য #{idx + 1}
+                        </span>
+                        {items.length > 1 && (
+                          <button onClick={() => removeItemRow(idx)} className="h-7 w-7 grid place-items-center rounded-md text-destructive hover:bg-destructive/10">
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-[88px_1fr] gap-4">
+                        {/* Image placeholder */}
+                        <div className="hidden md:grid place-items-center h-[88px] w-[88px] rounded-xl border-2 border-dashed border-[hsl(var(--surface-container-high))] text-muted-foreground bg-background/40">
+                          <ImagePlus className="h-6 w-6" />
+                        </div>
+                        <div className="space-y-3">
+                          <div>
+                            <Label className="text-xs flex items-center gap-1 mb-1"><Package className="h-3 w-3" />পণ্য</Label>
+                            <div className="relative">
+                              <Input placeholder="পণ্যের নাম লিখুন বা স্ক্যান করুন"
+                                value={it.search}
+                                onChange={e => updateItem(idx, { search: e.target.value, product_id: "" })}
+                                className="h-10 bg-background pr-28" />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-bold">পণ্য সিলেক্ট ▾</span>
+                              {it.search && !it.product_id && (
+                                <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl max-h-52 overflow-y-auto shadow-lg">
+                                  {products.filter(p =>
+                                    p.name.toLowerCase().includes(it.search.toLowerCase()) ||
+                                    p.barcode?.toLowerCase().includes(it.search.toLowerCase()) ||
+                                    p.sku?.toLowerCase().includes(it.search.toLowerCase())
+                                  ).slice(0, 8).map(p => (
+                                    <button key={p.id} type="button" onClick={() => pickProduct(idx, p)}
+                                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted/60 flex justify-between">
+                                      <span>{p.name}</span>
+                                      <span className="text-xs text-muted-foreground">{fmt(Number(p.cost))}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label className="text-xs mb-1 block">ব্র্যান্ড</Label>
+                              <Input placeholder="ব্র্যান্ড নাম" className="h-10 bg-background" />
+                            </div>
+                            <div>
+                              <Label className="text-xs mb-1 block">ক্যাটাগরি</Label>
+                              <select value={it.category_id ?? ""}
+                                onChange={e => updateItem(idx, { category_id: e.target.value })}
+                                className="w-full h-10 rounded-md bg-background px-3 text-sm border border-input">
+                                <option value="">ক্যাটাগরি নাম</option>
+                                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label className="text-xs mb-1 block">পরিমাণ</Label>
+                              <Input type="number" value={it.qty} onChange={e => updateItem(idx, { qty: +e.target.value })} className="h-10 bg-background" />
+                            </div>
+                            <div>
+                              <Label className="text-xs mb-1 block">ইউনিট</Label>
+                              <select value={it.unit} onChange={e => updateItem(idx, { unit: e.target.value })}
+                                className="w-full h-10 rounded-md bg-background px-3 text-sm border border-input">
+                                <option value="pcs">পিস</option>
+                                <option value="kg">কেজি</option>
+                                <option value="ltr">লিটার</option>
+                                <option value="box">বক্স</option>
+                                <option value="dz">ডজন</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-3 rounded-xl bg-background/50 p-3">
+                            <div>
+                              <Label className="text-xs mb-1 block">ক্রয়মূল্য (৳)</Label>
+                              <Input type="number" value={it.unit_cost} onChange={e => updateItem(idx, { unit_cost: +e.target.value })} className="h-10 bg-background" />
+                            </div>
+                            <div>
+                              <Label className="text-xs mb-1 block">বিক্রয়মূল্য (৳)</Label>
+                              <Input type="number" placeholder="ঐচ্ছিক" value={it.sell_price || ""} onChange={e => updateItem(idx, { sell_price: +e.target.value })} className="h-10 bg-background" />
+                            </div>
+                            <div>
+                              <Label className="text-xs mb-1 block">মোট (৳)</Label>
+                              <div className="h-10 rounded-md bg-primary/10 grid place-items-center text-primary font-bold">৳{fmt(it.subtotal)}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  <button onClick={addItemRow}
+                    className="w-full h-12 rounded-xl border-2 border-dashed border-[hsl(var(--surface-container-high))] text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 transition flex items-center justify-center gap-2 text-sm font-semibold">
+                    <Plus className="h-4 w-4" /> আরও পণ্য যোগ করুন
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            {/* Bill summary card */}
+            <section className="rounded-2xl bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/50 overflow-hidden">
+              <div className="h-1 bg-gradient-to-r from-success via-primary to-info" />
+              <div className="p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-10 w-10 rounded-xl bg-success/10 grid place-items-center">
+                    <DollarSign className="h-5 w-5 text-success" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold">বিল সামারি ও পেমেন্ট</h3>
+                    <p className="text-xs text-muted-foreground">ডিসকাউন্ট, শিপিং ও পেমেন্ট তথ্য</p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl bg-[hsl(var(--surface-container-low))] p-4 space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="font-medium">সাবটোটাল</span>
+                    <span className="font-bold">৳{fmt(subtotal)}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs mb-1 block">ডিসকাউন্ট (৳)</Label>
+                      <Input type="number" value={discount} onChange={e => setDiscount(+e.target.value)} className="h-10 bg-background" />
+                    </div>
+                    <div>
+                      <Label className="text-xs mb-1 block">ডেলিভারি চার্জ (৳)</Label>
+                      <Input type="number" value={delivery} onChange={e => setDelivery(+e.target.value)} className="h-10 bg-background" />
+                    </div>
+                  </div>
+                  <div className="border-t border-[hsl(var(--surface-container-high))]/60 pt-3 flex justify-between items-center">
+                    <span className="font-bold">সর্বমোট</span>
+                    <span className="text-2xl font-black text-primary">৳{fmt(total)}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    <div>
+                      <Label className="text-xs mb-1 block">পেমেন্ট পদ্ধতি</Label>
+                      <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}
+                        className="w-full h-10 rounded-md bg-background px-3 text-sm border border-input">
+                        <option value="cash">নগদ</option>
+                        <option value="bkash">বিকাশ</option>
+                        <option value="nagad">নগদ (Mobile)</option>
+                        <option value="bank">ব্যাংক</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label className="text-xs mb-1 block">পেমেন্ট (৳)</Label>
+                      <Input type="number" value={paid} onChange={e => setPaid(+e.target.value)} className="h-10 bg-background" />
+                    </div>
+                  </div>
+                  <div className={`rounded-lg px-4 py-3 flex justify-between items-center font-bold ${fullyPaid ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}`}>
+                    <span className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4" />
+                      {fullyPaid ? "সম্পূর্ণ পরিশোধিত" : "বকেয়া"}
+                    </span>
+                    <span>৳{fmt(fullyPaid ? total : due)}</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Notes */}
+            <section className="rounded-2xl bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/50 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <StickyNote className="h-4 w-4 text-muted-foreground" />
+                <h3 className="font-semibold text-sm">নোট (ঐচ্ছিক)</h3>
+              </div>
+              <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
+                placeholder="পারচেজ সম্পর্কে কোনো নোট লিখুন..."
+                className="w-full rounded-xl bg-[hsl(var(--surface-container-low))] border-none p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
+            </section>
           </div>
 
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button>
-            <Button onClick={save} className="gradient-primary">{t("save")} ({fmt(total)})</Button>
-          </DialogFooter>
+          {/* Sticky footer */}
+          <div className="border-t border-[hsl(var(--surface-container-high))]/60 px-5 py-3 flex items-center justify-between bg-[hsl(var(--surface-container-lowest))]">
+            <button onClick={() => { setOpen(false); resetForm(); }} className="text-sm text-muted-foreground hover:text-foreground px-3 py-2">
+              বাতিল
+            </button>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-2 rounded-lg bg-[hsl(var(--surface-container-low))] text-sm font-bold">মোট ৳{fmt(total)}</span>
+              <Button variant="outline" onClick={save} className="gap-2"><Printer className="h-4 w-4" />সেভ ও প্রিন্ট</Button>
+              <Button onClick={save} className="gradient-primary gap-2"><Save className="h-4 w-4" />পারচেজ সেভ</Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
