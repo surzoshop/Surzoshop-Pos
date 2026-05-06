@@ -348,15 +348,17 @@ export default function Ledger() {
       </div>
 
       {/* Tabs row: লেজার / আয় / খরচ / ক্যাশ / বিক্রয় / ক্রয় (page switch) */}
-      <div className="flex flex-wrap gap-1 p-1 rounded-full bg-muted/40 w-fit mx-auto">
+      <div className="flex flex-wrap gap-1.5 p-1.5 rounded-2xl bg-muted/40 w-fit mx-auto border border-border/60">
         {TABS.map(t => {
           const active = tab === t.key;
           return (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
-                active ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"
+              className={`inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
+                active
+                  ? "bg-background shadow-md text-primary scale-105"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/60"
               }`}>
-              <t.icon className="h-3.5 w-3.5" />
+              <t.icon className="h-4 w-4" />
               {t.label}
             </button>
           );
@@ -365,13 +367,15 @@ export default function Ledger() {
 
       {/* Account sub-tabs (only for লেজার) */}
       {tab === "ledger" && (
-        <div className="flex flex-wrap gap-6 justify-center text-sm">
+        <div className="flex flex-wrap gap-2 justify-center">
           {ACCOUNT_TABS.map(a => {
             const active = account === a.key;
             return (
               <button key={a.key} onClick={() => setAccount(a.key)}
-                className={`pb-1 font-bold transition-all border-b-2 ${
-                  active ? "border-emerald-600 text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+                className={`px-5 py-2 rounded-full text-sm font-bold border-2 transition-all duration-200 ${
+                  active
+                    ? "bg-primary text-primary-foreground border-primary shadow-md scale-105"
+                    : "bg-background text-foreground/80 border-border hover:border-primary/60 hover:text-primary hover:-translate-y-0.5"
                 }`}>{a.label}</button>
             );
           })}
