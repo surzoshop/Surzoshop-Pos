@@ -393,11 +393,13 @@ export default function Ledger() {
       <Card className="border-border/60">
         <CardContent className="p-4 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            <CalendarDays className="h-5 w-5 text-muted-foreground" />
             {RANGE_CHIPS.map(c => (
               <button key={c.key} onClick={() => setLowRange(c.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-                  lowRange === c.key ? "bg-emerald-600 text-white shadow" : "bg-muted/60 text-foreground/70 hover:bg-muted"
+                className={`px-4 py-2 rounded-full text-sm font-bold border-2 transition-all ${
+                  lowRange === c.key
+                    ? "bg-primary text-primary-foreground border-primary shadow"
+                    : "bg-background text-foreground/80 border-border hover:border-primary/50 hover:text-primary"
                 }`}>{c.label}</button>
             ))}
             <div className="flex items-center gap-2 ml-auto">
@@ -419,11 +421,13 @@ export default function Ledger() {
             </Button>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <ListFilter className="h-4 w-4 text-muted-foreground" />
+            <ListFilter className="h-5 w-5 text-muted-foreground" />
             {ROW_FILTERS.map(f => (
               <button key={f.key} onClick={() => setRowFilter(f.key)}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                  rowFilter === f.key ? "bg-emerald-600 text-white" : "bg-muted/60 text-foreground/70 hover:bg-muted"
+                className={`px-4 py-1.5 rounded-full text-sm font-bold border-2 transition-all ${
+                  rowFilter === f.key
+                    ? "bg-primary text-primary-foreground border-primary shadow"
+                    : "bg-background text-foreground/80 border-border hover:border-primary/50 hover:text-primary"
                 }`}>{f.label}</button>
             ))}
           </div>
