@@ -335,8 +335,14 @@ export default function Ledger() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:justify-end">
-            <Input type="date" value={topFrom} onChange={e => setTopFrom(e.target.value)} className="w-full sm:w-[150px]" />
-            <Input type="date" value={topTo}   onChange={e => setTopTo(e.target.value)}   className="w-full sm:w-[150px]" />
+            <div className="flex flex-col gap-1">
+              <Label className="text-[11px] font-bold text-muted-foreground sm:hidden">শুরু</Label>
+              <Input type="date" value={topFrom} onChange={e => setTopFrom(e.target.value)} className="w-full sm:w-[150px] h-11 sm:h-10 text-sm" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label className="text-[11px] font-bold text-muted-foreground sm:hidden">শেষ</Label>
+              <Input type="date" value={topTo}   onChange={e => setTopTo(e.target.value)}   className="w-full sm:w-[150px] h-11 sm:h-10 text-sm" />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -407,8 +413,14 @@ export default function Ledger() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:justify-end">
-            <Input type="date" value={lowFrom} onChange={e => setLowFrom(e.target.value)} className="w-full sm:w-[150px]" />
-            <Input type="date" value={lowTo}   onChange={e => setLowTo(e.target.value)}   className="w-full sm:w-[150px]" />
+            <div className="flex flex-col gap-1">
+              <Label className="text-[11px] font-bold text-muted-foreground sm:hidden">শুরু</Label>
+              <Input type="date" value={lowFrom} onChange={e => setLowFrom(e.target.value)} className="w-full sm:w-[150px] h-11 sm:h-10 text-sm" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label className="text-[11px] font-bold text-muted-foreground sm:hidden">শেষ</Label>
+              <Input type="date" value={lowTo}   onChange={e => setLowTo(e.target.value)}   className="w-full sm:w-[150px] h-11 sm:h-10 text-sm" />
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative flex-1 min-w-[160px]">
@@ -673,22 +685,22 @@ function EntryDialog({ open, type, onOpenChange, onSaved, userId, shopId }: any)
   const isDeposit = type === "deposit";
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg w-[calc(100vw-1rem)] max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             {isDeposit
               ? <ArrowDownCircle className="h-5 w-5 text-emerald-600" />
               : <ArrowUpCircle className="h-5 w-5 text-rose-600" />}
             {isDeposit ? "নতুন জমা" : "নতুন উত্তোলন"}
           </DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-3 py-2">
-          <div><Label>তারিখ</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
-          <div><Label>পরিমাণ (৳)</Label><Input type="number" placeholder="0" value={amount} onChange={e => setAmount(e.target.value)} /></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-2">
+          <div><Label>তারিখ</Label><Input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-11 sm:h-10" /></div>
+          <div><Label>পরিমাণ (৳)</Label><Input type="number" inputMode="decimal" placeholder="0" value={amount} onChange={e => setAmount(e.target.value)} className="h-11 sm:h-10" /></div>
           <div>
             <Label>অ্যাকাউন্ট</Label>
             <Select value={accountKind} onValueChange={(v: any) => setAccountKind(v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-11 sm:h-10"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="general">সাধারণ</SelectItem>
                 <SelectItem value="customer">কাস্টমার</SelectItem>
@@ -700,7 +712,7 @@ function EntryDialog({ open, type, onOpenChange, onSaved, userId, shopId }: any)
           <div>
             <Label>পেমেন্ট মাধ্যম</Label>
             <Select value={method} onValueChange={setMethod}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-11 sm:h-10"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="cash">নগদ</SelectItem>
                 <SelectItem value="bkash">বিকাশ</SelectItem>
@@ -710,15 +722,15 @@ function EntryDialog({ open, type, onOpenChange, onSaved, userId, shopId }: any)
               </SelectContent>
             </Select>
           </div>
-          <div className="col-span-2"><Label>ক্যাটাগরি</Label><Input placeholder={isDeposit ? "যেমন: বিক্রয়, ভাড়া আদায়" : "যেমন: ভাড়া, বিদ্যুৎ বিল"} value={category} onChange={e => setCategory(e.target.value)} /></div>
-          <div className="col-span-2"><Label>পার্টি / ব্যক্তির নাম</Label><Input value={party} onChange={e => setParty(e.target.value)} /></div>
-          <div className="col-span-2"><Label>রেফারেন্স নং</Label><Input value={ref} onChange={e => setRef(e.target.value)} /></div>
-          <div className="col-span-2"><Label>নোট</Label><Textarea rows={2} value={notes} onChange={e => setNotes(e.target.value)} /></div>
+          <div className="sm:col-span-2"><Label>ক্যাটাগরি</Label><Input placeholder={isDeposit ? "যেমন: বিক্রয়, ভাড়া আদায়" : "যেমন: ভাড়া, বিদ্যুৎ বিল"} value={category} onChange={e => setCategory(e.target.value)} className="h-11 sm:h-10" /></div>
+          <div className="sm:col-span-2"><Label>পার্টি / ব্যক্তির নাম</Label><Input value={party} onChange={e => setParty(e.target.value)} className="h-11 sm:h-10" /></div>
+          <div className="sm:col-span-2"><Label>রেফারেন্স নং</Label><Input value={ref} onChange={e => setRef(e.target.value)} className="h-11 sm:h-10" /></div>
+          <div className="sm:col-span-2"><Label>নোট</Label><Textarea rows={2} value={notes} onChange={e => setNotes(e.target.value)} /></div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>বাতিল</Button>
+        <DialogFooter className="flex-col-reverse sm:flex-row gap-2 sticky bottom-0 bg-background pt-3">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto h-11 sm:h-10">বাতিল</Button>
           <Button onClick={save} disabled={saving}
-            className={isDeposit ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-rose-600 hover:bg-rose-700 text-white"}>
+            className={`w-full sm:w-auto h-11 sm:h-10 ${isDeposit ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-rose-600 hover:bg-rose-700 text-white"}`}>
             {saving ? "সংরক্ষণ..." : "সংরক্ষণ করুন"}
           </Button>
         </DialogFooter>
