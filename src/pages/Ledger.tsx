@@ -104,6 +104,8 @@ export default function Ledger() {
   const { user } = useAuth();
   const { currentShop } = useShop();
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [salesAgg, setSalesAgg] = useState<{ date: string; total: number; party: string | null }[]>([]);
+  const [purchasesAgg, setPurchasesAgg] = useState<{ date: string; total: number; party: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Top section state
@@ -140,9 +142,26 @@ export default function Ledger() {
     let q = supabase.from("cash_book" as any).select("*")
       .order("entry_date", { ascending: false }).order("created_at", { ascending: false });
     if (currentShop) q = q.eq("shop_id", currentShop.id);
-    const { data, error } = await q;
+
+    let sq = supabase.from("sales").select("created_at,total,customers(name)").order("created_at", { ascending: false });
+    if (currentShop) sq = sq.eq("shop_id", currentShop.id);
+
+    let pq = supabase.from("purchases").select("created_at,total,suppliers(name)").order("created_at", { ascending: false });
+    if (currentShop) pq = pq.eq("shop_id", currentShop.id);
+
+    const [{ data, error }, { data: sd }, { data: pd }] = await Promise.all([q, sq, pq]);
     if (error) toast.error(error.message);
     setEntries((data ?? []) as any);
+    setSalesAgg((sd ?? []).map((s: any) => ({
+      date: String(s.created_at).slice(0, 10),
+      total: Number(s.total || 0),
+      party: s.customers?.name ?? null,
+    })));
+    setPurchasesAgg((pd ?? []).map((p: any) => ({
+      date: String(p.created_at).slice(0, 10),
+      total: Number(p.total || 0),
+      party: p.suppliers?.name ?? null,
+    })));
     setLoading(false);
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [currentShop?.id]);
