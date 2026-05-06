@@ -322,11 +322,13 @@ export default function Ledger() {
             <Input placeholder="ক্যাটাগরি, নোট বা পরিমাণ দিয়ে খুঁজুন..." value={topSearch} onChange={e => setTopSearch(e.target.value)} className="pl-9" />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            <CalendarDays className="h-5 w-5 text-muted-foreground" />
             {RANGE_CHIPS.map(c => (
               <button key={c.key} onClick={() => setTopRange(c.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-                  topRange === c.key ? "bg-emerald-600 text-white shadow" : "bg-muted/60 text-foreground/70 hover:bg-muted"
+                className={`px-4 py-2 rounded-full text-sm font-bold border-2 transition-all ${
+                  topRange === c.key
+                    ? "bg-primary text-primary-foreground border-primary shadow"
+                    : "bg-background text-foreground/80 border-border hover:border-primary/50 hover:text-primary"
                 }`}>{c.label}</button>
             ))}
             <div className="flex items-center gap-2 ml-auto">
