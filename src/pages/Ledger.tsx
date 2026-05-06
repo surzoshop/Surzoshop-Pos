@@ -335,8 +335,14 @@ export default function Ledger() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:justify-end">
-            <Input type="date" value={topFrom} onChange={e => setTopFrom(e.target.value)} className="w-full sm:w-[150px]" />
-            <Input type="date" value={topTo}   onChange={e => setTopTo(e.target.value)}   className="w-full sm:w-[150px]" />
+            <div className="flex flex-col gap-1">
+              <Label className="text-[11px] font-bold text-muted-foreground sm:hidden">শুরু</Label>
+              <Input type="date" value={topFrom} onChange={e => setTopFrom(e.target.value)} className="w-full sm:w-[150px] h-11 sm:h-10 text-sm" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label className="text-[11px] font-bold text-muted-foreground sm:hidden">শেষ</Label>
+              <Input type="date" value={topTo}   onChange={e => setTopTo(e.target.value)}   className="w-full sm:w-[150px] h-11 sm:h-10 text-sm" />
+            </div>
           </div>
         </CardContent>
       </Card>
