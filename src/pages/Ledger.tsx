@@ -253,7 +253,7 @@ export default function Ledger() {
           <p className="text-xs text-muted-foreground">{TAB_META[tab].subtitle}</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setDialog("deposit")}
+          <Button onClick={() => setDialog("withdraw")}
             className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md">
             <ArrowDownCircle className="h-4 w-4" /> জমা
           </Button>
