@@ -46,15 +46,15 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
   type Tone = "emerald" | "violet" | "sky" | "amber" | "indigo" | "teal" | "pink" | "rose" | "cyan" | "lime" | "fuchsia" | "orange" | "blue" | "purple";
   const allItems: { url: string; icon: any; label: string; key: PageKey; tone: Tone }[] = [
     { url: "/", icon: LayoutDashboard, label: "ড্যাশবোর্ড", key: "dashboard", tone: "indigo" },
-    { url: "/purchases", icon: ShoppingBag, label: "ক্রয় / স্টক এন্ট্রি", key: "purchases", tone: "fuchsia" },
-    { url: "/pos", icon: ShoppingCart, label: "বিক্রি করুন", key: "pos", tone: "emerald" },
+    { url: "/pos", icon: ShoppingCart, label: "বিক্রি করুন (POS)", key: "pos", tone: "emerald" },
     { url: "/sales", icon: Receipt, label: "বিক্রয় তালিকা", key: "sales", tone: "violet" },
     { url: "/sales/returns", icon: RotateCcw, label: "বিক্রয় ফেরত", key: "sales-returns", tone: "rose" },
+    { url: "/purchases", icon: ShoppingBag, label: "ক্রয় / স্টক এন্ট্রি", key: "purchases", tone: "fuchsia" },
     { url: "/products", icon: Package, label: "পণ্য তালিকা", key: "products", tone: "teal" },
     { url: "/stock-ledger", icon: Layers, label: "স্টক ম্যানেজমেন্ট", key: "stock-ledger", tone: "blue" },
     { url: "/stock-adjustments", icon: Warehouse, label: "স্টক সমন্বয়", key: "stock-adjustments", tone: "blue" },
     { url: "/expenses", icon: ClipboardList, label: "জমা খরচ এন্ট্রি", key: "expenses", tone: "rose" },
-    { url: "/ledger", icon: BookOpen, label: "লেজার", key: "dashboard", tone: "indigo" },
+    { url: "/ledger", icon: BookOpen, label: "হিসাব ব্যবস্থাপনা", key: "dashboard", tone: "indigo" },
     { url: "/installments", icon: Wallet, label: "কিস্তি ম্যানেজমেন্ট", key: "installments", tone: "amber" },
     { url: "/warranty", icon: ShieldCheck, label: "ওয়ারেন্টি ম্যানেজমেন্ট", key: "warranty", tone: "lime" },
     { url: "/customers", icon: Users, label: "কাস্টমার ম্যানেজমেন্ট", key: "customers", tone: "sky" },
