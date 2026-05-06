@@ -3,6 +3,7 @@ import {
   LayoutDashboard, Package, Receipt, Warehouse, Users, ShoppingCart,
   HelpCircle, LogOut, Truck, ShoppingBag, Wallet, ClipboardList,
   UserCog, CalendarCheck, BarChart3, Store, X, Smartphone, Printer, Contact, ShieldCheck,
+  RotateCcw, BookOpen, Layers,
 } from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -48,12 +49,16 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
     { url: "/pos", icon: ShoppingCart, label: t("pos"), key: "pos", tone: "emerald" },
     { url: "/sales", icon: Receipt, label: t("salesLedger"), key: "sales", tone: "violet" },
     { url: "/customers", icon: Users, label: t("customers"), key: "customers", tone: "sky" },
+    { url: "/customers/ledger", icon: BookOpen, label: "ক্রেতা লেজার", key: "customer-ledger", tone: "cyan" },
     { url: "/contacts", icon: Contact, label: "যোগাযোগ", key: "contacts", tone: "cyan" },
     { url: "/installments", icon: Wallet, label: t("installments"), key: "installments", tone: "amber" },
     { url: "/products", icon: Package, label: t("productCatalog"), key: "products", tone: "teal" },
+    { url: "/stock-ledger", icon: Layers, label: "স্টক লেজার", key: "stock-ledger", tone: "blue" },
     { url: "/warranty", icon: ShieldCheck, label: "ওয়ারেন্টি", key: "warranty", tone: "lime" },
     { url: "/suppliers", icon: Truck, label: t("suppliers"), key: "suppliers", tone: "orange" },
+    { url: "/suppliers/ledger", icon: BookOpen, label: "সরবরাহকারী লেজার", key: "supplier-ledger", tone: "amber" },
     { url: "/purchases", icon: ShoppingBag, label: t("purchases"), key: "purchases", tone: "fuchsia" },
+    { url: "/sales/returns", icon: RotateCcw, label: "বিক্রয় ফেরত", key: "sales-returns", tone: "rose" },
     { url: "/stock-adjustments", icon: Warehouse, label: t("stockAdjustments"), key: "stock-adjustments", tone: "blue" },
     { url: "/expenses", icon: ClipboardList, label: t("expenses"), key: "expenses", tone: "rose" },
     { url: "/reports", icon: BarChart3, label: t("reports"), key: "reports", tone: "purple" },
