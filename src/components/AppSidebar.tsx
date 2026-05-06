@@ -61,6 +61,7 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
     { url: "/suppliers", icon: Truck, label: "সরবরাহকারী", key: "suppliers", tone: "orange" },
     { url: "/suppliers/ledger", icon: BookOpen, label: "সরবরাহকারী লেজার", key: "supplier-ledger", tone: "amber" },
     { url: "/expenses", icon: ClipboardList, label: "খরচ", key: "expenses", tone: "rose" },
+    { url: "/ledger", icon: BookOpen, label: "নগদ লেজার", key: "dashboard", tone: "indigo" },
     { url: "/reports", icon: BarChart3, label: "রিপোর্ট", key: "reports", tone: "purple" },
     { url: "/staff", icon: UserCog, label: "স্টাফ", key: "staff", tone: "pink" },
     { url: "/attendance", icon: CalendarCheck, label: "হাজিরা", key: "attendance", tone: "emerald" },
