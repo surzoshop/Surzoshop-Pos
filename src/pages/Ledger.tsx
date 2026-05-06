@@ -481,23 +481,30 @@ export default function Ledger() {
   );
 }
 
-function MiniStat({ label, value, icon: Icon, tone }: any) {
-  const tones: Record<string, string> = {
-    emerald: "from-emerald-100 to-emerald-50 dark:from-emerald-900/40 dark:to-emerald-900/10 text-emerald-700 dark:text-emerald-400",
-    rose:    "from-rose-100 to-rose-50 dark:from-rose-900/40 dark:to-rose-900/10 text-rose-700 dark:text-rose-400",
-    sky:     "from-sky-100 to-sky-50 dark:from-sky-900/40 dark:to-sky-900/10 text-sky-700 dark:text-sky-400",
-    amber:   "from-amber-100 to-amber-50 dark:from-amber-900/40 dark:to-amber-900/10 text-amber-700 dark:text-amber-400",
+function MiniStat({ label, value, icon: Icon, tone, active, onClick }: any) {
+  const tones: Record<string, { ring: string; icon: string; bar: string }> = {
+    income:   { ring: "ring-emerald-500/40", icon: "text-emerald-600 bg-emerald-500/10", bar: "bg-emerald-500" },
+    expense:  { ring: "ring-rose-500/40",    icon: "text-rose-600 bg-rose-500/10",       bar: "bg-rose-500" },
+    balance:  { ring: "ring-primary/40",     icon: "text-primary bg-primary/10",         bar: "bg-primary" },
+    cash:     { ring: "ring-sky-500/40",     icon: "text-sky-600 bg-sky-500/10",         bar: "bg-sky-500" },
+    sales:    { ring: "ring-amber-500/40",   icon: "text-amber-600 bg-amber-500/10",     bar: "bg-amber-500" },
+    purchase: { ring: "ring-violet-500/40",  icon: "text-violet-600 bg-violet-500/10",   bar: "bg-violet-500" },
   };
+  const t = tones[tone] ?? tones.balance;
   return (
-    <div className={`rounded-2xl p-3 bg-gradient-to-br ${tones[tone]} border border-border/40`}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="text-[11px] font-bold opacity-80 truncate">{label}</div>
-        <div className="h-7 w-7 rounded-full bg-background/70 grid place-items-center shadow">
+    <button onClick={onClick}
+      className={`group relative text-left rounded-xl p-3 bg-card border border-border/60 transition-all hover:shadow-md hover:-translate-y-0.5 ${
+        active ? `ring-2 ${t.ring} shadow-md` : ""
+      }`}>
+      <span className={`absolute left-0 top-3 bottom-3 w-1 rounded-r ${t.bar} ${active ? "opacity-100" : "opacity-60"}`} />
+      <div className="flex items-start justify-between gap-2 pl-2">
+        <div className="text-[11px] font-bold text-muted-foreground truncate">{label}</div>
+        <div className={`h-7 w-7 rounded-lg grid place-items-center ${t.icon}`}>
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      <div className="mt-1 text-lg font-black text-foreground truncate">{`৳${Number(value || 0).toLocaleString("bn-BD")}`}</div>
-    </div>
+      <div className="mt-1 pl-2 text-lg font-black text-foreground truncate">{`৳${Number(value || 0).toLocaleString("bn-BD")}`}</div>
+    </button>
   );
 }
 
