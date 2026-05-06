@@ -166,8 +166,37 @@ export default function Ledger() {
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [currentShop?.id]);
 
+  // Convert sales/purchases into synthetic ledger entries so all tabs show real DB data
+  const synthEntries: Entry[] = useMemo(() => {
+    const sales: Entry[] = salesAgg.map((s, i) => ({
+      id: `sale-${i}-${s.date}`,
+      entry_date: s.date,
+      entry_type: "deposit",
+      amount: s.total,
+      category: "Sales / বিক্রয়",
+      payment_method: "cash",
+      reference_no: null,
+      party_name: s.party,
+      notes: null,
+      created_at: s.date,
+    }));
+    const purchases: Entry[] = purchasesAgg.map((p, i) => ({
+      id: `pur-${i}-${p.date}`,
+      entry_date: p.date,
+      entry_type: "withdraw",
+      amount: p.total,
+      category: "Purchase / ক্রয়",
+      payment_method: "cash",
+      reference_no: null,
+      party_name: p.party,
+      notes: null,
+      created_at: p.date,
+    }));
+    return [...entries, ...sales, ...purchases];
+  }, [entries, salesAgg, purchasesAgg]);
+
   // Apply top range to compute summary cards
-  const topRangeFiltered = useMemo(() => entries.filter(e => {
+  const topRangeFiltered = useMemo(() => synthEntries.filter(e => {
     if (topFrom && e.entry_date < topFrom) return false;
     if (topTo   && e.entry_date > topTo)   return false;
     if (topSearch) {
@@ -177,25 +206,27 @@ export default function Ledger() {
         || String(e.amount).includes(q);
     }
     return true;
-  }), [entries, topFrom, topTo, topSearch]);
+  }), [synthEntries, topFrom, topTo, topSearch]);
 
-  // 6 mini stat cards (top row)
+  // 6 mini stat cards (top row) — REAL DB data
   const miniStats = useMemo(() => {
     const sumWhere = (fn: (e: Entry) => boolean) =>
       topRangeFiltered.filter(fn).reduce((s, e) => s + Number(e.amount || 0), 0);
     const cat = (e: Entry, k: string) => (e.category ?? "").toLowerCase().includes(k);
+    const income  = sumWhere(e => e.entry_type === "deposit");
+    const expense = sumWhere(e => e.entry_type === "withdraw");
     return [
-      { key: "income"   as TabKey, label: "মোট আয়",    value: sumWhere(e => e.entry_type === "deposit"),  icon: ArrowDownToLine, tone: "income" },
-      { key: "expense"  as TabKey, label: "মোট খরচ",   value: sumWhere(e => e.entry_type === "withdraw"), icon: ArrowUpFromLine, tone: "expense" },
-      { key: "ledger"   as TabKey, label: "নগদ ব্যাল.", value: sumWhere(e => e.entry_type === "deposit") - sumWhere(e => e.entry_type === "withdraw"), icon: Coins, tone: "balance" },
-      { key: "cash"     as TabKey, label: "ক্যাশ",      value: sumWhere(e => (e.payment_method ?? "cash") === "cash"), icon: Wallet, tone: "cash" },
-      { key: "sales"    as TabKey, label: "বিক্রয়",    value: sumWhere(e => cat(e, "sales") || cat(e, "বিক্রয়")), icon: Receipt, tone: "sales" },
-      { key: "purchase" as TabKey, label: "ক্রয়",       value: sumWhere(e => cat(e, "purchase") || cat(e, "ক্রয়")), icon: ShoppingBag, tone: "purchase" },
+      { key: "income"   as TabKey, label: "মোট আয়",       value: income,                                     icon: ArrowDownToLine, tone: "income" },
+      { key: "expense"  as TabKey, label: "মোট খরচ",      value: expense,                                    icon: ArrowUpFromLine, tone: "expense" },
+      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স", value: income - expense,                          icon: Coins,           tone: "balance" },
+      { key: "cash"     as TabKey, label: "ক্যাশ লেনদেন",  value: sumWhere(e => (e.payment_method ?? "cash") === "cash"), icon: Wallet, tone: "cash" },
+      { key: "sales"    as TabKey, label: "মোট বিক্রয়",    value: sumWhere(e => cat(e, "sales")    || cat(e, "বিক্রয়")), icon: Receipt,    tone: "sales" },
+      { key: "purchase" as TabKey, label: "মোট ক্রয়",      value: sumWhere(e => cat(e, "purchase") || cat(e, "ক্রয়")),    icon: ShoppingBag, tone: "purchase" },
     ];
   }, [topRangeFiltered]);
 
   // 3 big totals (under account tabs) — based on lower range + tab + account filter
-  const lowerFiltered = useMemo(() => entries.filter(e => {
+  const lowerFiltered = useMemo(() => synthEntries.filter(e => {
     if (lowFrom && e.entry_date < lowFrom) return false;
     if (lowTo   && e.entry_date > lowTo)   return false;
 
@@ -205,14 +236,14 @@ export default function Ledger() {
     if (tab === "sales"    && !((e.category ?? "").toLowerCase().includes("sales")    || (e.category ?? "").includes("বিক্রয়"))) return false;
     if (tab === "purchase" && !((e.category ?? "").toLowerCase().includes("purchase") || (e.category ?? "").includes("ক্রয়")))    return false;
 
-    if (account !== "account") {
+    if (tab === "ledger" && account !== "account") {
       const cat = (e.category ?? "").toLowerCase();
-      const map: Record<string, string[]> = {
-        customer: ["customer", "কাস্টমার", "ক্রেতা"],
-        supplier: ["supplier", "সাপ্লায়ার", "সরবরাহ"],
-        owner:    ["owner", "মালিক", "ওনার"],
-      };
-      if (!map[account].some(k => cat.includes(k.toLowerCase()))) return false;
+      const isSales    = cat.includes("sales")    || cat.includes("বিক্রয়");
+      const isPurchase = cat.includes("purchase") || cat.includes("ক্রয়");
+      const ownerKw    = ["owner", "মালিক", "ওনার"];
+      if (account === "customer" && !isSales  && !ownerKw.every(k => false) && !cat.includes("customer") && !cat.includes("কাস্টমার") && !cat.includes("ক্রেতা")) return false;
+      if (account === "supplier" && !isPurchase && !cat.includes("supplier") && !cat.includes("সাপ্লায়ার") && !cat.includes("সরবরাহ")) return false;
+      if (account === "owner"    && !ownerKw.some(k => cat.includes(k.toLowerCase()))) return false;
     }
 
     if (rowFilter === "income"   && e.entry_type !== "deposit")  return false;
@@ -228,7 +259,7 @@ export default function Ledger() {
         || (e.reference_no ?? "").toLowerCase().includes(q);
     }
     return true;
-  }), [entries, lowFrom, lowTo, tab, account, rowFilter, lowSearch]);
+  }), [synthEntries, lowFrom, lowTo, tab, account, rowFilter, lowSearch]);
 
   const totals = useMemo(() => {
     const cr = lowerFiltered.filter(e => e.entry_type === "deposit") .reduce((s, e) => s + Number(e.amount || 0), 0);
