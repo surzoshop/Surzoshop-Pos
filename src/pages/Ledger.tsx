@@ -288,43 +288,38 @@ export default function Ledger() {
         </CardContent>
       </Card>
 
-      {/* Primary tabs (true page switch) */}
-      <Card className="border-border/60 overflow-hidden">
-        <div className="grid grid-cols-3 sm:grid-cols-6 divide-x divide-border/60">
-          {TABS.map(t => {
-            const active = tab === t.key;
-            return (
-              <button key={t.key} onClick={() => setTab(t.key)}
-                className={`relative flex flex-col items-center justify-center gap-1 py-3 px-2 text-xs font-bold transition-all ${
-                  active
-                    ? "bg-primary/10 text-primary"
-                    : "bg-background text-muted-foreground hover:bg-muted/40 hover:text-foreground"
-                }`}>
-                <t.icon className="h-4 w-4" />
-                <span>{t.label}</span>
-                {active && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
-              </button>
-            );
-          })}
-        </div>
-      </Card>
-
-      {/* 6 mini stat cards — quick switchers too */}
+      {/* 6 mini stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {miniStats.map((s, i) => (
           <MiniStat key={i} {...s} active={tab === s.key} onClick={() => setTab(s.key)} />
         ))}
       </div>
 
+      {/* Tabs row: লেজার / আয় / খরচ / ক্যাশ / বিক্রয় / ক্রয় (page switch) */}
+      <div className="flex flex-wrap gap-1 p-1 rounded-full bg-muted/40 w-fit mx-auto">
+        {TABS.map(t => {
+          const active = tab === t.key;
+          return (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
+                active ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}>
+              <t.icon className="h-3.5 w-3.5" />
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Account sub-tabs (only for লেজার) */}
       {tab === "ledger" && (
-        <div className="flex flex-wrap gap-6 justify-center text-sm border-b border-border/60 pb-0">
+        <div className="flex flex-wrap gap-6 justify-center text-sm">
           {ACCOUNT_TABS.map(a => {
             const active = account === a.key;
             return (
               <button key={a.key} onClick={() => setAccount(a.key)}
-                className={`pb-2 -mb-px font-bold transition-all border-b-2 ${
-                  active ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                className={`pb-1 font-bold transition-all border-b-2 ${
+                  active ? "border-emerald-600 text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}>{a.label}</button>
             );
           })}
