@@ -352,6 +352,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean
+          low_stock_threshold: number
           name: string
           price: number
           shop_id: string | null
@@ -370,6 +371,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          low_stock_threshold?: number
           name: string
           price?: number
           shop_id?: string | null
@@ -388,6 +390,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          low_stock_threshold?: number
           name?: string
           price?: number
           shop_id?: string | null
@@ -474,6 +477,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      purchase_payments: {
+        Row: {
+          amount: number
+          created_by: string | null
+          id: string
+          note: string | null
+          paid_at: string
+          payment_method: string | null
+          purchase_id: string
+          shop_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          paid_at?: string
+          payment_method?: string | null
+          purchase_id: string
+          shop_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          paid_at?: string
+          payment_method?: string | null
+          purchase_id?: string
+          shop_id?: string | null
+        }
+        Relationships: []
       }
       purchases: {
         Row: {
@@ -671,6 +707,86 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sales_return_items: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          product_name: string
+          qty: number
+          return_id: string
+          shop_id: string | null
+          subtotal: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          product_name: string
+          qty: number
+          return_id: string
+          shop_id?: string | null
+          subtotal: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          product_name?: string
+          qty?: number
+          return_id?: string
+          shop_id?: string | null
+          subtotal?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_return_items_return_id_fkey"
+            columns: ["return_id"]
+            isOneToOne: false
+            referencedRelation: "sales_returns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_returns: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          reason: string | null
+          refund_amount: number
+          return_no: string
+          sale_id: string
+          shop_id: string | null
+          total_amount: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+          refund_amount?: number
+          return_no?: string
+          sale_id: string
+          shop_id?: string | null
+          total_amount?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          reason?: string | null
+          refund_amount?: number
+          return_no?: string
+          sale_id?: string
+          shop_id?: string | null
+          total_amount?: number
+        }
+        Relationships: []
       }
       shop_users: {
         Row: {
