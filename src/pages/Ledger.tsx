@@ -384,7 +384,7 @@ export default function Ledger() {
         <CardContent className="p-0">
           <div className="flex items-center justify-between p-4 border-b border-border/60">
             <h3 className="font-bold text-foreground inline-flex items-center gap-2">
-              <BookOpen className="h-4 w-4" /> হিসেব লেজার
+              <BookOpen className="h-4 w-4" /> {TAB_META[tab].title}
             </h3>
             <div className="flex items-center gap-2">
               <div className="inline-flex bg-muted/40 rounded-full p-1">
