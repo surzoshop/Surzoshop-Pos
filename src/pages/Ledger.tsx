@@ -166,12 +166,12 @@ export default function Ledger() {
       topRangeFiltered.filter(fn).reduce((s, e) => s + Number(e.amount || 0), 0);
     const cat = (e: Entry, k: string) => (e.category ?? "").toLowerCase().includes(k);
     return [
-      { label: "মোট আয়",    value: sumWhere(e => e.entry_type === "deposit"),  icon: ArrowDownToLine, tone: "emerald" },
-      { label: "মোট খরচ",   value: sumWhere(e => e.entry_type === "withdraw"), icon: ArrowUpFromLine, tone: "rose" },
-      { label: "নগদ ব্যাল.", value: sumWhere(e => e.entry_type === "deposit") - sumWhere(e => e.entry_type === "withdraw"), icon: Coins, tone: "sky" },
-      { label: "ক্যাশ",      value: sumWhere(e => (e.payment_method ?? "cash") === "cash"), icon: Wallet, tone: "emerald" },
-      { label: "বিক্রয়",    value: sumWhere(e => cat(e, "sales") || cat(e, "বিক্রয়")), icon: Receipt, tone: "amber" },
-      { label: "ক্রয়",       value: sumWhere(e => cat(e, "purchase") || cat(e, "ক্রয়")), icon: ShoppingBag, tone: "rose" },
+      { key: "income"   as TabKey, label: "মোট আয়",    value: sumWhere(e => e.entry_type === "deposit"),  icon: ArrowDownToLine, tone: "income" },
+      { key: "expense"  as TabKey, label: "মোট খরচ",   value: sumWhere(e => e.entry_type === "withdraw"), icon: ArrowUpFromLine, tone: "expense" },
+      { key: "ledger"   as TabKey, label: "নগদ ব্যাল.", value: sumWhere(e => e.entry_type === "deposit") - sumWhere(e => e.entry_type === "withdraw"), icon: Coins, tone: "balance" },
+      { key: "cash"     as TabKey, label: "ক্যাশ",      value: sumWhere(e => (e.payment_method ?? "cash") === "cash"), icon: Wallet, tone: "cash" },
+      { key: "sales"    as TabKey, label: "বিক্রয়",    value: sumWhere(e => cat(e, "sales") || cat(e, "বিক্রয়")), icon: Receipt, tone: "sales" },
+      { key: "purchase" as TabKey, label: "ক্রয়",       value: sumWhere(e => cat(e, "purchase") || cat(e, "ক্রয়")), icon: ShoppingBag, tone: "purchase" },
     ];
   }, [topRangeFiltered]);
 
