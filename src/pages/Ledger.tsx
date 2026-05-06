@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import {
   ArrowDownCircle, ArrowUpCircle, Wallet, TrendingUp, TrendingDown,
   Search, Calendar as CalendarIcon, Printer, Download, BookOpen,
+  Plus, Receipt, ShoppingCart, ShoppingBag, Coins,
 } from "lucide-react";
 
 type Entry = {
@@ -33,9 +34,21 @@ type Entry = {
   created_at: string;
 };
 
+type TabKey = "ledger" | "income" | "expense" | "cash" | "sales" | "purchase";
+type AccountKey = "all" | "customer" | "supplier" | "owner";
+
 const today = () => new Date().toISOString().slice(0, 10);
 const firstOfMonth = () => { const d = new Date(); d.setDate(1); return d.toISOString().slice(0, 10); };
 const fmt = (n: number) => `৳${Number(n || 0).toLocaleString("bn-BD")}`;
+
+const TABS: { key: TabKey; label: string; icon: any; tone: string }[] = [
+  { key: "ledger",   label: "লেজার",   icon: BookOpen,     tone: "indigo"  },
+  { key: "income",   label: "আয়",      icon: TrendingUp,   tone: "emerald" },
+  { key: "expense",  label: "খরচ",     icon: TrendingDown, tone: "rose"    },
+  { key: "cash",     label: "ক্যাশ",   icon: Coins,        tone: "amber"   },
+  { key: "sales",    label: "বিক্রয়", icon: Receipt,      tone: "violet"  },
+  { key: "purchase", label: "ক্রয়",    icon: ShoppingBag,  tone: "fuchsia" },
+];
 
 export default function Ledger() {
   const { user } = useAuth();
@@ -45,7 +58,8 @@ export default function Ledger() {
   const [from, setFrom] = useState(firstOfMonth());
   const [to, setTo] = useState(today());
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<"all" | "deposit" | "withdraw">("all");
+  const [tab, setTab] = useState<TabKey>("ledger");
+  const [account, setAccount] = useState<AccountKey>("all");
   const [dialog, setDialog] = useState<null | "deposit" | "withdraw">(null);
 
   const load = async () => {
@@ -62,9 +76,23 @@ export default function Ledger() {
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [from, to, currentShop?.id]);
 
+  // Filter by tab + account + search
   const filtered = useMemo(() => {
     return entries.filter(e => {
-      if (typeFilter !== "all" && e.entry_type !== typeFilter) return false;
+      // Tab filter
+      if (tab === "income"  && e.entry_type !== "deposit")  return false;
+      if (tab === "expense" && e.entry_type !== "withdraw") return false;
+      if (tab === "cash"    && (e.payment_method ?? "cash") !== "cash") return false;
+      if (tab === "sales"    && (e.category ?? "").toLowerCase() !== "sales"    && (e.category ?? "") !== "বিক্রয়") return false;
+      if (tab === "purchase" && (e.category ?? "").toLowerCase() !== "purchase" && (e.category ?? "") !== "ক্রয়")    return false;
+
+      // Account filter (party_kind stored as a hint in notes prefix or category) — simple heuristic on category prefix
+      if (account !== "all") {
+        const cat = (e.category ?? "").toLowerCase();
+        const map = { customer: ["customer", "কাস্টমার", "ক্রেতা"], supplier: ["supplier", "সাপ্লায়ার", "সরবরাহ"], owner: ["owner", "মালিক"] } as const;
+        if (!map[account].some(k => cat.includes(k.toLowerCase()))) return false;
+      }
+
       if (search) {
         const q = search.toLowerCase();
         return (e.party_name ?? "").toLowerCase().includes(q)
@@ -74,10 +102,10 @@ export default function Ledger() {
       }
       return true;
     });
-  }, [entries, typeFilter, search]);
+  }, [entries, tab, account, search]);
 
   const totals = useMemo(() => {
-    const deposit = entries.filter(e => e.entry_type === "deposit").reduce((s, e) => s + Number(e.amount || 0), 0);
+    const deposit  = entries.filter(e => e.entry_type === "deposit") .reduce((s, e) => s + Number(e.amount || 0), 0);
     const withdraw = entries.filter(e => e.entry_type === "withdraw").reduce((s, e) => s + Number(e.amount || 0), 0);
     return { deposit, withdraw, balance: deposit - withdraw };
   }, [entries]);
@@ -91,44 +119,81 @@ export default function Ledger() {
             <BookOpen className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-foreground">নগদ লেজার</h1>
-            <p className="text-xs text-muted-foreground">দৈনিক জমা ও উত্তোলনের হিসাব</p>
+            <h1 className="text-2xl font-black text-foreground">হিসাব ব্যবস্থাপনা</h1>
+            <p className="text-xs text-muted-foreground">জমা খরচ এন্ট্রি ও সম্পূর্ণ লেজার</p>
           </div>
         </div>
         <div className="flex gap-2">
           <Button onClick={() => setDialog("deposit")}
             className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:brightness-110 text-white shadow-lg shadow-emerald-500/30">
-            <ArrowDownCircle className="h-4 w-4" /> জমা
+            <Plus className="h-4 w-4" /> আয় যোগ
           </Button>
           <Button onClick={() => setDialog("withdraw")}
             className="bg-gradient-to-r from-rose-500 to-rose-600 hover:brightness-110 text-white shadow-lg shadow-rose-500/30">
-            <ArrowUpCircle className="h-4 w-4" /> উত্তোলন
+            <Plus className="h-4 w-4" /> খরচ যোগ
           </Button>
         </div>
       </div>
 
-      {/* Summary cards */}
+      {/* Summary cards — মোট আয় / মোট খরচ / নগদ ব্যালেন্স */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <SummaryCard
           icon={<TrendingUp className="h-5 w-5" />}
-          label="মোট জমা" value={fmt(totals.deposit)}
-          gradient="from-emerald-400 to-emerald-600" tint="emerald"
+          label="মোট আয়" value={fmt(totals.deposit)}
+          gradient="from-emerald-400 to-emerald-600"
         />
         <SummaryCard
           icon={<TrendingDown className="h-5 w-5" />}
-          label="মোট উত্তোলন" value={fmt(totals.withdraw)}
-          gradient="from-rose-400 to-rose-600" tint="rose"
+          label="মোট খরচ" value={fmt(totals.withdraw)}
+          gradient="from-rose-400 to-rose-600"
         />
         <SummaryCard
           icon={<Wallet className="h-5 w-5" />}
-          label="বর্তমান ব্যালেন্স" value={fmt(totals.balance)}
-          gradient="from-indigo-400 to-indigo-600" tint="indigo"
+          label="নগদ ব্যালেন্স" value={fmt(totals.balance)}
+          gradient="from-indigo-400 to-indigo-600"
         />
       </div>
 
-      {/* Filters */}
+      {/* Tab pills — লেজার / আয় / খরচ / ক্যাশ / বিক্রয় / ক্রয় */}
+      <Card className="border-border/60">
+        <CardContent className="p-3">
+          <div className="flex flex-wrap gap-2">
+            {TABS.map(t => {
+              const active = tab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={`group inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                    active
+                      ? `bg-gradient-to-r from-${t.tone}-500 to-${t.tone}-600 text-white shadow-lg shadow-${t.tone}-500/30`
+                      : "bg-muted/60 text-foreground/70 hover:bg-muted"
+                  }`}
+                >
+                  <t.icon className="h-4 w-4" />
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Filters: account + dates + search */}
       <Card className="border-border/60">
         <CardContent className="p-4 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+          <div className="md:col-span-3">
+            <Label className="text-xs text-muted-foreground mb-1 block">অ্যাকাউন্ট</Label>
+            <Select value={account} onValueChange={(v: any) => setAccount(v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">সব অ্যাকাউন্ট</SelectItem>
+                <SelectItem value="customer">কাস্টমার</SelectItem>
+                <SelectItem value="supplier">সাপ্লায়ার</SelectItem>
+                <SelectItem value="owner">মালিক</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="md:col-span-3">
             <Label className="text-xs text-muted-foreground mb-1 block">শুরুর তারিখ</Label>
             <div className="relative">
@@ -142,17 +207,6 @@ export default function Ledger() {
               <CalendarIcon className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input type="date" value={to} onChange={e => setTo(e.target.value)} className="pl-9" />
             </div>
-          </div>
-          <div className="md:col-span-3">
-            <Label className="text-xs text-muted-foreground mb-1 block">ধরন</Label>
-            <Select value={typeFilter} onValueChange={(v: any) => setTypeFilter(v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">সব</SelectItem>
-                <SelectItem value="deposit">জমা</SelectItem>
-                <SelectItem value="withdraw">উত্তোলন</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
           <div className="md:col-span-3">
             <Label className="text-xs text-muted-foreground mb-1 block">খুঁজুন</Label>
@@ -184,8 +238,8 @@ export default function Ledger() {
                   <th className="text-left p-3">পার্টি</th>
                   <th className="text-left p-3">পেমেন্ট</th>
                   <th className="text-left p-3">রেফ.</th>
-                  <th className="text-right p-3">জমা</th>
-                  <th className="text-right p-3">উত্তোলন</th>
+                  <th className="text-right p-3">আয় (+)</th>
+                  <th className="text-right p-3">খরচ (-)</th>
                 </tr>
               </thead>
               <tbody>
@@ -198,14 +252,14 @@ export default function Ledger() {
                     <td className="p-3 whitespace-nowrap">{e.entry_date}</td>
                     <td className="p-3">
                       {e.entry_type === "deposit"
-                        ? <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30">জমা</Badge>
-                        : <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30">উত্তোলন</Badge>}
+                        ? <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30">আয়</Badge>
+                        : <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30">খরচ</Badge>}
                     </td>
                     <td className="p-3">{e.category ?? "-"}</td>
                     <td className="p-3">{e.party_name ?? "-"}</td>
                     <td className="p-3 capitalize">{e.payment_method ?? "-"}</td>
                     <td className="p-3 text-muted-foreground">{e.reference_no ?? "-"}</td>
-                    <td className="p-3 text-right font-bold text-emerald-600">{e.entry_type === "deposit" ? fmt(Number(e.amount)) : "-"}</td>
+                    <td className="p-3 text-right font-bold text-emerald-600">{e.entry_type === "deposit"  ? fmt(Number(e.amount)) : "-"}</td>
                     <td className="p-3 text-right font-bold text-rose-600">{e.entry_type === "withdraw" ? fmt(Number(e.amount)) : "-"}</td>
                   </tr>
                 ))}
@@ -214,7 +268,7 @@ export default function Ledger() {
                 <tfoot className="bg-muted/40 font-bold">
                   <tr className="border-t border-border">
                     <td className="p-3" colSpan={6}>সর্বমোট</td>
-                    <td className="p-3 text-right text-emerald-700">{fmt(filtered.filter(e => e.entry_type === "deposit").reduce((s, e) => s + Number(e.amount), 0))}</td>
+                    <td className="p-3 text-right text-emerald-700">{fmt(filtered.filter(e => e.entry_type === "deposit") .reduce((s, e) => s + Number(e.amount), 0))}</td>
                     <td className="p-3 text-right text-rose-700">{fmt(filtered.filter(e => e.entry_type === "withdraw").reduce((s, e) => s + Number(e.amount), 0))}</td>
                   </tr>
                 </tfoot>
@@ -236,9 +290,9 @@ export default function Ledger() {
   );
 }
 
-function SummaryCard({ icon, label, value, gradient, tint }: any) {
+function SummaryCard({ icon, label, value, gradient }: any) {
   return (
-    <Card className={`relative overflow-hidden border-${tint}-500/20`}>
+    <Card className="relative overflow-hidden border-border/60">
       <div className={`absolute inset-0 opacity-10 bg-gradient-to-br ${gradient}`} />
       <CardContent className="p-5 relative flex items-center gap-4">
         <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${gradient} text-white grid place-items-center shadow-lg`}>
@@ -256,6 +310,7 @@ function SummaryCard({ icon, label, value, gradient, tint }: any) {
 function EntryDialog({ open, type, onOpenChange, onSaved, userId, shopId }: any) {
   const [date, setDate] = useState(today());
   const [amount, setAmount] = useState("");
+  const [accountKind, setAccountKind] = useState<"customer" | "supplier" | "owner" | "general">("general");
   const [category, setCategory] = useState("");
   const [party, setParty] = useState("");
   const [method, setMethod] = useState("cash");
@@ -265,7 +320,7 @@ function EntryDialog({ open, type, onOpenChange, onSaved, userId, shopId }: any)
 
   useEffect(() => {
     if (open) {
-      setDate(today()); setAmount(""); setCategory(""); setParty("");
+      setDate(today()); setAmount(""); setAccountKind("general"); setCategory(""); setParty("");
       setMethod("cash"); setRef(""); setNotes("");
     }
   }, [open]);
@@ -275,14 +330,18 @@ function EntryDialog({ open, type, onOpenChange, onSaved, userId, shopId }: any)
     const amt = Number(amount);
     if (!amt || amt <= 0) { toast.error("সঠিক পরিমাণ দিন"); return; }
     setSaving(true);
+    // store account kind as a prefix in category so account filter works
+    const finalCategory = accountKind !== "general"
+      ? `${accountKind}${category ? " - " + category : ""}`
+      : (category || null);
     const { error } = await supabase.from("cash_book" as any).insert({
       shop_id: shopId, entry_date: date, entry_type: type, amount: amt,
-      category: category || null, party_name: party || null, payment_method: method,
+      category: finalCategory, party_name: party || null, payment_method: method,
       reference_no: ref || null, notes: notes || null, created_by: userId,
     });
     setSaving(false);
     if (error) { toast.error(error.message); return; }
-    toast.success(type === "deposit" ? "জমা সংরক্ষিত" : "উত্তোলন সংরক্ষিত");
+    toast.success(type === "deposit" ? "আয় সংরক্ষিত" : "খরচ সংরক্ষিত");
     onSaved();
   };
 
@@ -295,7 +354,7 @@ function EntryDialog({ open, type, onOpenChange, onSaved, userId, shopId }: any)
             {isDeposit
               ? <ArrowDownCircle className="h-5 w-5 text-emerald-600" />
               : <ArrowUpCircle className="h-5 w-5 text-rose-600" />}
-            {isDeposit ? "নতুন জমা" : "নতুন উত্তোলন"}
+            {isDeposit ? "নতুন আয় এন্ট্রি" : "নতুন খরচ এন্ট্রি"}
           </DialogTitle>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3 py-2">
@@ -307,13 +366,17 @@ function EntryDialog({ open, type, onOpenChange, onSaved, userId, shopId }: any)
             <Label>পরিমাণ (৳)</Label>
             <Input type="number" placeholder="0" value={amount} onChange={e => setAmount(e.target.value)} />
           </div>
-          <div className="col-span-2">
-            <Label>ক্যাটাগরি</Label>
-            <Input placeholder={isDeposit ? "যেমন: বিক্রয় থেকে" : "যেমন: ভাড়া, বিল"} value={category} onChange={e => setCategory(e.target.value)} />
-          </div>
-          <div className="col-span-2">
-            <Label>পার্টি / ব্যক্তির নাম</Label>
-            <Input value={party} onChange={e => setParty(e.target.value)} />
+          <div className="col-span-1">
+            <Label>অ্যাকাউন্ট</Label>
+            <Select value={accountKind} onValueChange={(v: any) => setAccountKind(v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="general">সাধারণ</SelectItem>
+                <SelectItem value="customer">কাস্টমার</SelectItem>
+                <SelectItem value="supplier">সাপ্লায়ার</SelectItem>
+                <SelectItem value="owner">মালিক</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="col-span-1">
             <Label>পেমেন্ট মাধ্যম</Label>
@@ -328,10 +391,19 @@ function EntryDialog({ open, type, onOpenChange, onSaved, userId, shopId }: any)
               </SelectContent>
             </Select>
           </div>
+          <div className="col-span-2">
+            <Label>ক্যাটাগরি</Label>
+            <Input placeholder={isDeposit ? "যেমন: বিক্রয়, ভাড়া আদায়" : "যেমন: ভাড়া, বিদ্যুৎ বিল"} value={category} onChange={e => setCategory(e.target.value)} />
+          </div>
+          <div className="col-span-2">
+            <Label>পার্টি / ব্যক্তির নাম</Label>
+            <Input value={party} onChange={e => setParty(e.target.value)} />
+          </div>
           <div className="col-span-1">
             <Label>রেফারেন্স নং</Label>
             <Input value={ref} onChange={e => setRef(e.target.value)} />
           </div>
+          <div className="col-span-1" />
           <div className="col-span-2">
             <Label>নোট</Label>
             <Textarea rows={2} value={notes} onChange={e => setNotes(e.target.value)} />
@@ -352,11 +424,12 @@ function EntryDialog({ open, type, onOpenChange, onSaved, userId, shopId }: any)
 }
 
 function exportCsv(rows: Entry[]) {
-  const head = ["তারিখ", "ধরন", "ক্যাটাগরি", "পার্টি", "পেমেন্ট", "রেফ", "জমা", "উত্তোলন", "নোট"];
+  const head = ["তারিখ", "ধরন", "ক্যাটাগরি", "পার্টি", "পেমেন্ট", "রেফ", "আয়", "খরচ", "নোট"];
   const lines = [head.join(",")];
   rows.forEach(e => {
     lines.push([
-      e.entry_date, e.entry_type, e.category ?? "", e.party_name ?? "",
+      e.entry_date, e.entry_type === "deposit" ? "আয়" : "খরচ",
+      e.category ?? "", e.party_name ?? "",
       e.payment_method ?? "", e.reference_no ?? "",
       e.entry_type === "deposit" ? e.amount : "",
       e.entry_type === "withdraw" ? e.amount : "",
