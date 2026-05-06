@@ -21,6 +21,7 @@ export default function Purchases() {
   const [purchases, setPurchases] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [viewBill, setViewBill] = useState<any>(null);
@@ -30,53 +31,75 @@ export default function Purchases() {
 
   // form state
   const [supplierId, setSupplierId] = useState("");
+  const [supplierSearch, setSupplierSearch] = useState("");
   const [billDate, setBillDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<any[]>([
+    { product_id: "", product_name: "", search: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0 },
+  ]);
   const [discount, setDiscount] = useState(0);
+  const [delivery, setDelivery] = useState(0);
   const [paid, setPaid] = useState(0);
-  // quick row
-  const [qPid, setQPid] = useState(""); const [qQty, setQQty] = useState(1); const [qCost, setQCost] = useState(0);
-  const [qSearch, setQSearch] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
 
   const load = async () => {
-    const [p, s, pr] = await Promise.all([
+    const [p, s, pr, c] = await Promise.all([
       supabase.from("purchases").select("*, suppliers(name)").order("created_at", { ascending: false }).limit(200),
-      supabase.from("suppliers").select("id,name").order("name"),
-      supabase.from("products").select("id,name,cost,barcode,sku").order("name"),
+      supabase.from("suppliers").select("id,name,phone").order("name"),
+      supabase.from("products").select("id,name,cost,price,unit,barcode,sku,image_url,category_id").order("name"),
+      supabase.from("categories").select("id,name").order("name"),
     ]);
-    setPurchases(p.data ?? []); setSuppliers(s.data ?? []); setProducts(pr.data ?? []);
+    setPurchases(p.data ?? []); setSuppliers(s.data ?? []); setProducts(pr.data ?? []); setCategories(c.data ?? []);
   };
   useEffect(() => { load(); }, []);
 
-  const subtotal = items.reduce((a, b) => a + b.subtotal, 0);
-  const total = Math.max(subtotal - discount, 0);
+  const subtotal = items.reduce((a, b) => a + (Number(b.subtotal) || 0), 0);
+  const total = Math.max(subtotal - discount + delivery, 0);
   const due = Math.max(total - paid, 0);
+  const fullyPaid = total > 0 && due === 0;
 
-  const productMatches = useMemo(() =>
-    !qSearch ? products.slice(0, 8) : products.filter(p =>
-      p.name.toLowerCase().includes(qSearch.toLowerCase()) ||
-      p.barcode?.toLowerCase().includes(qSearch.toLowerCase()) ||
-      p.sku?.toLowerCase().includes(qSearch.toLowerCase())
-    ).slice(0, 8), [qSearch, products]);
+  const supplierMatches = useMemo(() =>
+    !supplierSearch ? suppliers.slice(0, 6)
+      : suppliers.filter(s => s.name.toLowerCase().includes(supplierSearch.toLowerCase())).slice(0, 6),
+    [supplierSearch, suppliers]);
 
-  const addItem = () => {
-    const prod = products.find(p => p.id === qPid);
-    if (!prod || qQty <= 0) return toast({ title: "পণ্য ও পরিমাণ দিন", variant: "destructive" });
-    setItems([...items, { product_id: prod.id, product_name: prod.name, qty: qQty, unit_cost: qCost, subtotal: qQty * qCost }]);
-    setQPid(""); setQQty(1); setQCost(0); setQSearch("");
+  const updateItem = (idx: number, patch: any) => {
+    setItems(items.map((it, i) => {
+      if (i !== idx) return it;
+      const next = { ...it, ...patch };
+      next.subtotal = (Number(next.qty) || 0) * (Number(next.unit_cost) || 0);
+      return next;
+    }));
+  };
+  const addItemRow = () => setItems([...items, { product_id: "", product_name: "", search: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0 }]);
+  const removeItemRow = (idx: number) => setItems(items.length === 1 ? items : items.filter((_, i) => i !== idx));
+
+  const pickProduct = (idx: number, p: any) => updateItem(idx, {
+    product_id: p.id, product_name: p.name, search: p.name,
+    unit_cost: Number(p.cost), sell_price: Number(p.price),
+    unit: p.unit ?? "pcs", category_id: p.category_id ?? "",
+  });
+
+  const resetForm = () => {
+    setItems([{ product_id: "", product_name: "", search: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0 }]);
+    setPaid(0); setDiscount(0); setDelivery(0); setSupplierId(""); setSupplierSearch(""); setNotes("");
   };
 
-  const resetForm = () => { setItems([]); setPaid(0); setDiscount(0); setSupplierId(""); setNotes(""); };
+  const validItems = () => items.filter(i => i.product_id && i.qty > 0);
 
   const save = async () => {
-    if (items.length === 0) return toast({ title: "কমপক্ষে একটি পণ্য যোগ করুন", variant: "destructive" });
+    const rowsToSave = validItems();
+    if (rowsToSave.length === 0) return toast({ title: "কমপক্ষে একটি পণ্য নির্বাচন করুন", variant: "destructive" });
     const { data, error } = await supabase.from("purchases").insert({
       supplier_id: supplierId || null, subtotal, discount, total, paid, due,
       notes: notes || null, created_by: user!.id, shop_id: currentShop?.id ?? null,
     }).select().single();
     if (error) return toast({ title: error.message, variant: "destructive" });
-    const rows = items.map(i => ({ ...i, purchase_id: data.id, shop_id: currentShop?.id ?? null }));
+    const rows = rowsToSave.map(i => ({
+      product_id: i.product_id, product_name: i.product_name, qty: i.qty,
+      unit_cost: i.unit_cost, subtotal: i.subtotal,
+      purchase_id: data.id, shop_id: currentShop?.id ?? null,
+    }));
     const { error: e2 } = await supabase.from("purchase_items").insert(rows);
     if (e2) return toast({ title: e2.message, variant: "destructive" });
     setOpen(false); resetForm(); load();
@@ -97,7 +120,7 @@ export default function Purchases() {
   const submitPayment = async () => {
     if (!payTarget || payAmt <= 0) return;
     const { error } = await supabase.from("purchase_payments").insert({
-      purchase_id: payTarget.id, amount: payAmt, payment_method: "cash",
+      purchase_id: payTarget.id, amount: payAmt, payment_method: paymentMethod,
       created_by: user!.id, shop_id: currentShop?.id ?? null,
     });
     if (error) return toast({ title: error.message, variant: "destructive" });
