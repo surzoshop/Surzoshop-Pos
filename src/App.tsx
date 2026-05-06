@@ -25,6 +25,7 @@ import SupplierLedger from "./pages/SupplierLedger";
 import CustomerLedger from "./pages/CustomerLedger";
 import StockLedger from "./pages/StockLedger";
 import Purchases from "./pages/Purchases";
+import Ledger from "./pages/Ledger";
 import Expenses from "./pages/Expenses";
 import StockAdjustments from "./pages/StockAdjustments";
 import Staff from "./pages/Staff";
