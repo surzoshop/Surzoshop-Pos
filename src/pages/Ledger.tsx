@@ -459,7 +459,54 @@ export default function Ledger() {
               <span className="text-xs text-muted-foreground">{lowerFiltered.length} টি এন্ট্রি</span>
             </div>
           </div>
-          <div className="overflow-x-auto">
+          {/* Mobile card view */}
+          <div className="sm:hidden divide-y divide-border/40">
+            {loading ? (
+              <div className="p-8 text-center text-muted-foreground">লোড হচ্ছে...</div>
+            ) : view === "detailed" ? (
+              detailedRows.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">কোনো লেনদেন নেই</div>
+              ) : detailedRows.map(({ e, cr, dr, balance }) => (
+                <div key={e.id} className="p-3 hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`h-8 w-8 rounded-full grid place-items-center shrink-0 ${e.entry_type === "deposit" ? "bg-emerald-500/15 text-emerald-600" : "bg-rose-500/15 text-rose-600"}`}>
+                        {e.entry_type === "deposit" ? <ArrowDownCircle className="h-4 w-4" /> : <ArrowUpCircle className="h-4 w-4" />}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="font-bold text-sm truncate">{e.category ?? "-"}</div>
+                        <div className="text-[11px] text-muted-foreground truncate">{e.entry_date}{e.party_name ? ` • ${e.party_name}` : ""}</div>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className={`font-black text-sm ${e.entry_type === "deposit" ? "text-emerald-600" : "text-rose-600"}`}>
+                        {e.entry_type === "deposit" ? "+" : "-"}{fmt(e.entry_type === "deposit" ? cr : dr)}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">ব্যাল: {fmt(balance)}</div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              dailyRows.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">কোনো লেনদেন নেই</div>
+              ) : dailyRows.map(([date, v]) => (
+                <div key={date} className="p-3 hover:bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <div className="font-bold text-sm">{date}</div>
+                    <div className="font-black text-sm">{fmt(v.cr - v.dr)}</div>
+                  </div>
+                  <div className="flex justify-between text-[11px] mt-1">
+                    <span className="text-emerald-600 font-bold">জমা: {fmt(v.cr)}</span>
+                    <span className="text-rose-600 font-bold">উত্তোলন: {fmt(v.dr)}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop / tablet table view */}
+          <div className="hidden sm:block overflow-x-auto">
             {view === "detailed" ? (
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-muted-foreground text-xs">
