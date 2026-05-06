@@ -67,6 +67,15 @@ const TABS: { key: TabKey; label: string; icon: any }[] = [
   { key: "purchase", label: "ক্রয়",    icon: ShoppingBag },
 ];
 
+const TAB_META: Record<TabKey, { title: string; subtitle: string; entryLabel: string; rangeChip: string }> = {
+  ledger:   { title: "হিসেব লেজার",     subtitle: "সকল লেনদেনের সম্পূর্ণ লেজার",          entryLabel: "লেনদেন",   rangeChip: "সকল" },
+  income:   { title: "আয়ের লেজার",      subtitle: "সকল আয়/জমা লেনদেনের তালিকা",          entryLabel: "আয়",        rangeChip: "আয়" },
+  expense:  { title: "খরচের লেজার",     subtitle: "সকল খরচ/উত্তোলন লেনদেনের তালিকা",     entryLabel: "খরচ",       rangeChip: "খরচ" },
+  cash:     { title: "ক্যাশ লেজার",     subtitle: "শুধুমাত্র নগদ পেমেন্টের লেনদেন",       entryLabel: "ক্যাশ",     rangeChip: "ক্যাশ" },
+  sales:    { title: "বিক্রয় লেজার",    subtitle: "বিক্রয় সংক্রান্ত সকল লেনদেন",          entryLabel: "বিক্রয়",   rangeChip: "বিক্রয়" },
+  purchase: { title: "ক্রয় লেজার",      subtitle: "ক্রয়/স্টক সংক্রান্ত সকল লেনদেন",       entryLabel: "ক্রয়",      rangeChip: "ক্রয়" },
+};
+
 const ACCOUNT_TABS: { key: AccountKey; label: string }[] = [
   { key: "account",  label: "অ্যাকাউন্ট" },
   { key: "customer", label: "কাস্টমার" },
@@ -157,12 +166,12 @@ export default function Ledger() {
       topRangeFiltered.filter(fn).reduce((s, e) => s + Number(e.amount || 0), 0);
     const cat = (e: Entry, k: string) => (e.category ?? "").toLowerCase().includes(k);
     return [
-      { label: "মোট আয়",    value: sumWhere(e => e.entry_type === "deposit"),  icon: ArrowDownToLine, tone: "emerald" },
-      { label: "মোট খরচ",   value: sumWhere(e => e.entry_type === "withdraw"), icon: ArrowUpFromLine, tone: "rose" },
-      { label: "নগদ ব্যাল.", value: sumWhere(e => e.entry_type === "deposit") - sumWhere(e => e.entry_type === "withdraw"), icon: Coins, tone: "sky" },
-      { label: "ক্যাশ",      value: sumWhere(e => (e.payment_method ?? "cash") === "cash"), icon: Wallet, tone: "emerald" },
-      { label: "বিক্রয়",    value: sumWhere(e => cat(e, "sales") || cat(e, "বিক্রয়")), icon: Receipt, tone: "amber" },
-      { label: "ক্রয়",       value: sumWhere(e => cat(e, "purchase") || cat(e, "ক্রয়")), icon: ShoppingBag, tone: "rose" },
+      { key: "income"   as TabKey, label: "মোট আয়",    value: sumWhere(e => e.entry_type === "deposit"),  icon: ArrowDownToLine, tone: "income" },
+      { key: "expense"  as TabKey, label: "মোট খরচ",   value: sumWhere(e => e.entry_type === "withdraw"), icon: ArrowUpFromLine, tone: "expense" },
+      { key: "ledger"   as TabKey, label: "নগদ ব্যাল.", value: sumWhere(e => e.entry_type === "deposit") - sumWhere(e => e.entry_type === "withdraw"), icon: Coins, tone: "balance" },
+      { key: "cash"     as TabKey, label: "ক্যাশ",      value: sumWhere(e => (e.payment_method ?? "cash") === "cash"), icon: Wallet, tone: "cash" },
+      { key: "sales"    as TabKey, label: "বিক্রয়",    value: sumWhere(e => cat(e, "sales") || cat(e, "বিক্রয়")), icon: Receipt, tone: "sales" },
+      { key: "purchase" as TabKey, label: "ক্রয়",       value: sumWhere(e => cat(e, "purchase") || cat(e, "ক্রয়")), icon: ShoppingBag, tone: "purchase" },
     ];
   }, [topRangeFiltered]);
 
@@ -240,12 +249,12 @@ export default function Ledger() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-foreground">হিসাব ব্যবস্থাপনা</h1>
-          <p className="text-xs text-muted-foreground">আয়-ব্যয় ও ক্যাশ ব্যবস্থাপনা</p>
+          <h1 className="text-2xl font-black text-foreground">{TAB_META[tab].title}</h1>
+          <p className="text-xs text-muted-foreground">{TAB_META[tab].subtitle}</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={() => setDialog("deposit")}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md">
+            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md">
             <ArrowDownCircle className="h-4 w-4" /> জমা
           </Button>
           <Button onClick={() => setDialog("withdraw")}
@@ -279,41 +288,48 @@ export default function Ledger() {
         </CardContent>
       </Card>
 
-      {/* 6 mini stat cards */}
+      {/* Primary tabs (true page switch) */}
+      <Card className="border-border/60 overflow-hidden">
+        <div className="grid grid-cols-3 sm:grid-cols-6 divide-x divide-border/60">
+          {TABS.map(t => {
+            const active = tab === t.key;
+            return (
+              <button key={t.key} onClick={() => setTab(t.key)}
+                className={`relative flex flex-col items-center justify-center gap-1 py-3 px-2 text-xs font-bold transition-all ${
+                  active
+                    ? "bg-primary/10 text-primary"
+                    : "bg-background text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                }`}>
+                <t.icon className="h-4 w-4" />
+                <span>{t.label}</span>
+                {active && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* 6 mini stat cards — quick switchers too */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {miniStats.map((s, i) => (
-          <MiniStat key={i} {...s} />
+          <MiniStat key={i} {...s} active={tab === s.key} onClick={() => setTab(s.key)} />
         ))}
       </div>
 
-      {/* Tabs row: লেজার / আয় / খরচ / ক্যাশ / বিক্রয় / ক্রয় */}
-      <div className="flex flex-wrap gap-1 p-1 rounded-full bg-muted/40 w-fit mx-auto">
-        {TABS.map(t => {
-          const active = tab === t.key;
-          return (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
-                active ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}>
-              <t.icon className="h-3.5 w-3.5" />
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Account sub-tabs */}
-      <div className="flex flex-wrap gap-6 justify-center text-sm">
-        {ACCOUNT_TABS.map(a => {
-          const active = account === a.key;
-          return (
-            <button key={a.key} onClick={() => setAccount(a.key)}
-              className={`pb-1 font-bold transition-all border-b-2 ${
-                active ? "border-emerald-600 text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}>{a.label}</button>
-          );
-        })}
-      </div>
+      {/* Account sub-tabs (only for লেজার) */}
+      {tab === "ledger" && (
+        <div className="flex flex-wrap gap-6 justify-center text-sm border-b border-border/60 pb-0">
+          {ACCOUNT_TABS.map(a => {
+            const active = account === a.key;
+            return (
+              <button key={a.key} onClick={() => setAccount(a.key)}
+                className={`pb-2 -mb-px font-bold transition-all border-b-2 ${
+                  active ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}>{a.label}</button>
+            );
+          })}
+        </div>
+      )}
 
       {/* 3 totals cards: মোট জমা (Cr) / মোট খরচ (Dr) / নীট ব্যালেন্স */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -368,7 +384,7 @@ export default function Ledger() {
         <CardContent className="p-0">
           <div className="flex items-center justify-between p-4 border-b border-border/60">
             <h3 className="font-bold text-foreground inline-flex items-center gap-2">
-              <BookOpen className="h-4 w-4" /> হিসেব লেজার
+              <BookOpen className="h-4 w-4" /> {TAB_META[tab].title}
             </h3>
             <div className="flex items-center gap-2">
               <div className="inline-flex bg-muted/40 rounded-full p-1">
@@ -465,23 +481,30 @@ export default function Ledger() {
   );
 }
 
-function MiniStat({ label, value, icon: Icon, tone }: any) {
-  const tones: Record<string, string> = {
-    emerald: "from-emerald-100 to-emerald-50 dark:from-emerald-900/40 dark:to-emerald-900/10 text-emerald-700 dark:text-emerald-400",
-    rose:    "from-rose-100 to-rose-50 dark:from-rose-900/40 dark:to-rose-900/10 text-rose-700 dark:text-rose-400",
-    sky:     "from-sky-100 to-sky-50 dark:from-sky-900/40 dark:to-sky-900/10 text-sky-700 dark:text-sky-400",
-    amber:   "from-amber-100 to-amber-50 dark:from-amber-900/40 dark:to-amber-900/10 text-amber-700 dark:text-amber-400",
+function MiniStat({ label, value, icon: Icon, tone, active, onClick }: any) {
+  const tones: Record<string, { ring: string; icon: string; bar: string }> = {
+    income:   { ring: "ring-emerald-500/40", icon: "text-emerald-600 bg-emerald-500/10", bar: "bg-emerald-500" },
+    expense:  { ring: "ring-rose-500/40",    icon: "text-rose-600 bg-rose-500/10",       bar: "bg-rose-500" },
+    balance:  { ring: "ring-primary/40",     icon: "text-primary bg-primary/10",         bar: "bg-primary" },
+    cash:     { ring: "ring-sky-500/40",     icon: "text-sky-600 bg-sky-500/10",         bar: "bg-sky-500" },
+    sales:    { ring: "ring-amber-500/40",   icon: "text-amber-600 bg-amber-500/10",     bar: "bg-amber-500" },
+    purchase: { ring: "ring-violet-500/40",  icon: "text-violet-600 bg-violet-500/10",   bar: "bg-violet-500" },
   };
+  const t = tones[tone] ?? tones.balance;
   return (
-    <div className={`rounded-2xl p-3 bg-gradient-to-br ${tones[tone]} border border-border/40`}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="text-[11px] font-bold opacity-80 truncate">{label}</div>
-        <div className="h-7 w-7 rounded-full bg-background/70 grid place-items-center shadow">
+    <button onClick={onClick}
+      className={`group relative text-left rounded-xl p-3 bg-card border border-border/60 transition-all hover:shadow-md hover:-translate-y-0.5 ${
+        active ? `ring-2 ${t.ring} shadow-md` : ""
+      }`}>
+      <span className={`absolute left-0 top-3 bottom-3 w-1 rounded-r ${t.bar} ${active ? "opacity-100" : "opacity-60"}`} />
+      <div className="flex items-start justify-between gap-2 pl-2">
+        <div className="text-[11px] font-bold text-muted-foreground truncate">{label}</div>
+        <div className={`h-7 w-7 rounded-lg grid place-items-center ${t.icon}`}>
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      <div className="mt-1 text-lg font-black text-foreground truncate">{`৳${Number(value || 0).toLocaleString("bn-BD")}`}</div>
-    </div>
+      <div className="mt-1 pl-2 text-lg font-black text-foreground truncate">{`৳${Number(value || 0).toLocaleString("bn-BD")}`}</div>
+    </button>
   );
 }
 
