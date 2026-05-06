@@ -249,12 +249,12 @@ export default function Ledger() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-foreground">হিসাব ব্যবস্থাপনা</h1>
-          <p className="text-xs text-muted-foreground">আয়-ব্যয় ও ক্যাশ ব্যবস্থাপনা</p>
+          <h1 className="text-2xl font-black text-foreground">{TAB_META[tab].title}</h1>
+          <p className="text-xs text-muted-foreground">{TAB_META[tab].subtitle}</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={() => setDialog("deposit")}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md">
+            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md">
             <ArrowDownCircle className="h-4 w-4" /> জমা
           </Button>
           <Button onClick={() => setDialog("withdraw")}
