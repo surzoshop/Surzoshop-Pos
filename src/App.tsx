@@ -18,8 +18,12 @@ import BarcodePrint from "./pages/BarcodePrint";
 import Customers from "./pages/Customers";
 import Installments from "./pages/Installments";
 import Sales from "./pages/Sales";
+import SalesReturns from "./pages/SalesReturns";
 import Reports from "./pages/Reports";
 import Suppliers from "./pages/Suppliers";
+import SupplierLedger from "./pages/SupplierLedger";
+import CustomerLedger from "./pages/CustomerLedger";
+import StockLedger from "./pages/StockLedger";
 import Purchases from "./pages/Purchases";
 import Expenses from "./pages/Expenses";
 import StockAdjustments from "./pages/StockAdjustments";
@@ -54,8 +58,12 @@ const App = () => (
                     <Route path="/customers" element={<PageGate page="customers"><Customers /></PageGate>} />
                     <Route path="/installments" element={<PageGate page="installments"><Installments /></PageGate>} />
                     <Route path="/sales" element={<PageGate page="sales"><Sales /></PageGate>} />
+                    <Route path="/sales/returns" element={<PageGate page="sales-returns"><SalesReturns /></PageGate>} />
                     <Route path="/reports" element={<PageGate page="reports"><Reports /></PageGate>} />
                     <Route path="/suppliers" element={<PageGate page="suppliers"><Suppliers /></PageGate>} />
+                    <Route path="/suppliers/ledger" element={<PageGate page="supplier-ledger"><SupplierLedger /></PageGate>} />
+                    <Route path="/customers/ledger" element={<PageGate page="customer-ledger"><CustomerLedger /></PageGate>} />
+                    <Route path="/stock-ledger" element={<PageGate page="stock-ledger"><StockLedger /></PageGate>} />
                     <Route path="/purchases" element={<PageGate page="purchases"><Purchases /></PageGate>} />
                     <Route path="/expenses" element={<PageGate page="expenses"><Expenses /></PageGate>} />
                     <Route path="/stock-adjustments" element={<PageGate page="stock-adjustments"><StockAdjustments /></PageGate>} />
