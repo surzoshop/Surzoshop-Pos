@@ -104,6 +104,8 @@ export default function Ledger() {
   const { user } = useAuth();
   const { currentShop } = useShop();
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [salesAgg, setSalesAgg] = useState<{ date: string; total: number; party: string | null }[]>([]);
+  const [purchasesAgg, setPurchasesAgg] = useState<{ date: string; total: number; party: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Top section state
@@ -140,15 +142,61 @@ export default function Ledger() {
     let q = supabase.from("cash_book" as any).select("*")
       .order("entry_date", { ascending: false }).order("created_at", { ascending: false });
     if (currentShop) q = q.eq("shop_id", currentShop.id);
-    const { data, error } = await q;
+
+    let sq = supabase.from("sales").select("created_at,total,customers(name)").order("created_at", { ascending: false });
+    if (currentShop) sq = sq.eq("shop_id", currentShop.id);
+
+    let pq = supabase.from("purchases").select("created_at,total,suppliers(name)").order("created_at", { ascending: false });
+    if (currentShop) pq = pq.eq("shop_id", currentShop.id);
+
+    const [{ data, error }, { data: sd }, { data: pd }] = await Promise.all([q, sq, pq]);
     if (error) toast.error(error.message);
     setEntries((data ?? []) as any);
+    setSalesAgg((sd ?? []).map((s: any) => ({
+      date: String(s.created_at).slice(0, 10),
+      total: Number(s.total || 0),
+      party: s.customers?.name ?? null,
+    })));
+    setPurchasesAgg((pd ?? []).map((p: any) => ({
+      date: String(p.created_at).slice(0, 10),
+      total: Number(p.total || 0),
+      party: p.suppliers?.name ?? null,
+    })));
     setLoading(false);
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [currentShop?.id]);
 
+  // Convert sales/purchases into synthetic ledger entries so all tabs show real DB data
+  const synthEntries: Entry[] = useMemo(() => {
+    const sales: Entry[] = salesAgg.map((s, i) => ({
+      id: `sale-${i}-${s.date}`,
+      entry_date: s.date,
+      entry_type: "deposit",
+      amount: s.total,
+      category: "Sales / বিক্রয়",
+      payment_method: "cash",
+      reference_no: null,
+      party_name: s.party,
+      notes: null,
+      created_at: s.date,
+    }));
+    const purchases: Entry[] = purchasesAgg.map((p, i) => ({
+      id: `pur-${i}-${p.date}`,
+      entry_date: p.date,
+      entry_type: "withdraw",
+      amount: p.total,
+      category: "Purchase / ক্রয়",
+      payment_method: "cash",
+      reference_no: null,
+      party_name: p.party,
+      notes: null,
+      created_at: p.date,
+    }));
+    return [...entries, ...sales, ...purchases];
+  }, [entries, salesAgg, purchasesAgg]);
+
   // Apply top range to compute summary cards
-  const topRangeFiltered = useMemo(() => entries.filter(e => {
+  const topRangeFiltered = useMemo(() => synthEntries.filter(e => {
     if (topFrom && e.entry_date < topFrom) return false;
     if (topTo   && e.entry_date > topTo)   return false;
     if (topSearch) {
@@ -158,25 +206,27 @@ export default function Ledger() {
         || String(e.amount).includes(q);
     }
     return true;
-  }), [entries, topFrom, topTo, topSearch]);
+  }), [synthEntries, topFrom, topTo, topSearch]);
 
-  // 6 mini stat cards (top row)
+  // 6 mini stat cards (top row) — REAL DB data
   const miniStats = useMemo(() => {
     const sumWhere = (fn: (e: Entry) => boolean) =>
       topRangeFiltered.filter(fn).reduce((s, e) => s + Number(e.amount || 0), 0);
     const cat = (e: Entry, k: string) => (e.category ?? "").toLowerCase().includes(k);
+    const income  = sumWhere(e => e.entry_type === "deposit");
+    const expense = sumWhere(e => e.entry_type === "withdraw");
     return [
-      { key: "income"   as TabKey, label: "মোট আয়",    value: sumWhere(e => e.entry_type === "deposit"),  icon: ArrowDownToLine, tone: "income" },
-      { key: "expense"  as TabKey, label: "মোট খরচ",   value: sumWhere(e => e.entry_type === "withdraw"), icon: ArrowUpFromLine, tone: "expense" },
-      { key: "ledger"   as TabKey, label: "নগদ ব্যাল.", value: sumWhere(e => e.entry_type === "deposit") - sumWhere(e => e.entry_type === "withdraw"), icon: Coins, tone: "balance" },
-      { key: "cash"     as TabKey, label: "ক্যাশ",      value: sumWhere(e => (e.payment_method ?? "cash") === "cash"), icon: Wallet, tone: "cash" },
-      { key: "sales"    as TabKey, label: "বিক্রয়",    value: sumWhere(e => cat(e, "sales") || cat(e, "বিক্রয়")), icon: Receipt, tone: "sales" },
-      { key: "purchase" as TabKey, label: "ক্রয়",       value: sumWhere(e => cat(e, "purchase") || cat(e, "ক্রয়")), icon: ShoppingBag, tone: "purchase" },
+      { key: "income"   as TabKey, label: "মোট আয়",       value: income,                                     icon: ArrowDownToLine, tone: "income" },
+      { key: "expense"  as TabKey, label: "মোট খরচ",      value: expense,                                    icon: ArrowUpFromLine, tone: "expense" },
+      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স", value: income - expense,                          icon: Coins,           tone: "balance" },
+      { key: "cash"     as TabKey, label: "ক্যাশ লেনদেন",  value: sumWhere(e => (e.payment_method ?? "cash") === "cash"), icon: Wallet, tone: "cash" },
+      { key: "sales"    as TabKey, label: "মোট বিক্রয়",    value: sumWhere(e => cat(e, "sales")    || cat(e, "বিক্রয়")), icon: Receipt,    tone: "sales" },
+      { key: "purchase" as TabKey, label: "মোট ক্রয়",      value: sumWhere(e => cat(e, "purchase") || cat(e, "ক্রয়")),    icon: ShoppingBag, tone: "purchase" },
     ];
   }, [topRangeFiltered]);
 
   // 3 big totals (under account tabs) — based on lower range + tab + account filter
-  const lowerFiltered = useMemo(() => entries.filter(e => {
+  const lowerFiltered = useMemo(() => synthEntries.filter(e => {
     if (lowFrom && e.entry_date < lowFrom) return false;
     if (lowTo   && e.entry_date > lowTo)   return false;
 
@@ -186,14 +236,14 @@ export default function Ledger() {
     if (tab === "sales"    && !((e.category ?? "").toLowerCase().includes("sales")    || (e.category ?? "").includes("বিক্রয়"))) return false;
     if (tab === "purchase" && !((e.category ?? "").toLowerCase().includes("purchase") || (e.category ?? "").includes("ক্রয়")))    return false;
 
-    if (account !== "account") {
+    if (tab === "ledger" && account !== "account") {
       const cat = (e.category ?? "").toLowerCase();
-      const map: Record<string, string[]> = {
-        customer: ["customer", "কাস্টমার", "ক্রেতা"],
-        supplier: ["supplier", "সাপ্লায়ার", "সরবরাহ"],
-        owner:    ["owner", "মালিক", "ওনার"],
-      };
-      if (!map[account].some(k => cat.includes(k.toLowerCase()))) return false;
+      const isSales    = cat.includes("sales")    || cat.includes("বিক্রয়");
+      const isPurchase = cat.includes("purchase") || cat.includes("ক্রয়");
+      const ownerKw    = ["owner", "মালিক", "ওনার"];
+      if (account === "customer" && !isSales  && !ownerKw.every(k => false) && !cat.includes("customer") && !cat.includes("কাস্টমার") && !cat.includes("ক্রেতা")) return false;
+      if (account === "supplier" && !isPurchase && !cat.includes("supplier") && !cat.includes("সাপ্লায়ার") && !cat.includes("সরবরাহ")) return false;
+      if (account === "owner"    && !ownerKw.some(k => cat.includes(k.toLowerCase()))) return false;
     }
 
     if (rowFilter === "income"   && e.entry_type !== "deposit")  return false;
@@ -209,7 +259,7 @@ export default function Ledger() {
         || (e.reference_no ?? "").toLowerCase().includes(q);
     }
     return true;
-  }), [entries, lowFrom, lowTo, tab, account, rowFilter, lowSearch]);
+  }), [synthEntries, lowFrom, lowTo, tab, account, rowFilter, lowSearch]);
 
   const totals = useMemo(() => {
     const cr = lowerFiltered.filter(e => e.entry_type === "deposit") .reduce((s, e) => s + Number(e.amount || 0), 0);
@@ -272,11 +322,13 @@ export default function Ledger() {
             <Input placeholder="ক্যাটাগরি, নোট বা পরিমাণ দিয়ে খুঁজুন..." value={topSearch} onChange={e => setTopSearch(e.target.value)} className="pl-9" />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            <CalendarDays className="h-5 w-5 text-muted-foreground" />
             {RANGE_CHIPS.map(c => (
               <button key={c.key} onClick={() => setTopRange(c.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-                  topRange === c.key ? "bg-emerald-600 text-white shadow" : "bg-muted/60 text-foreground/70 hover:bg-muted"
+                className={`px-4 py-2 rounded-full text-sm font-bold border-2 transition-all ${
+                  topRange === c.key
+                    ? "bg-primary text-primary-foreground border-primary shadow"
+                    : "bg-background text-foreground/80 border-border hover:border-primary/50 hover:text-primary"
                 }`}>{c.label}</button>
             ))}
             <div className="flex items-center gap-2 ml-auto">
@@ -296,15 +348,17 @@ export default function Ledger() {
       </div>
 
       {/* Tabs row: লেজার / আয় / খরচ / ক্যাশ / বিক্রয় / ক্রয় (page switch) */}
-      <div className="flex flex-wrap gap-1 p-1 rounded-full bg-muted/40 w-fit mx-auto">
+      <div className="flex flex-wrap gap-1.5 p-1.5 rounded-2xl bg-muted/40 w-fit mx-auto border border-border/60">
         {TABS.map(t => {
           const active = tab === t.key;
           return (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
-                active ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"
+              className={`inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
+                active
+                  ? "bg-background shadow-md text-primary scale-105"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/60"
               }`}>
-              <t.icon className="h-3.5 w-3.5" />
+              <t.icon className="h-4 w-4" />
               {t.label}
             </button>
           );
@@ -313,13 +367,15 @@ export default function Ledger() {
 
       {/* Account sub-tabs (only for লেজার) */}
       {tab === "ledger" && (
-        <div className="flex flex-wrap gap-6 justify-center text-sm">
+        <div className="flex flex-wrap gap-2 justify-center">
           {ACCOUNT_TABS.map(a => {
             const active = account === a.key;
             return (
               <button key={a.key} onClick={() => setAccount(a.key)}
-                className={`pb-1 font-bold transition-all border-b-2 ${
-                  active ? "border-emerald-600 text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+                className={`px-5 py-2 rounded-full text-sm font-bold border-2 transition-all duration-200 ${
+                  active
+                    ? "bg-primary text-primary-foreground border-primary shadow-md scale-105"
+                    : "bg-background text-foreground/80 border-border hover:border-primary/60 hover:text-primary hover:-translate-y-0.5"
                 }`}>{a.label}</button>
             );
           })}
@@ -337,11 +393,13 @@ export default function Ledger() {
       <Card className="border-border/60">
         <CardContent className="p-4 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            <CalendarDays className="h-5 w-5 text-muted-foreground" />
             {RANGE_CHIPS.map(c => (
               <button key={c.key} onClick={() => setLowRange(c.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-                  lowRange === c.key ? "bg-emerald-600 text-white shadow" : "bg-muted/60 text-foreground/70 hover:bg-muted"
+                className={`px-4 py-2 rounded-full text-sm font-bold border-2 transition-all ${
+                  lowRange === c.key
+                    ? "bg-primary text-primary-foreground border-primary shadow"
+                    : "bg-background text-foreground/80 border-border hover:border-primary/50 hover:text-primary"
                 }`}>{c.label}</button>
             ))}
             <div className="flex items-center gap-2 ml-auto">
@@ -363,11 +421,13 @@ export default function Ledger() {
             </Button>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <ListFilter className="h-4 w-4 text-muted-foreground" />
+            <ListFilter className="h-5 w-5 text-muted-foreground" />
             {ROW_FILTERS.map(f => (
               <button key={f.key} onClick={() => setRowFilter(f.key)}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                  rowFilter === f.key ? "bg-emerald-600 text-white" : "bg-muted/60 text-foreground/70 hover:bg-muted"
+                className={`px-4 py-1.5 rounded-full text-sm font-bold border-2 transition-all ${
+                  rowFilter === f.key
+                    ? "bg-primary text-primary-foreground border-primary shadow"
+                    : "bg-background text-foreground/80 border-border hover:border-primary/50 hover:text-primary"
                 }`}>{f.label}</button>
             ))}
           </div>
@@ -477,28 +537,27 @@ export default function Ledger() {
 }
 
 function MiniStat({ label, value, icon: Icon, tone, active, onClick }: any) {
-  const tones: Record<string, { ring: string; icon: string; bar: string }> = {
-    income:   { ring: "ring-emerald-500/40", icon: "text-emerald-600 bg-emerald-500/10", bar: "bg-emerald-500" },
-    expense:  { ring: "ring-rose-500/40",    icon: "text-rose-600 bg-rose-500/10",       bar: "bg-rose-500" },
-    balance:  { ring: "ring-primary/40",     icon: "text-primary bg-primary/10",         bar: "bg-primary" },
-    cash:     { ring: "ring-sky-500/40",     icon: "text-sky-600 bg-sky-500/10",         bar: "bg-sky-500" },
-    sales:    { ring: "ring-amber-500/40",   icon: "text-amber-600 bg-amber-500/10",     bar: "bg-amber-500" },
-    purchase: { ring: "ring-violet-500/40",  icon: "text-violet-600 bg-violet-500/10",   bar: "bg-violet-500" },
+  const tones: Record<string, { border: string; bg: string; icon: string; text: string; activeBg: string }> = {
+    income:   { border: "border-emerald-500/60", bg: "bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/40 dark:to-emerald-900/20", icon: "text-white bg-emerald-500", text: "text-emerald-700 dark:text-emerald-300", activeBg: "ring-2 ring-emerald-500" },
+    expense:  { border: "border-rose-500/60",    bg: "bg-gradient-to-br from-rose-50 to-rose-100/50 dark:from-rose-950/40 dark:to-rose-900/20",          icon: "text-white bg-rose-500",    text: "text-rose-700 dark:text-rose-300",    activeBg: "ring-2 ring-rose-500" },
+    balance:  { border: "border-primary/60",     bg: "bg-gradient-to-br from-primary/5 to-primary/15",                                                    icon: "text-primary-foreground bg-primary", text: "text-primary",            activeBg: "ring-2 ring-primary" },
+    cash:     { border: "border-sky-500/60",     bg: "bg-gradient-to-br from-sky-50 to-sky-100/50 dark:from-sky-950/40 dark:to-sky-900/20",              icon: "text-white bg-sky-500",     text: "text-sky-700 dark:text-sky-300",      activeBg: "ring-2 ring-sky-500" },
+    sales:    { border: "border-amber-500/60",   bg: "bg-gradient-to-br from-amber-50 to-amber-100/50 dark:from-amber-950/40 dark:to-amber-900/20",      icon: "text-white bg-amber-500",   text: "text-amber-700 dark:text-amber-300",  activeBg: "ring-2 ring-amber-500" },
+    purchase: { border: "border-violet-500/60",  bg: "bg-gradient-to-br from-violet-50 to-violet-100/50 dark:from-violet-950/40 dark:to-violet-900/20",  icon: "text-white bg-violet-500",  text: "text-violet-700 dark:text-violet-300", activeBg: "ring-2 ring-violet-500" },
   };
   const t = tones[tone] ?? tones.balance;
   return (
     <button onClick={onClick}
-      className={`group relative text-left rounded-xl p-3 bg-card border border-border/60 transition-all hover:shadow-md hover:-translate-y-0.5 ${
-        active ? `ring-2 ${t.ring} shadow-md` : ""
+      className={`group relative text-left rounded-2xl p-4 border-2 ${t.border} ${t.bg} transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:scale-[1.02] ${
+        active ? `${t.activeBg} shadow-lg scale-[1.02]` : "shadow-sm"
       }`}>
-      <span className={`absolute left-0 top-3 bottom-3 w-1 rounded-r ${t.bar} ${active ? "opacity-100" : "opacity-60"}`} />
-      <div className="flex items-start justify-between gap-2 pl-2">
-        <div className="text-[11px] font-bold text-muted-foreground truncate">{label}</div>
-        <div className={`h-7 w-7 rounded-lg grid place-items-center ${t.icon}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className={`text-xs font-bold ${t.text} truncate`}>{label}</div>
+        <div className={`h-9 w-9 rounded-xl grid place-items-center shadow-md ${t.icon} transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6`}>
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      <div className="mt-1 pl-2 text-lg font-black text-foreground truncate">{`৳${Number(value || 0).toLocaleString("bn-BD")}`}</div>
+      <div className="mt-2 text-xl font-black text-foreground truncate">{`৳${Number(value || 0).toLocaleString("bn-BD")}`}</div>
     </button>
   );
 }
