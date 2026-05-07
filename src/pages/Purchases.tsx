@@ -75,17 +75,18 @@ export default function Purchases() {
       return next;
     }));
   };
-  const addItemRow = () => setItems([...items, { product_id: "", product_name: "", search: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0 }]);
+  const addItemRow = () => setItems([...items, { product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "" }]);
   const removeItemRow = (idx: number) => setItems(items.length === 1 ? items : items.filter((_, i) => i !== idx));
 
   const pickProduct = (idx: number, p: any) => updateItem(idx, {
     product_id: p.id, product_name: p.name, search: p.name,
     unit_cost: Number(p.cost), sell_price: Number(p.price),
     unit: p.unit ?? "pcs", category_id: p.category_id ?? "",
+    image_url: p.image_url ?? "",
   });
 
   const resetForm = () => {
-    setItems([{ product_id: "", product_name: "", search: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0 }]);
+    setItems([{ product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "" }]);
     setPaid(0); setDiscount(0); setDelivery(0); setSupplierId(""); setSupplierSearch(""); setNotes("");
   };
 
