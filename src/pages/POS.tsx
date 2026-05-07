@@ -48,6 +48,7 @@ export default function POS() {
   const [showGuarantorForm, setShowGuarantorForm] = useState(false);
   const [gForm, setGForm] = useState<any>({ name: "", phone: "", nid: "", address: "", relation: "" });
   const [lastSale, setLastSale] = useState<any>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
