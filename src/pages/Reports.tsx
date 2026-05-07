@@ -258,26 +258,33 @@ export default function Reports() {
   };
 
   /* ----------------------------- PDF ------------------------------- */
+  // Brand palette — matches stock_explanation.pdf
+  const BLUE: [number, number, number] = [30, 64, 175];     // #1E40AF
+  const ALT:  [number, number, number] = [248, 250, 252];   // #F8FAFC zebra
+  const AMBER:[number, number, number] = [254, 243, 199];   // #FEF3C7 footer
+  const GREEN:[number, number, number] = [240, 253, 244];   // #F0FDF4 profit
+  const TEXT: [number, number, number] = [15, 23, 42];
+  const MUTED:[number, number, number] = [100, 116, 139];
+
   const handlePDF = () => {
     const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
     const W = doc.internal.pageSize.getWidth();
     const shopName = currentShop?.name ?? "Shop";
     const periodLabel = `${fmtDate(start, "en")} — ${fmtDate(end, "en")}`;
 
-    // Header
-    doc.setFontSize(18); doc.setFont("helvetica", "bold");
-    doc.text(shopName, W / 2, 40, { align: "center" });
+    doc.setFillColor(...BLUE);
+    doc.rect(0, 0, W, 70, "F");
+    doc.setTextColor(255); doc.setFontSize(20); doc.setFont("helvetica", "bold");
+    doc.text(shopName, W / 2, 30, { align: "center" });
     doc.setFontSize(11); doc.setFont("helvetica", "normal");
-    doc.text("Business Report", W / 2, 58, { align: "center" });
-    doc.setFontSize(9); doc.setTextColor(120);
-    doc.text(`Period: ${periodLabel}`, W / 2, 74, { align: "center" });
-    doc.text(`Generated: ${new Date().toLocaleString("en-US")}`, W / 2, 88, { align: "center" });
-    doc.setTextColor(0);
+    doc.text("Business Report", W / 2, 48, { align: "center" });
+    doc.setFontSize(9);
+    doc.text(`Period: ${periodLabel}  |  Generated: ${new Date().toLocaleString("en-US")}`, W / 2, 62, { align: "center" });
+    doc.setTextColor(...TEXT);
 
-    // Summary
     autoTable(doc, {
-      startY: 110,
-      head: [["Metric", "Amount (BDT)"]],
+      startY: 90,
+      head: [["Description", "Amount (BDT)"]],
       body: [
         ["Total Sales", k.totalSales.toFixed(2)],
         ["Total Discount", k.totalDiscount.toFixed(2)],
@@ -286,108 +293,202 @@ export default function Reports() {
         ["Total Purchase", k.totalPurchase.toFixed(2)],
         ["Total Expense", k.totalExpense.toFixed(2)],
         ["Gross Profit", k.grossProfit.toFixed(2)],
-        ["Net Profit/Loss", k.netProfit.toFixed(2)],
-        ["Stock Value (cost)", k.stockValue.toFixed(2)],
+        ["Stock Cost Value", k.stockValue.toFixed(2)],
+        ["Stock Sale Value", k.stockSaleValue.toFixed(2)],
       ],
-      headStyles: { fillColor: [30, 41, 59] },
-      styles: { fontSize: 9 },
+      foot: [[k.netProfit >= 0 ? "Net Profit" : "Net Loss", Math.abs(k.netProfit).toFixed(2)]],
+      headStyles: { fillColor: BLUE, textColor: 255, fontStyle: "bold", halign: "left" },
+      footStyles: { fillColor: GREEN, textColor: [21, 128, 61], fontStyle: "bold", fontSize: 11 },
+      alternateRowStyles: { fillColor: ALT },
+      styles: { fontSize: 10, cellPadding: 6, lineColor: [226, 232, 240], lineWidth: 0.5 },
+      columnStyles: { 1: { halign: "right", fontStyle: "bold" } },
+      margin: { left: 36, right: 36 },
     });
 
-    // Daily breakdown
+    const sectionPage = (title: string) => {
+      doc.addPage();
+      doc.setFillColor(...BLUE); doc.rect(0, 0, W, 36, "F");
+      doc.setTextColor(255); doc.setFontSize(13); doc.setFont("helvetica", "bold");
+      doc.text(title, 40, 23);
+      doc.setTextColor(...TEXT);
+    };
+
+    const baseTable = (head: string[][], body: any[][], foot?: any[][]) => ({
+      head, body, foot,
+      headStyles: { fillColor: BLUE, textColor: 255, fontStyle: "bold" as const },
+      footStyles: { fillColor: AMBER, textColor: TEXT, fontStyle: "bold" as const },
+      alternateRowStyles: { fillColor: ALT },
+      styles: { fontSize: 8, cellPadding: 4, lineColor: [226, 232, 240] as [number, number, number], lineWidth: 0.4 },
+      margin: { left: 36, right: 36 },
+    });
+
     if (daily.length) {
-      doc.addPage();
-      doc.setFontSize(13); doc.setFont("helvetica", "bold");
-      doc.text("Daily Sales Report", 40, 40);
-      autoTable(doc, {
-        startY: 55,
-        head: [["Date", "Orders", "Sales", "Discount", "Paid", "Due", "Purchase", "Expense"]],
-        body: daily.map(d => [
-          d.date, d.orders, d.sales.toFixed(2), d.discount.toFixed(2),
-          d.paid.toFixed(2), d.due.toFixed(2), d.purchase.toFixed(2), d.expense.toFixed(2),
-        ]),
-        headStyles: { fillColor: [30, 41, 59] },
-        styles: { fontSize: 8 },
-      });
+      sectionPage("Daily Sales Report");
+      autoTable(doc, { startY: 50, ...baseTable(
+        [["Date","Orders","Sales","Discount","Paid","Due","Purchase","Expense"]],
+        daily.map(d => [d.date, d.orders, d.sales.toFixed(2), d.discount.toFixed(2), d.paid.toFixed(2), d.due.toFixed(2), d.purchase.toFixed(2), d.expense.toFixed(2)]),
+        [["Total", daily.reduce((a,b)=>a+b.orders,0), k.totalSales.toFixed(2), k.totalDiscount.toFixed(2), k.totalPaid.toFixed(2), k.totalDue.toFixed(2), k.totalPurchase.toFixed(2), k.totalExpense.toFixed(2)]],
+      )});
     }
 
-    // Sales transactions
     if (data.sales.length) {
-      doc.addPage();
-      doc.setFontSize(13); doc.setFont("helvetica", "bold");
-      doc.text("All Sales Transactions", 40, 40);
-      autoTable(doc, {
-        startY: 55,
-        head: [["Invoice", "Date", "Customer", "Total", "Paid", "Due", "Status"]],
-        body: data.sales.map((s: any) => [
-          s.invoice_no, fmtDate(s.created_at, "en"),
-          s.customers?.name ?? "Walk-in", Number(s.total).toFixed(2),
-          Number(s.paid).toFixed(2), Number(s.due).toFixed(2), s.status,
-        ]),
-        headStyles: { fillColor: [30, 41, 59] },
-        styles: { fontSize: 8 },
-      });
+      sectionPage("All Sales Transactions");
+      autoTable(doc, { startY: 50, ...baseTable(
+        [["Invoice","Date","Customer","Total","Paid","Due","Status"]],
+        data.sales.map((s: any) => [s.invoice_no, fmtDate(s.created_at,"en"), s.customers?.name ?? "Walk-in", Number(s.total).toFixed(2), Number(s.paid).toFixed(2), Number(s.due).toFixed(2), s.status]),
+      )});
     }
 
-    // Product sales
     if (productSales.length) {
-      doc.addPage();
-      doc.setFontSize(13); doc.setFont("helvetica", "bold");
-      doc.text("Product-wise Sales", 40, 40);
-      autoTable(doc, {
-        startY: 55,
-        head: [["Product", "Qty", "Revenue", "Cost", "Profit"]],
-        body: productSales.map(p => [
-          p.name, p.qty, p.revenue.toFixed(2), p.cost.toFixed(2), p.profit.toFixed(2),
-        ]),
-        headStyles: { fillColor: [30, 41, 59] },
-        styles: { fontSize: 8 },
-      });
+      sectionPage("Product-wise Sales");
+      autoTable(doc, { startY: 50, ...baseTable(
+        [["Product","Qty","Revenue","Cost","Profit"]],
+        productSales.map(p => [p.name, p.qty, p.revenue.toFixed(2), p.cost.toFixed(2), p.profit.toFixed(2)]),
+        [["Total", productSales.reduce((a,b)=>a+b.qty,0), productSales.reduce((a,b)=>a+b.revenue,0).toFixed(2), productSales.reduce((a,b)=>a+b.cost,0).toFixed(2), productSales.reduce((a,b)=>a+b.profit,0).toFixed(2)]],
+      )});
     }
 
-    // Purchases
     if (data.purchases.length) {
-      doc.addPage();
-      doc.setFontSize(13); doc.setFont("helvetica", "bold");
-      doc.text("Purchase List", 40, 40);
-      autoTable(doc, {
-        startY: 55,
-        head: [["Bill No", "Date", "Supplier", "Total", "Paid", "Due"]],
-        body: data.purchases.map((p: any) => [
-          p.bill_no, fmtDate(p.created_at, "en"),
-          p.suppliers?.name ?? "—", Number(p.total).toFixed(2),
-          Number(p.paid).toFixed(2), Number(p.due).toFixed(2),
-        ]),
-        headStyles: { fillColor: [30, 41, 59] },
-        styles: { fontSize: 8 },
-      });
+      sectionPage("Purchase List");
+      autoTable(doc, { startY: 50, ...baseTable(
+        [["Bill No","Date","Supplier","Total","Paid","Due"]],
+        data.purchases.map((p: any) => [p.bill_no, fmtDate(p.created_at,"en"), p.suppliers?.name ?? "-", Number(p.total).toFixed(2), Number(p.paid).toFixed(2), Number(p.due).toFixed(2)]),
+      )});
     }
 
-    // Expenses
     if (data.expenses.length) {
-      doc.addPage();
-      doc.setFontSize(13); doc.setFont("helvetica", "bold");
-      doc.text("Expenses", 40, 40);
-      autoTable(doc, {
-        startY: 55,
-        head: [["Date", "Title", "Category", "Method", "Amount"]],
-        body: data.expenses.map((e: any) => [
-          e.expense_date, e.title, e.expense_categories?.name ?? "—",
-          e.payment_method ?? "cash", Number(e.amount).toFixed(2),
-        ]),
-        headStyles: { fillColor: [30, 41, 59] },
-        styles: { fontSize: 8 },
-      });
+      sectionPage("Expenses");
+      autoTable(doc, { startY: 50, ...baseTable(
+        [["Date","Title","Category","Method","Amount"]],
+        data.expenses.map((e: any) => [e.expense_date, e.title, e.expense_categories?.name ?? "-", e.payment_method ?? "cash", Number(e.amount).toFixed(2)]),
+        [["Total","","","", k.totalExpense.toFixed(2)]],
+      )});
     }
 
-    // Footer page numbers
+    if (data.products.length) {
+      sectionPage("Stock Report");
+      autoTable(doc, { startY: 50, ...baseTable(
+        [["Product","SKU","Stock","Cost","Price","Stock Cost Value","Stock Sale Value"]],
+        data.products.map((p: any) => [p.name, p.sku ?? "-", p.stock, Number(p.cost).toFixed(2), Number(p.price).toFixed(2), (Number(p.stock)*Number(p.cost)).toFixed(2), (Number(p.stock)*Number(p.price)).toFixed(2)]),
+        [["Total","", data.products.reduce((a,b:any)=>a+Number(b.stock),0), "","", k.stockValue.toFixed(2), k.stockSaleValue.toFixed(2)]],
+      )});
+    }
+
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
-      doc.setFontSize(8); doc.setTextColor(140);
-      doc.text(`${shopName}  •  Page ${i} of ${pageCount}`, W / 2, doc.internal.pageSize.getHeight() - 20, { align: "center" });
+      doc.setFontSize(8); doc.setTextColor(...MUTED);
+      doc.text(`${shopName}  •  Page ${i} of ${pageCount}`, W / 2, doc.internal.pageSize.getHeight() - 16, { align: "center" });
     }
 
     doc.save(`Report_${start.toISOString().slice(0,10)}_${end.toISOString().slice(0,10)}.pdf`);
+  };
+
+  /* ----------------------------- Excel (styled, multi-sheet) ------- */
+  const handleExcel = async () => {
+    const wb = new ExcelJS.Workbook();
+    wb.creator = currentShop?.name ?? "Shop";
+    wb.created = new Date();
+
+    const HEADER_FILL = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FF1E40AF" } };
+    const ALT_FILL    = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFF8FAFC" } };
+    const FOOT_FILL   = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFFEF3C7" } };
+    const BORDER = { top:{style:"thin" as const,color:{argb:"FFE2E8F0"}}, left:{style:"thin" as const,color:{argb:"FFE2E8F0"}}, bottom:{style:"thin" as const,color:{argb:"FFE2E8F0"}}, right:{style:"thin" as const,color:{argb:"FFE2E8F0"}} };
+
+    const buildSheet = (name: string, title: string, headers: string[], rows: any[][], foot?: any[], widths?: number[]) => {
+      const ws = wb.addWorksheet(name, { views: [{ state: "frozen", ySplit: 4 }] });
+      const colCount = headers.length;
+      ws.mergeCells(1, 1, 1, colCount);
+      const tc = ws.getCell(1, 1);
+      tc.value = `${currentShop?.name ?? "Shop"} — ${title}`;
+      tc.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
+      tc.fill = HEADER_FILL; tc.alignment = { horizontal: "center", vertical: "middle" };
+      ws.getRow(1).height = 26;
+      ws.mergeCells(2, 1, 2, colCount);
+      const sub = ws.getCell(2, 1);
+      sub.value = `Period: ${fmtDate(start,"en")} — ${fmtDate(end,"en")}    |    Generated: ${new Date().toLocaleString("en-US")}`;
+      sub.font = { italic: true, color: { argb: "FF64748B" }, size: 10 };
+      sub.alignment = { horizontal: "center" };
+      const headerRow = ws.getRow(4);
+      headers.forEach((h, i) => {
+        const c = headerRow.getCell(i + 1);
+        c.value = h; c.font = { bold: true, color: { argb: "FFFFFFFF" } };
+        c.fill = HEADER_FILL; c.alignment = { horizontal: "center", vertical: "middle" }; c.border = BORDER;
+      });
+      headerRow.height = 22;
+      rows.forEach((r, ri) => {
+        const row = ws.getRow(5 + ri);
+        r.forEach((v, ci) => {
+          const c = row.getCell(ci + 1);
+          c.value = v; c.border = BORDER;
+          if (typeof v === "number") c.numFmt = "#,##0.00";
+          if (ri % 2 === 1) c.fill = ALT_FILL;
+        });
+      });
+      if (foot) {
+        const fr = ws.getRow(5 + rows.length);
+        foot.forEach((v, ci) => {
+          const c = fr.getCell(ci + 1);
+          c.value = v; c.fill = FOOT_FILL; c.font = { bold: true }; c.border = BORDER;
+          if (typeof v === "number") c.numFmt = "#,##0.00";
+        });
+      }
+      (widths ?? headers.map(() => 16)).forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+    };
+
+    buildSheet("Summary", "Business Summary",
+      ["Description", "Amount (BDT)"],
+      [
+        ["Total Sales", k.totalSales],
+        ["Total Discount", k.totalDiscount],
+        ["Total Paid", k.totalPaid],
+        ["Total Due", k.totalDue],
+        ["Total Purchase", k.totalPurchase],
+        ["Total Expense", k.totalExpense],
+        ["Gross Profit", k.grossProfit],
+        ["Stock Cost Value", k.stockValue],
+        ["Stock Sale Value", k.stockSaleValue],
+      ],
+      [k.netProfit >= 0 ? "Net Profit" : "Net Loss", Math.abs(k.netProfit)],
+      [32, 20],
+    );
+
+    if (daily.length) buildSheet("Daily", "Daily Sales Report",
+      ["Date","Orders","Sales","Discount","Paid","Due","Purchase","Expense"],
+      daily.map(d => [d.date, d.orders, d.sales, d.discount, d.paid, d.due, d.purchase, d.expense]),
+      ["Total", daily.reduce((a,b)=>a+b.orders,0), k.totalSales, k.totalDiscount, k.totalPaid, k.totalDue, k.totalPurchase, k.totalExpense],
+      [14,10,14,14,14,14,14,14]);
+
+    if (data.sales.length) buildSheet("Sales", "All Sales",
+      ["Invoice","Date","Customer","Total","Paid","Due","Status"],
+      data.sales.map((s: any) => [s.invoice_no, fmtDate(s.created_at,"en"), s.customers?.name ?? "Walk-in", Number(s.total), Number(s.paid), Number(s.due), s.status]),
+      undefined, [14,14,24,14,14,14,12]);
+
+    if (productSales.length) buildSheet("Products", "Product-wise Sales",
+      ["Product","Qty","Revenue","Cost","Profit"],
+      productSales.map(p => [p.name, p.qty, p.revenue, p.cost, p.profit]),
+      ["Total", productSales.reduce((a,b)=>a+b.qty,0), productSales.reduce((a,b)=>a+b.revenue,0), productSales.reduce((a,b)=>a+b.cost,0), productSales.reduce((a,b)=>a+b.profit,0)],
+      [32,10,16,16,16]);
+
+    if (data.purchases.length) buildSheet("Purchases", "Purchase List",
+      ["Bill No","Date","Supplier","Total","Paid","Due"],
+      data.purchases.map((p: any) => [p.bill_no, fmtDate(p.created_at,"en"), p.suppliers?.name ?? "-", Number(p.total), Number(p.paid), Number(p.due)]),
+      undefined, [14,14,24,14,14,14]);
+
+    if (data.expenses.length) buildSheet("Expenses", "Expenses",
+      ["Date","Title","Category","Method","Amount"],
+      data.expenses.map((e: any) => [e.expense_date, e.title, e.expense_categories?.name ?? "-", e.payment_method ?? "cash", Number(e.amount)]),
+      ["Total","","","", k.totalExpense],
+      [14,28,18,14,16]);
+
+    if (data.products.length) buildSheet("Stock", "Stock Report",
+      ["Product","SKU","Stock","Cost","Price","Stock Cost Value","Stock Sale Value"],
+      data.products.map((p: any) => [p.name, p.sku ?? "-", Number(p.stock), Number(p.cost), Number(p.price), Number(p.stock)*Number(p.cost), Number(p.stock)*Number(p.price)]),
+      ["Total","", data.products.reduce((a,b:any)=>a+Number(b.stock),0), "","", k.stockValue, k.stockSaleValue],
+      [32,14,10,14,14,18,18]);
+
+    const buf = await wb.xlsx.writeBuffer();
+    saveAs(new Blob([buf]), `Report_${start.toISOString().slice(0,10)}_${end.toISOString().slice(0,10)}.xlsx`);
   };
 
   /* ----------------------------- CSV ------------------------------- */
