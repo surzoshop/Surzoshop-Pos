@@ -564,7 +564,7 @@ export default function Reports() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-rose-600 text-white font-bold text-sm hover:bg-rose-700 active:scale-95 transition-all">
             <FileText className="h-4 w-4" /> {t("downloadPdf")}
           </button>
-          <button onClick={csvAll}
+          <button onClick={handleExcel}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 active:scale-95 transition-all">
             <FileSpreadsheet className="h-4 w-4" /> {t("downloadExcel")}
           </button>
