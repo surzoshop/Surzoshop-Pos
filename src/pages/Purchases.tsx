@@ -549,15 +549,25 @@ export default function Purchases() {
             </section>
           </div>
 
-          {/* Sticky footer */}
-          <div className="border-t border-[hsl(var(--surface-container-high))]/60 px-5 py-3 flex items-center justify-between bg-[hsl(var(--surface-container-lowest))]">
-            <button onClick={() => { setOpen(false); resetForm(); }} className="text-sm text-muted-foreground hover:text-foreground px-3 py-2">
-              বাতিল
-            </button>
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-2 rounded-lg bg-[hsl(var(--surface-container-low))] text-sm font-bold">মোট ৳{fmt(total)}</span>
-              <Button variant="outline" onClick={() => save(true)} className="gap-2"><Printer className="h-4 w-4" />সেভ ও প্রিন্ট (A4)</Button>
-              <Button onClick={() => save(false)} className="gradient-primary gap-2"><Save className="h-4 w-4" />পারচেজ সেভ</Button>
+          {/* Sticky footer — mobile responsive */}
+          <div className="border-t border-[hsl(var(--surface-container-high))]/60 px-3 sm:px-5 py-3 bg-[hsl(var(--surface-container-lowest))]">
+            <div className="hidden sm:flex items-center justify-between">
+              <button onClick={() => { setOpen(false); resetForm(); }} className="text-sm text-muted-foreground hover:text-foreground px-3 py-2">বাতিল</button>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-2 rounded-lg bg-[hsl(var(--surface-container-low))] text-sm font-bold">মোট ৳{fmt(total)}</span>
+                <Button variant="outline" onClick={() => save(true)} className="gap-2"><Printer className="h-4 w-4" />সেভ ও প্রিন্ট (A4)</Button>
+                <Button onClick={() => save(false)} className="gradient-primary gap-2"><Save className="h-4 w-4" />পারচেজ সেভ</Button>
+              </div>
+            </div>
+            <div className="sm:hidden space-y-2">
+              <div className="flex items-center justify-between">
+                <button onClick={() => { setOpen(false); resetForm(); }} className="text-xs text-muted-foreground px-2">বাতিল</button>
+                <span className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-black">মোট ৳{fmt(total)}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" onClick={() => save(true)} className="gap-1 h-11 text-xs"><Printer className="h-4 w-4" />সেভ + প্রিন্ট</Button>
+                <Button onClick={() => save(false)} className="gradient-primary gap-1 h-11 text-xs"><Save className="h-4 w-4" />সেভ</Button>
+              </div>
             </div>
           </div>
         </DialogContent>
