@@ -230,76 +230,196 @@ export default function Purchases() {
   };
 
   const printA4Invoice = (p: any) => {
-    const w = window.open("", "_blank", "width=900,height=700"); if (!w) return;
+    const itemsCount = p.items.length;
+    const itemTotal = p.items.reduce((a: number, it: any) => a + Number(it.subtotal), 0);
+    const grand = Number(p.total);
+    const paidAmt = Number(p.paid);
+    const dueAmt = Number(p.due);
+    const disc = Number(p.discount) || 0;
+    const deliv = Number(p.delivery) || 0;
+    const subAfterDisc = itemTotal - disc;
+
     const rows = p.items.map((it: any, i: number) => `
-      <tr>
-        <td>${i + 1}</td>
-        <td>${it.product_name}</td>
-        <td style="text-align:center">${it.qty} ${it.unit ?? ""}</td>
-        <td style="text-align:right">${fmt(Number(it.unit_cost))}</td>
-        <td style="text-align:right">${fmt(Number(it.subtotal))}</td>
+      <tr style="background:${i % 2 ? "#f7f7fb" : "#ffffff"}">
+        <td style="padding:8px 10px;border-bottom:1px solid #eef0f5">${it.product_name}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #eef0f5">৳${fmt(Number(it.unit_cost)).replace("৳","")}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #eef0f5">${it.qty} ${it.unit ?? ""}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #eef0f5">0%</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #eef0f5">৳${fmt(Number(it.subtotal)).replace("৳","")}</td>
       </tr>`).join("");
-    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${p.billNo}</title>
+
+    const numToWords = (n: number) => {
+      // simple english words for the amount-in-words section
+      const a = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+      const b = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+      const inWords = (num: number): string => {
+        if (num < 20) return a[num];
+        if (num < 100) return b[Math.floor(num/10)] + (num%10 ? ' ' + a[num%10] : '');
+        if (num < 1000) return a[Math.floor(num/100)] + ' Hundred' + (num%100 ? ' ' + inWords(num%100) : '');
+        if (num < 100000) return inWords(Math.floor(num/1000)) + ' Thousand' + (num%1000 ? ' ' + inWords(num%1000) : '');
+        if (num < 10000000) return inWords(Math.floor(num/100000)) + ' Lakh' + (num%100000 ? ' ' + inWords(num%100000) : '');
+        return inWords(Math.floor(num/10000000)) + ' Crore' + (num%10000000 ? ' ' + inWords(num%10000000) : '');
+      };
+      const r = Math.round(n);
+      return (inWords(r) || 'Zero') + ' Taka Only';
+    };
+
+    const logoUrl = p.shop?.logo_url || "/brand-logo.png";
+    const qrData = encodeURIComponent(`Invoice:${p.billNo}|Total:${grand}|Shop:${p.shop?.name ?? ""}|Date:${p.billDate}`);
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${qrData}`;
+    const timeStr = new Date().toLocaleTimeString("en-GB", { hour12: false }).slice(0,5);
+    const status = dueAmt === 0 ? "PAID" : dueAmt === grand ? "UNPAID" : "PARTIAL";
+    const orderStatus = "COMPLETED";
+
+    const w = window.open("", "_blank", "width=950,height=750");
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${p.billNo}</title>
       <style>
-        @page{size:A4;margin:14mm}
+        @page{size:A4;margin:10mm}
+        @media print{body{margin:0}}
         *{box-sizing:border-box;font-family:'Segoe UI',Tahoma,Arial,sans-serif}
-        body{margin:0;color:#0f172a;font-size:12px}
-        .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px double #0f172a;padding-bottom:10px;margin-bottom:14px}
-        .shop-name{font-size:22px;font-weight:800;letter-spacing:.3px}
-        .muted{color:#64748b;font-size:11px}
-        .title{display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px}
-        .title h2{margin:0;font-size:16px;letter-spacing:.5px}
-        .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f1f5f9;border-radius:6px;padding:10px;margin-bottom:12px}
-        table{width:100%;border-collapse:collapse;margin-top:6px}
-        th,td{border:1px solid #cbd5e1;padding:7px 8px;font-size:12px}
-        th{background:#0f172a;color:#fff;text-align:left;font-weight:600}
-        tfoot td{font-weight:700;background:#f8fafc}
-        .totals{margin-top:14px;display:flex;justify-content:flex-end}
-        .totals table{width:320px}
-        .totals td{border:none;padding:5px 6px}
-        .totals .grand{border-top:2px solid #0f172a;border-bottom:2px solid #0f172a;font-size:14px}
-        .sign{margin-top:60px;display:flex;justify-content:space-between}
-        .sign div{border-top:1px solid #0f172a;width:30%;padding-top:4px;text-align:center;font-size:11px}
-        .footer{margin-top:24px;text-align:center;color:#64748b;font-size:10px;border-top:1px dashed #94a3b8;padding-top:8px}
-        .badge{display:inline-block;padding:2px 8px;border-radius:10px;background:#0f172a;color:#fff;font-size:10px}
+        body{margin:0;color:#1f2937;font-size:12px;background:#fff}
+        .wrap{max-width:780px;margin:0 auto;padding:6px}
+        .head{display:flex;gap:14px;align-items:flex-start;margin-bottom:14px}
+        .logo-box{width:96px;height:96px;border-radius:10px;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #eef0f5}
+        .logo-box img{max-width:100%;max-height:100%;object-fit:contain}
+        .shop-name{font-size:26px;font-weight:800;color:#5b5fc7;margin:0 0 4px;line-height:1.1}
+        .shop-info{font-size:11.5px;line-height:1.55;color:#1f2937}
+        .shop-info b{color:#0f172a}
+        .banner{background:#7c83ff;color:#fff;text-align:center;padding:8px;font-weight:700;letter-spacing:.5px;border-radius:4px;margin:10px 0}
+        .meta{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 16px;padding:10px 4px;border-bottom:1px solid #eef0f5;margin-bottom:8px}
+        .meta .lbl{font-weight:700;font-size:11px;color:#0f172a}
+        .meta .val{font-size:12px;color:#1f2937;margin-top:2px}
+        h3.sec{color:#5b5fc7;font-size:13px;margin:12px 0 6px;font-weight:700}
+        .billto{font-size:12px;line-height:1.7}
+        .billto b{color:#0f172a}
+        table.items{width:100%;border-collapse:collapse;margin-top:6px;border-radius:4px;overflow:hidden}
+        table.items thead th{background:#7c83ff;color:#fff;text-align:left;padding:9px 10px;font-weight:600;font-size:12px}
+        .items-banner{background:#7c83ff;color:#fff;display:flex;justify-content:space-between;padding:7px 12px;font-weight:700;font-size:12px;border-radius:4px;margin-top:6px}
+        .twocol{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;margin-top:14px}
+        .terms b,.payopt b,.bank b{color:#5b5fc7;display:block;margin-bottom:4px;font-size:12.5px}
+        .terms ol{margin:0;padding-left:18px;font-size:11.5px;line-height:1.6}
+        .totals{font-size:12px}
+        .totals .row{display:flex;justify-content:space-between;padding:3px 0}
+        .totals .row.b{font-weight:700;color:#0f172a}
+        .totals .grand{border-top:1px dashed #94a3b8;border-bottom:1px dashed #94a3b8;padding:5px 0;margin:4px 0;font-weight:800;color:#0f172a}
+        .qr{display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:6px}
+        .qr img{border:1px solid #eef0f5;border-radius:6px}
+        .qr .scan{background:#7c83ff;color:#fff;padding:4px 16px;border-radius:4px;font-size:11px;font-weight:700;margin-top:2px}
+        .words{margin-top:10px}
+        .words b{color:#5b5fc7;display:block;margin-bottom:3px}
+        .powered{text-align:right;font-size:11px;margin-top:14px;color:#0f172a}
+        .powered .grow{display:block;font-weight:700;margin-top:3px}
+        .footer{background:#7c83ff;color:#fff;text-align:center;padding:10px;margin-top:16px;border-radius:4px;font-weight:700;line-height:1.5}
+        .remark{font-size:11px;color:#5b5fc7;margin-top:14px;font-weight:700}
       </style></head><body>
-      <div class="head">
-        <div>
-          ${p.shop?.logo_url ? `<img src="${p.shop.logo_url}" style="height:50px;margin-bottom:4px"/>` : ""}
-          <div class="shop-name">${p.shop?.name ?? "Shop"}</div>
-          ${p.shop?.address ? `<div class="muted">${p.shop.address}</div>` : ""}
-          ${p.shop?.phone ? `<div class="muted">📞 ${p.shop.phone}</div>` : ""}
+      <div class="wrap">
+        <div class="head">
+          <div class="logo-box"><img src="${logoUrl}" onerror="this.style.display='none'"/></div>
+          <div style="flex:1">
+            <h1 class="shop-name">${p.shop?.name ?? "Shop"}</h1>
+            <div class="shop-info">
+              ${p.shop?.address ? `<div><b>Address:</b> ${p.shop.address}</div>` : ""}
+              ${p.shop?.phone ? `<div><b>Phone No.:</b> ${p.shop.phone}</div>` : ""}
+              ${p.shop?.email ? `<div><b>Email:</b> ${p.shop.email}</div>` : ""}
+              <div><b>Best From Best</b></div>
+            </div>
+          </div>
         </div>
-        <div style="text-align:right">
-          <div class="badge">PURCHASE INVOICE</div>
-          <div style="font-size:18px;font-weight:800;margin-top:6px">${p.billNo}</div>
-          <div class="muted">তারিখঃ ${p.billDate}</div>
+
+        <div class="banner">Purchase Invoice / ক্রয় চালান</div>
+
+        <div class="meta">
+          <div><div class="lbl">Bill No #:</div><div class="val">${p.billNo}</div></div>
+          <div><div class="lbl">ITEM:</div><div class="val">${itemsCount} ITEM${itemsCount>1?'S':''}</div></div>
+          <div><div class="lbl">Date:</div><div class="val">${p.billDate}</div></div>
+          <div><div class="lbl">Time:</div><div class="val">${timeStr}</div></div>
+          <div><div class="lbl">Order Status:</div><div class="val">${orderStatus}</div></div>
+          <div><div class="lbl">Payment Method:</div><div class="val">${(p.paymentMethod||'CASH').toUpperCase()}</div></div>
+          <div><div class="lbl">Payment Status:</div><div class="val">${status}</div></div>
+          <div><div class="lbl">Created By:</div><div class="val">OWNER</div></div>
         </div>
-      </div>
-      <div class="meta">
-        <div><b>সরবরাহকারী:</b> ${p.supplierName}</div>
-        <div><b>পেমেন্ট:</b> ${p.paymentMethod}</div>
-      </div>
-      <table>
-        <thead><tr><th style="width:32px">#</th><th>পণ্যের নাম</th><th style="width:90px;text-align:center">পরিমাণ</th><th style="width:90px;text-align:right">দর (৳)</th><th style="width:110px;text-align:right">মোট (৳)</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div class="totals">
-        <table>
-          <tr><td>সাবটোটাল</td><td style="text-align:right">৳ ${fmt(p.subtotal)}</td></tr>
-          <tr><td>ডিসকাউন্ট</td><td style="text-align:right">- ৳ ${fmt(p.discount)}</td></tr>
-          <tr><td>ডেলিভারি</td><td style="text-align:right">৳ ${fmt(p.delivery)}</td></tr>
-          <tr class="grand"><td>সর্বমোট</td><td style="text-align:right">৳ ${fmt(p.total)}</td></tr>
-          <tr><td>পরিশোধিত</td><td style="text-align:right">৳ ${fmt(p.paid)}</td></tr>
-          <tr><td><b>বকেয়া</b></td><td style="text-align:right;color:#b91c1c"><b>৳ ${fmt(p.due)}</b></td></tr>
+
+        <h3 class="sec">Billing To / সরবরাহকারী</h3>
+        <div class="billto">
+          <div><b>Name:</b> ${p.supplierName}</div>
+        </div>
+
+        <table class="items">
+          <thead><tr>
+            <th>Name</th><th>Price/Unit</th><th>Quantity</th><th>GST</th><th>Amount</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
         </table>
+
+        <div class="items-banner">
+          <span>Total Items: ${itemsCount}</span>
+          <span>Item Total : ৳${fmt(itemTotal).replace("৳","")}</span>
+        </div>
+
+        <div class="twocol">
+          <div>
+            <div class="terms">
+              <b>Terms &amp; Conditions</b>
+              <ol>
+                <li>Goods once sold will not be taken back or exchanged.</li>
+                <li>All disputes are subject to jurisdiction only.</li>
+              </ol>
+            </div>
+            <div class="payopt" style="margin-top:12px">
+              <b>Payment Option</b>
+            </div>
+            <div class="bank" style="margin-top:6px;font-size:11.5px;line-height:1.6">
+              <b>Bank Details</b>
+              <div>Shop : ${p.shop?.name ?? ""}</div>
+              ${p.shop?.phone ? `<div>Contact : ${p.shop.phone}</div>` : ""}
+            </div>
+            <div class="qr" style="align-items:flex-start;margin-top:10px">
+              <img src="${qrUrl}" alt="QR" width="130" height="130"/>
+              <div class="scan">SCAN TO PAY</div>
+            </div>
+          </div>
+          <div>
+            <div class="totals">
+              <div class="row"><span>Item Total:</span><b>৳${fmt(itemTotal).replace("৳","")}</b></div>
+              ${disc>0 ? `<div class="row"><span>Bill Discount:</span><b>- ৳${fmt(disc).replace("৳","")}</b></div>` : ""}
+              <div class="row b"><span>Subtotal:</span><b>৳${fmt(subAfterDisc).replace("৳","")}</b></div>
+              ${deliv>0 ? `<div class="row"><span>Delivery:</span><b>৳${fmt(deliv).replace("৳","")}</b></div>` : ""}
+              <div class="row grand"><span>Grand Total:</span><span>৳${fmt(grand).replace("৳","")}</span></div>
+              <div class="row"><span>Paid Amount:</span><b>৳${fmt(paidAmt).replace("৳","")}</b></div>
+              ${dueAmt>0 ? `<div class="row" style="color:#b91c1c"><span>Due:</span><b>৳${fmt(dueAmt).replace("৳","")}</b></div>` : ""}
+            </div>
+            <div class="words">
+              <b>Amount in Words</b>
+              <div style="font-size:11.5px">${numToWords(grand)}</div>
+            </div>
+            <div class="powered">
+              Powered by <b style="color:#5b5fc7">${p.shop?.name ?? "সূর্য শপ"}</b>
+              <span class="grow">Grow with us!</span>
+            </div>
+          </div>
+        </div>
+
+        ${p.notes ? `<div class="remark">Remark: <span style="color:#1f2937;font-weight:400">${p.notes}</span></div>` : `<div class="remark">Remark</div>`}
+
+        <div class="footer">Thank You, Visit Again.<br/>Feels Best</div>
       </div>
-      ${p.notes ? `<div style="margin-top:14px;padding:8px 10px;background:#fef9c3;border-left:3px solid #ca8a04;font-size:11px"><b>নোট:</b> ${p.notes}</div>` : ""}
-      <div class="sign"><div>সরবরাহকারীর স্বাক্ষর</div><div>প্রস্তুতকারী</div><div>অনুমোদনকারী</div></div>
-      <div class="footer">${p.shop?.name ?? ""} — ক্রয় চালান · কম্পিউটার-জেনারেটেড নথি</div>
-      <script>window.onload=()=>{setTimeout(()=>{window.print();},250)}</script>
-      </body></html>`);
-    w.document.close(); w.focus();
+      <script>window.onload=()=>{setTimeout(()=>{try{window.focus();window.print();}catch(e){}}, 350)}</script>
+      </body></html>`;
+
+    if (w && !w.closed) {
+      w.document.open(); w.document.write(html); w.document.close(); w.focus(); return;
+    }
+    // mobile / popup-blocked fallback: hidden iframe
+    const old = document.getElementById("__purchase_print_iframe");
+    if (old) old.remove();
+    const iframe = document.createElement("iframe");
+    iframe.id = "__purchase_print_iframe";
+    iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0";
+    document.body.appendChild(iframe);
+    const idoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!idoc) { toast({ title: "প্রিন্ট করা যায়নি — পপআপ অনুমতি দিন", variant: "destructive" }); return; }
+    idoc.open(); idoc.write(html); idoc.close();
+    setTimeout(() => { try { iframe.contentWindow?.focus(); iframe.contentWindow?.print(); } catch {} }, 800);
   };
 
   const del = async (id: string) => {
