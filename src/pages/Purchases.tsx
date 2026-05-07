@@ -569,9 +569,17 @@ export default function Purchases() {
                     onFocus={() => setSupplierFocus(true)}
                     onBlur={() => setTimeout(() => setSupplierFocus(false), 200)}
                     onChange={e => { setSupplierSearch(e.target.value); setSupplierId(""); setSupplierFocus(true); }}
-                    className="h-11 bg-[hsl(var(--surface-container-low))] border-none pr-28"
+                    onClick={() => setSupplierFocus(true)}
+                    className="h-11 bg-[hsl(var(--surface-container-low))] border-none pr-28 cursor-pointer"
                   />
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded-md bg-primary/10 text-primary text-xs font-bold pointer-events-none">তালিকা ▾</span>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => { setSupplierSearch(""); setSupplierId(""); setSupplierFocus(v => !v); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded-md bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold"
+                    title="সম্পূর্ণ তালিকা দেখুন">
+                    সব দেখুন ▾
+                  </button>
                   {supplierFocus && (
                     <div className="absolute z-[60] left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl max-h-60 overflow-y-auto shadow-2xl">
                       {supplierMatches.length === 0 && <div className="px-4 py-4 text-sm text-muted-foreground text-center">কোন সরবরাহকারী পাওয়া যায়নি — সরবরাহকারী পেইজ থেকে যোগ করুন</div>}
