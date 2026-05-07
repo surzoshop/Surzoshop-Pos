@@ -142,7 +142,7 @@ export default function InstallApp() {
             <div className="flex-1 text-center sm:text-left space-y-3">
               <div>
                 <h2 className="text-xl font-bold mb-1 flex items-center justify-center sm:justify-start gap-2">
-                  <Download className="h-5 w-5 text-primary" /> মূল POS অ্যাপ ইনস্টল করুন
+                  <Download className="h-5 w-5 text-primary" /> সূর্য শপ — মূল অ্যাপ ইনস্টল করুন
                 </h2>
                 <p className="text-sm text-muted-foreground">
                   {isInIframe || isPreviewHost
