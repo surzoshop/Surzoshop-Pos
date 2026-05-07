@@ -364,6 +364,15 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* Daily Stock & Sales Comparison */}
+          <DailyComparison
+            todayStock={stats.todayStockUnits}
+            yestStock={stats.yestStockUnits}
+            todaySold={stats.todaySoldQty}
+            yestSold={stats.yestSoldQty}
+            lang={lang}
+          />
+
           {/* Top Selling */}
           <div className="bg-[hsl(var(--surface-container-lowest))] p-5 md:p-8 rounded-2xl border border-[hsl(var(--surface-container-high))]/40">
             <div className="flex items-center gap-3 mb-4 md:mb-6">
