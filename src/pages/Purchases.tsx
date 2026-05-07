@@ -40,7 +40,7 @@ export default function Purchases() {
   const [billDate, setBillDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<any[]>([
-    { product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "" },
+    { product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "", has_warranty: false, warranty_months: 12, warranty_type: "ম্যানুফ্যাকচারার" },
   ]);
   const [discount, setDiscount] = useState(0);
   const [delivery, setDelivery] = useState(0);
@@ -51,7 +51,7 @@ export default function Purchases() {
     const [p, s, pr, c] = await Promise.all([
       supabase.from("purchases").select("*, suppliers(name)").order("created_at", { ascending: false }).limit(200),
       supabase.from("suppliers").select("id,name,phone").order("name"),
-      supabase.from("products").select("id,name,cost,price,unit,barcode,sku,image_url,category_id").order("name"),
+      supabase.from("products").select("id,name,cost,price,unit,barcode,sku,image_url,category_id,has_warranty,warranty_months").order("name"),
       supabase.from("categories").select("id,name").order("name"),
     ]);
     setPurchases(p.data ?? []); setSuppliers(s.data ?? []); setProducts(pr.data ?? []); setCategories(c.data ?? []);
@@ -86,7 +86,7 @@ export default function Purchases() {
       return next;
     }));
   };
-  const addItemRow = () => setItems([...items, { product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "" }]);
+  const addItemRow = () => setItems([...items, { product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "", has_warranty: false, warranty_months: 12, warranty_type: "ম্যানুফ্যাকচারার" }]);
   const removeItemRow = (idx: number) => setItems(items.length === 1 ? items : items.filter((_, i) => i !== idx));
 
   const pickProduct = (idx: number, p: any) => updateItem(idx, {
@@ -94,10 +94,11 @@ export default function Purchases() {
     unit_cost: Number(p.cost), sell_price: Number(p.price),
     unit: p.unit ?? "pcs", category_id: p.category_id ?? "",
     image_url: p.image_url ?? "",
+    has_warranty: !!p.has_warranty, warranty_months: p.warranty_months || 12,
   });
 
   const resetForm = () => {
-    setItems([{ product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "" }]);
+    setItems([{ product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "", has_warranty: false, warranty_months: 12, warranty_type: "ম্যানুফ্যাকচারার" }]);
     setPaid(0); setDiscount(0); setDelivery(0); setSupplierId(""); setSupplierSearch(""); setNotes("");
     setEditingId(null);
   };
@@ -119,6 +120,7 @@ export default function Purchases() {
         brand: "", category_id: prod?.category_id ?? "", qty: it.qty, unit: prod?.unit ?? "pcs",
         unit_cost: Number(it.unit_cost), sell_price: prod?.price ?? 0,
         subtotal: Number(it.subtotal), image_url: prod?.image_url ?? "",
+        has_warranty: !!prod?.has_warranty, warranty_months: prod?.warranty_months || 12, warranty_type: "ম্যানুফ্যাকচারার",
       };
     }));
     setOpen(true);
@@ -144,16 +146,20 @@ export default function Purchases() {
           category_id: it.category_id || null,
           image_url: it.image_url || null,
           stock: 0, // trigger will increment
+          has_warranty: !!it.has_warranty,
+          warranty_months: it.has_warranty ? Number(it.warranty_months) || null : null,
           shop_id: currentShop?.id ?? null,
         }).select().single();
         if (pe) return toast({ title: "নতুন পণ্য তৈরিতে সমস্যা: " + pe.message, variant: "destructive" });
         pid = created.id;
-      } else if (it.image_url) {
-        // Update existing product image / cost when changed
+      } else {
+        // Update existing product cost / image / warranty
         await supabase.from("products").update({
-          image_url: it.image_url || null,
+          ...(it.image_url ? { image_url: it.image_url } : {}),
           cost: Number(it.unit_cost) || 0,
           ...(it.sell_price ? { price: Number(it.sell_price) } : {}),
+          has_warranty: !!it.has_warranty,
+          warranty_months: it.has_warranty ? Number(it.warranty_months) || null : null,
         }).eq("id", pid);
       }
       prepared.push({ ...it, product_id: pid, product_name: pname });
@@ -727,6 +733,85 @@ export default function Purchases() {
                               <div className="h-10 rounded-md bg-primary/10 grid place-items-center text-primary font-bold">৳{fmt(it.subtotal)}</div>
                               <p className="text-[10px] text-muted-foreground mt-1">পরিমাণ × ক্রয়মূল্য।</p>
                             </div>
+                          </div>
+
+                          {/* Profit row */}
+                          {(() => {
+                            const c = Number(it.unit_cost) || 0;
+                            const s = Number(it.sell_price) || 0;
+                            const pf = s - c;
+                            const pct = c > 0 ? (pf / c) * 100 : 0;
+                            const totalPf = pf * (Number(it.qty) || 0);
+                            return (
+                              <div className={`grid grid-cols-3 gap-2 rounded-xl p-3 text-xs font-bold ${pf >= 0 ? "bg-success/10" : "bg-destructive/10"}`}>
+                                <div className="text-center">
+                                  <div className="text-[10px] text-muted-foreground font-medium">প্রতি পিস প্রফিট</div>
+                                  <div className={pf >= 0 ? "text-success" : "text-destructive"}>৳{pf.toFixed(2)}</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-[10px] text-muted-foreground font-medium">শতকরা</div>
+                                  <div className={pf >= 0 ? "text-success" : "text-destructive"}>{pct.toFixed(1)}%</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-[10px] text-muted-foreground font-medium">মোট প্রফিট</div>
+                                  <div className={pf >= 0 ? "text-success" : "text-destructive"}>৳{totalPf.toFixed(2)}</div>
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {/* Warranty section */}
+                          <div className="rounded-xl border border-info/20 bg-info/5 p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={!!it.has_warranty}
+                                  onChange={e => updateItem(idx, { has_warranty: e.target.checked, warranty_months: e.target.checked ? (it.warranty_months || 12) : 0 })}
+                                  className="h-3.5 w-3.5 accent-info"
+                                />
+                                ওয়ারেন্টি আছে
+                              </Label>
+                              {it.has_warranty && (
+                                <span className="text-[10px] text-info font-bold">{it.warranty_months} মাস · {it.warranty_type}</span>
+                              )}
+                            </div>
+                            {it.has_warranty && (
+                              <>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {[6, 12, 24, 36, 60].map(m => (
+                                    <button key={m} type="button"
+                                      onClick={() => updateItem(idx, { warranty_months: m })}
+                                      className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition ${
+                                        Number(it.warranty_months) === m
+                                          ? "bg-info text-info-foreground"
+                                          : "bg-background hover:bg-info/10"
+                                      }`}>
+                                      {m === 12 ? "১ বছর" : m === 24 ? "২ বছর" : m === 36 ? "৩ বছর" : m === 60 ? "৫ বছর" : "৬ মাস"}
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <Label className="text-[10px] mb-1 block">কাস্টম (মাস)</Label>
+                                    <Input type="number" min={1} value={it.warranty_months}
+                                      onChange={e => updateItem(idx, { warranty_months: +e.target.value })}
+                                      className="h-9 bg-background text-xs" />
+                                  </div>
+                                  <div>
+                                    <Label className="text-[10px] mb-1 block">ধরন</Label>
+                                    <select value={it.warranty_type || "ম্যানুফ্যাকচারার"}
+                                      onChange={e => updateItem(idx, { warranty_type: e.target.value })}
+                                      className="w-full h-9 rounded-md bg-background px-2 text-xs border border-input">
+                                      <option value="ম্যানুফ্যাকচারার">ম্যানুফ্যাকচারার</option>
+                                      <option value="সেলার / দোকান">সেলার / দোকান</option>
+                                      <option value="ব্র্যান্ড অফিসিয়াল">ব্র্যান্ড অফিসিয়াল</option>
+                                      <option value="ইন্টারন্যাশনাল">ইন্টারন্যাশনাল</option>
+                                    </select>
+                                  </div>
+                                </div>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
