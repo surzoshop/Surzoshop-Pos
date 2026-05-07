@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { ImageUpload } from "@/components/ImageUpload";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, ShoppingBag, Calendar, FileText, Receipt, Search, Eye, Wallet, ArrowLeft, Building2, Package, DollarSign, StickyNote, Printer, Save, ImagePlus, CheckCircle2, X } from "lucide-react";
+import { Plus, Trash2, ShoppingBag, Calendar, FileText, Receipt, Search, Eye, Wallet, ArrowLeft, Building2, Package, DollarSign, StickyNote, Printer, Save, ImagePlus, CheckCircle2, X, ShieldCheck } from "lucide-react";
 import { PageHeader, SurfaceCard, PrimaryButton, StatusPill } from "@/components/PageHeader";
 
 export default function Purchases() {
