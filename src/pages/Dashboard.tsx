@@ -76,16 +76,19 @@ export default function Dashboard() {
     });
     setTopProducts([...map.entries()].map(([name, v]) => ({ name, ...v })).sort((a, b) => b.qty - a.qty).slice(0, 3));
     setRecent(recentSales.data ?? []);
-    const stockValue = (productsAll.data ?? []).reduce((a: number, p: any) => a + Number(p.stock) * Number(p.cost), 0);
+    const productsArr = (productsAll.data ?? []) as any[];
+    const stockUnits = productsArr.reduce((a, p) => a + Number(p.stock), 0);
+    const stockCostValue = productsArr.reduce((a, p) => a + Number(p.stock) * Number(p.cost), 0);
+    const stockSaleValue = productsArr.reduce((a, p) => a + Number(p.stock) * Number(p.price), 0);
     const totalDue = (duesData.data ?? []).reduce((a: number, d: any) => a + Number(d.due), 0);
     setStats({
       todaySales: todayTotal, todayCount: salesToday.data?.length ?? 0,
       monthSales, monthProfit,
-      orderCount: salesMonth.data?.length ?? 0,
+      monthSalesCount: salesMonth.data?.length ?? 0,
       deliveredToday: salesToday.data?.length ?? 0,
       lowStockCount: lowStockData.count ?? 0,
       totalProducts: productsAll.count ?? 0,
-      stockValue,
+      stockUnits, stockCostValue, stockSaleValue,
       totalCustomers: customersCount.count ?? 0,
       totalDue,
     });
