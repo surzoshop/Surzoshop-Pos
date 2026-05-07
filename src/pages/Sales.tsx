@@ -203,10 +203,10 @@ export default function Sales() {
     <div>
       <PageHeader title={t("salesLedger")} subtitle={t("salesSubtitle")} />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Stat icon={<Receipt className="h-6 w-6 text-primary" />} bg="bg-primary/10" label={t("recentSales")} value={filtered.length.toString()} />
-        <Stat icon={<Receipt className="h-6 w-6 text-info" />} bg="bg-info/10" label={t("totalRevenue")} value={fmt(totalRevenue)} />
-        <Stat icon={<Receipt className="h-6 w-6 text-[hsl(var(--secondary-foreground))]" />} bg="bg-secondary/30" label={t("pendingDue")} value={fmt(totalDue)} />
+      <div className="grid grid-cols-3 gap-2 sm:gap-6 mb-4 sm:mb-8">
+        <Stat icon={<Receipt className="h-4 w-4 sm:h-6 sm:w-6 text-primary" />} bg="bg-primary/10" label={t("recentSales")} value={filtered.length.toString()} />
+        <Stat icon={<Receipt className="h-4 w-4 sm:h-6 sm:w-6 text-info" />} bg="bg-info/10" label={t("totalRevenue")} value={fmt(totalRevenue)} />
+        <Stat icon={<Receipt className="h-4 w-4 sm:h-6 sm:w-6 text-[hsl(var(--secondary-foreground))]" />} bg="bg-secondary/30" label={t("pendingDue")} value={fmt(totalDue)} />
       </div>
 
       <SurfaceCard className="p-3 sm:p-6">
