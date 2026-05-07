@@ -40,9 +40,14 @@ export default function Products() {
   const [editing, setEditing] = useState<any>(null);
   const [newCat, setNewCat] = useState("");
   const [editCat, setEditCat] = useState<{ id: string; name: string } | null>(null);
-  const [selectedCat, setSelectedCat] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [selectedCat, setSelectedCat] = useState<string | null>(searchParams.get("category"));
   const [showCatSuggest, setShowCatSuggest] = useState(false);
   const isAdmin = role === "admin";
+
+  // sync URL param changes
+  useEffect(() => { setSelectedCat(searchParams.get("category")); }, [searchParams]);
+
 
   const empty = { name: "", category_id: "", price: 0, cost: 0, stock: 0, unit: "pcs", image_url: "" };
   const [form, setForm] = useState<any>(empty);
