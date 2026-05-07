@@ -678,7 +678,7 @@ function MiniStat({ label, value, icon: Icon, tone, active, onClick, hint }: any
   );
 }
 
-function BigStat({ label, value, icon, accent }: any) {
+function BigStat({ label, value, icon, accent, hint }: any) {
   const accents: Record<string, { ic: string; border: string }> = {
     emerald: { ic: "text-emerald-600 bg-emerald-500/10", border: "border-emerald-500/40" },
     rose:    { ic: "text-rose-600 bg-rose-500/10",       border: "border-rose-500/40" },
@@ -688,10 +688,11 @@ function BigStat({ label, value, icon, accent }: any) {
   return (
     <Card className={`border-2 ${a.border} hover:shadow-md transition-all`}>
       <CardContent className="p-3 sm:p-5 flex items-center gap-3">
-        <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl grid place-items-center ${a.ic}`}>{icon}</div>
+        <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl grid place-items-center shrink-0 ${a.ic}`}>{icon}</div>
         <div className="min-w-0">
           <p className="text-[11px] sm:text-xs text-muted-foreground font-bold">{label}</p>
           <p className="text-lg sm:text-2xl font-black text-foreground truncate">{value}</p>
+          {hint && <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5 leading-tight">{hint}</p>}
         </div>
       </CardContent>
     </Card>
