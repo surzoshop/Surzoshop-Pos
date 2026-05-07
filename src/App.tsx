@@ -15,6 +15,7 @@ import Dashboard from "./pages/Dashboard";
 import POS from "./pages/POS";
 import Products from "./pages/Products";
 import BarcodePrint from "./pages/BarcodePrint";
+import Categories from "./pages/Categories";
 import Customers from "./pages/Customers";
 import Installments from "./pages/Installments";
 import Sales from "./pages/Sales";
