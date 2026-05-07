@@ -372,12 +372,16 @@ export default function Sales() {
   );
 }
 
-function Stat({ icon, bg, label, value }: any) {
+function Stat({ icon, accent, label, value, delay }: any) {
   return (
-    <div className="bg-[hsl(var(--surface-container-lowest))] p-2.5 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:gap-4 transition-all hover:-translate-y-1">
-      <div className={`p-1.5 sm:p-3 ${bg} rounded-lg sm:rounded-xl shrink-0`}>{icon}</div>
+    <div
+      className="group relative overflow-hidden bg-[hsl(var(--surface-container-lowest))] p-2.5 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:gap-4 shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] transition-all hover:-translate-y-1 animate-fade-in"
+      style={{ animationDelay: delay }}
+    >
+      <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${accent} opacity-80`} />
+      <div className={`p-1.5 sm:p-3 bg-gradient-to-br ${accent} rounded-lg sm:rounded-xl shrink-0 shadow-sm group-hover:scale-110 transition-transform`}>{icon}</div>
       <div className="min-w-0 w-full">
-        <p className="text-muted-foreground text-[10px] sm:text-sm font-medium truncate">{label}</p>
+        <p className="text-muted-foreground text-[10px] sm:text-sm font-medium truncate uppercase tracking-wider">{label}</p>
         <h3 className="text-sm sm:text-xl font-bold text-foreground mt-0.5 truncate">{value}</h3>
       </div>
     </div>
