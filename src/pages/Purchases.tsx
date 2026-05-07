@@ -120,6 +120,7 @@ export default function Purchases() {
         brand: "", category_id: prod?.category_id ?? "", qty: it.qty, unit: prod?.unit ?? "pcs",
         unit_cost: Number(it.unit_cost), sell_price: prod?.price ?? 0,
         subtotal: Number(it.subtotal), image_url: prod?.image_url ?? "",
+        has_warranty: !!prod?.has_warranty, warranty_months: prod?.warranty_months || 12, warranty_type: "ম্যানুফ্যাকচারার",
       };
     }));
     setOpen(true);
