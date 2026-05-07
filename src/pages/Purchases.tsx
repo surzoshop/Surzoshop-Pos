@@ -28,6 +28,8 @@ export default function Purchases() {
   const [payOpen, setPayOpen] = useState(false);
   const [payTarget, setPayTarget] = useState<any>(null);
   const [payAmt, setPayAmt] = useState(0);
+  const [supplierFocus, setSupplierFocus] = useState(false);
+  const [productFocusIdx, setProductFocusIdx] = useState<number | null>(null);
 
   // form state
   const [supplierId, setSupplierId] = useState("");
@@ -59,8 +61,8 @@ export default function Purchases() {
   const fullyPaid = total > 0 && due === 0;
 
   const supplierMatches = useMemo(() =>
-    !supplierSearch ? suppliers.slice(0, 6)
-      : suppliers.filter(s => s.name.toLowerCase().includes(supplierSearch.toLowerCase())).slice(0, 6),
+    !supplierSearch ? suppliers
+      : suppliers.filter(s => s.name.toLowerCase().includes(supplierSearch.toLowerCase()) || s.phone?.includes(supplierSearch)),
     [supplierSearch, suppliers]);
 
   const updateItem = (idx: number, patch: any) => {
@@ -87,7 +89,7 @@ export default function Purchases() {
 
   const validItems = () => items.filter(i => i.product_id && i.qty > 0);
 
-  const save = async () => {
+  const save = async (alsoPrint = false) => {
     const rowsToSave = validItems();
     if (rowsToSave.length === 0) return toast({ title: "কমপক্ষে একটি পণ্য নির্বাচন করুন", variant: "destructive" });
     const { data, error } = await supabase.from("purchases").insert({
@@ -102,8 +104,89 @@ export default function Purchases() {
     }));
     const { error: e2 } = await supabase.from("purchase_items").insert(rows);
     if (e2) return toast({ title: e2.message, variant: "destructive" });
-    setOpen(false); resetForm(); load();
     toast({ title: "ক্রয় সংরক্ষিত ✓" });
+    if (alsoPrint) {
+      const supName = suppliers.find(s => s.id === supplierId)?.name ?? "—";
+      printA4Invoice({
+        billNo: data.bill_no, billDate, supplierName: supName,
+        shop: currentShop, items: rowsToSave, subtotal, discount, delivery, total, paid, due,
+        paymentMethod, notes,
+      });
+    }
+    setOpen(false); resetForm(); load();
+  };
+
+  const printA4Invoice = (p: any) => {
+    const w = window.open("", "_blank", "width=900,height=700"); if (!w) return;
+    const rows = p.items.map((it: any, i: number) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${it.product_name}</td>
+        <td style="text-align:center">${it.qty} ${it.unit ?? ""}</td>
+        <td style="text-align:right">${fmt(Number(it.unit_cost))}</td>
+        <td style="text-align:right">${fmt(Number(it.subtotal))}</td>
+      </tr>`).join("");
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${p.billNo}</title>
+      <style>
+        @page{size:A4;margin:14mm}
+        *{box-sizing:border-box;font-family:'Segoe UI',Tahoma,Arial,sans-serif}
+        body{margin:0;color:#0f172a;font-size:12px}
+        .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px double #0f172a;padding-bottom:10px;margin-bottom:14px}
+        .shop-name{font-size:22px;font-weight:800;letter-spacing:.3px}
+        .muted{color:#64748b;font-size:11px}
+        .title{display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px}
+        .title h2{margin:0;font-size:16px;letter-spacing:.5px}
+        .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f1f5f9;border-radius:6px;padding:10px;margin-bottom:12px}
+        table{width:100%;border-collapse:collapse;margin-top:6px}
+        th,td{border:1px solid #cbd5e1;padding:7px 8px;font-size:12px}
+        th{background:#0f172a;color:#fff;text-align:left;font-weight:600}
+        tfoot td{font-weight:700;background:#f8fafc}
+        .totals{margin-top:14px;display:flex;justify-content:flex-end}
+        .totals table{width:320px}
+        .totals td{border:none;padding:5px 6px}
+        .totals .grand{border-top:2px solid #0f172a;border-bottom:2px solid #0f172a;font-size:14px}
+        .sign{margin-top:60px;display:flex;justify-content:space-between}
+        .sign div{border-top:1px solid #0f172a;width:30%;padding-top:4px;text-align:center;font-size:11px}
+        .footer{margin-top:24px;text-align:center;color:#64748b;font-size:10px;border-top:1px dashed #94a3b8;padding-top:8px}
+        .badge{display:inline-block;padding:2px 8px;border-radius:10px;background:#0f172a;color:#fff;font-size:10px}
+      </style></head><body>
+      <div class="head">
+        <div>
+          ${p.shop?.logo_url ? `<img src="${p.shop.logo_url}" style="height:50px;margin-bottom:4px"/>` : ""}
+          <div class="shop-name">${p.shop?.name ?? "Shop"}</div>
+          ${p.shop?.address ? `<div class="muted">${p.shop.address}</div>` : ""}
+          ${p.shop?.phone ? `<div class="muted">📞 ${p.shop.phone}</div>` : ""}
+        </div>
+        <div style="text-align:right">
+          <div class="badge">PURCHASE INVOICE</div>
+          <div style="font-size:18px;font-weight:800;margin-top:6px">${p.billNo}</div>
+          <div class="muted">তারিখঃ ${p.billDate}</div>
+        </div>
+      </div>
+      <div class="meta">
+        <div><b>সরবরাহকারী:</b> ${p.supplierName}</div>
+        <div><b>পেমেন্ট:</b> ${p.paymentMethod}</div>
+      </div>
+      <table>
+        <thead><tr><th style="width:32px">#</th><th>পণ্যের নাম</th><th style="width:90px;text-align:center">পরিমাণ</th><th style="width:90px;text-align:right">দর (৳)</th><th style="width:110px;text-align:right">মোট (৳)</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="totals">
+        <table>
+          <tr><td>সাবটোটাল</td><td style="text-align:right">৳ ${fmt(p.subtotal)}</td></tr>
+          <tr><td>ডিসকাউন্ট</td><td style="text-align:right">- ৳ ${fmt(p.discount)}</td></tr>
+          <tr><td>ডেলিভারি</td><td style="text-align:right">৳ ${fmt(p.delivery)}</td></tr>
+          <tr class="grand"><td>সর্বমোট</td><td style="text-align:right">৳ ${fmt(p.total)}</td></tr>
+          <tr><td>পরিশোধিত</td><td style="text-align:right">৳ ${fmt(p.paid)}</td></tr>
+          <tr><td><b>বকেয়া</b></td><td style="text-align:right;color:#b91c1c"><b>৳ ${fmt(p.due)}</b></td></tr>
+        </table>
+      </div>
+      ${p.notes ? `<div style="margin-top:14px;padding:8px 10px;background:#fef9c3;border-left:3px solid #ca8a04;font-size:11px"><b>নোট:</b> ${p.notes}</div>` : ""}
+      <div class="sign"><div>সরবরাহকারীর স্বাক্ষর</div><div>প্রস্তুতকারী</div><div>অনুমোদনকারী</div></div>
+      <div class="footer">${p.shop?.name ?? ""} — ক্রয় চালান · কম্পিউটার-জেনারেটেড নথি</div>
+      <script>window.onload=()=>{setTimeout(()=>{window.print();},250)}</script>
+      </body></html>`);
+    w.document.close(); w.focus();
   };
 
   const del = async (id: string) => {
@@ -197,31 +280,30 @@ export default function Purchases() {
 
       {/* === New Purchase — Bongo-style full-screen sectioned form === */}
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
-        <DialogContent className="bg-[hsl(var(--surface-container-lowest))] p-0 max-w-5xl w-[96vw] h-[94vh] overflow-hidden flex flex-col gap-0">
+        <DialogContent className="bg-[hsl(var(--surface-container-lowest))] p-0 max-w-5xl w-[100vw] sm:w-[96vw] h-[100vh] sm:h-[94vh] sm:max-h-[94vh] sm:rounded-2xl rounded-none overflow-hidden flex flex-col gap-0">
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-3 border-b border-[hsl(var(--surface-container-high))]/60 bg-[hsl(var(--surface-container-lowest))]">
-            <div className="flex items-center gap-3">
-              <button onClick={() => { setOpen(false); resetForm(); }} className="h-9 w-9 grid place-items-center rounded-full hover:bg-muted">
+          <div className="flex items-center justify-between gap-2 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-[hsl(var(--surface-container-high))]/60 bg-[hsl(var(--surface-container-lowest))]">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <button onClick={() => { setOpen(false); resetForm(); }} className="h-9 w-9 grid place-items-center rounded-full hover:bg-muted shrink-0">
                 <ArrowLeft className="h-5 w-5" />
               </button>
-              <div className="h-10 w-10 rounded-xl bg-primary/10 grid place-items-center">
+              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-primary/10 grid place-items-center shrink-0">
                 <Receipt className="h-5 w-5 text-primary" />
               </div>
-              <div>
-                <DialogTitle className="text-base font-bold">নতুন ক্রয়</DialogTitle>
-                <p className="text-xs text-muted-foreground">নতুন পারচেজ এন্ট্রি তৈরি করুন</p>
+              <div className="min-w-0">
+                <DialogTitle className="text-sm sm:text-base font-bold">নতুন ক্রয়</DialogTitle>
+                <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">নতুন পারচেজ এন্ট্রি তৈরি করুন</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">তারিখ:</span>
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <input type="date" value={billDate} onChange={e => setBillDate(e.target.value)}
-                className="h-8 px-2 rounded-md bg-[hsl(var(--surface-container-low))] text-xs border-none focus:outline-none focus:ring-2 focus:ring-primary/30" />
-              <span className="ml-3 px-3 py-1 rounded-full bg-[hsl(var(--surface-container-low))] text-xs font-bold">আইটেম: {validItems().length}</span>
+                className="h-8 px-2 rounded-md bg-[hsl(var(--surface-container-low))] text-[11px] sm:text-xs border-none focus:outline-none focus:ring-2 focus:ring-primary/30 w-[120px] sm:w-auto" />
+              <span className="px-2 sm:px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] sm:text-xs font-bold whitespace-nowrap">আইটেম: {validItems().length}</span>
             </div>
           </div>
 
           {/* Scroll body */}
-          <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+          <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-3 sm:py-5 space-y-4 sm:space-y-5">
             {/* Supplier card */}
             <section className="rounded-2xl bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/50 overflow-hidden">
               <div className="h-1 bg-gradient-to-r from-primary via-primary/70 to-primary/30" />
@@ -237,23 +319,26 @@ export default function Purchases() {
                 </div>
                 <div className="relative">
                   <Input
-                    placeholder="সাপ্লায়ারের নাম লিখুন বা সিলেক্ট করুন"
+                    placeholder="সাপ্লায়ারের নাম লিখুন বা ক্লিক করে তালিকা থেকে বাছুন"
                     value={supplierSearch}
-                    onChange={e => { setSupplierSearch(e.target.value); setSupplierId(""); }}
+                    onFocus={() => setSupplierFocus(true)}
+                    onBlur={() => setTimeout(() => setSupplierFocus(false), 150)}
+                    onChange={e => { setSupplierSearch(e.target.value); setSupplierId(""); setSupplierFocus(true); }}
                     className="h-11 bg-[hsl(var(--surface-container-low))] border-none pr-28"
                   />
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded-md bg-muted text-xs text-muted-foreground">তালিকা ▾</span>
-                  {supplierSearch && !supplierId && (
-                    <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl max-h-56 overflow-y-auto shadow-lg">
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded-md bg-primary/10 text-primary text-xs font-bold pointer-events-none">তালিকা ▾</span>
+                  {supplierFocus && (
+                    <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl max-h-60 overflow-y-auto shadow-xl">
+                      {supplierMatches.length === 0 && <div className="px-4 py-4 text-sm text-muted-foreground text-center">কোন সরবরাহকারী পাওয়া যায়নি — সরবরাহকারী পেইজ থেকে যোগ করুন</div>}
                       {supplierMatches.map(s => (
                         <button key={s.id} type="button"
-                          onClick={() => { setSupplierId(s.id); setSupplierSearch(s.name); }}
-                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted/60 flex justify-between">
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => { setSupplierId(s.id); setSupplierSearch(s.name); setSupplierFocus(false); }}
+                          className={`w-full text-left px-4 py-2.5 text-sm hover:bg-primary/10 flex justify-between items-center ${supplierId===s.id ? "bg-primary/10" : ""}`}>
                           <span className="font-medium">{s.name}</span>
                           <span className="text-xs text-muted-foreground">{s.phone ?? ""}</span>
                         </button>
                       ))}
-                      {supplierMatches.length === 0 && <div className="px-4 py-3 text-sm text-muted-foreground">কোন সাপ্লায়ার নেই</div>}
                     </div>
                   )}
                 </div>
@@ -298,24 +383,33 @@ export default function Purchases() {
                           <div>
                             <Label className="text-xs flex items-center gap-1 mb-1"><Package className="h-3 w-3" />পণ্য</Label>
                             <div className="relative">
-                              <Input placeholder="পণ্যের নাম লিখুন বা স্ক্যান করুন"
+                              <Input placeholder="পণ্যের নাম লিখুন বা ক্লিক করে তালিকা থেকে বাছুন"
                                 value={it.search}
-                                onChange={e => updateItem(idx, { search: e.target.value, product_id: "" })}
+                                onFocus={() => setProductFocusIdx(idx)}
+                                onBlur={() => setTimeout(() => setProductFocusIdx(p => p === idx ? null : p), 150)}
+                                onChange={e => { updateItem(idx, { search: e.target.value, product_id: "" }); setProductFocusIdx(idx); }}
                                 className="h-10 bg-background pr-28" />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-bold">পণ্য সিলেক্ট ▾</span>
-                              {it.search && !it.product_id && (
-                                <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl max-h-52 overflow-y-auto shadow-lg">
-                                  {products.filter(p =>
-                                    p.name.toLowerCase().includes(it.search.toLowerCase()) ||
-                                    p.barcode?.toLowerCase().includes(it.search.toLowerCase()) ||
-                                    p.sku?.toLowerCase().includes(it.search.toLowerCase())
-                                  ).slice(0, 8).map(p => (
-                                    <button key={p.id} type="button" onClick={() => pickProduct(idx, p)}
-                                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted/60 flex justify-between">
-                                      <span>{p.name}</span>
-                                      <span className="text-xs text-muted-foreground">{fmt(Number(p.cost))}</span>
-                                    </button>
-                                  ))}
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-bold pointer-events-none">পণ্য সিলেক্ট ▾</span>
+                              {productFocusIdx === idx && (
+                                <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl max-h-60 overflow-y-auto shadow-xl">
+                                  {(() => {
+                                    const list = products.filter(p =>
+                                      !it.search ||
+                                      p.name.toLowerCase().includes(it.search.toLowerCase()) ||
+                                      p.barcode?.toLowerCase().includes(it.search.toLowerCase()) ||
+                                      p.sku?.toLowerCase().includes(it.search.toLowerCase())
+                                    );
+                                    if (list.length === 0) return <div className="px-4 py-4 text-sm text-muted-foreground text-center">কোন পণ্য পাওয়া যায়নি</div>;
+                                    return list.slice(0, 12).map(p => (
+                                      <button key={p.id} type="button"
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => { pickProduct(idx, p); setProductFocusIdx(null); }}
+                                        className="w-full text-left px-3 py-2 text-sm hover:bg-primary/10 flex justify-between items-center">
+                                        <span className="font-medium">{p.name}</span>
+                                        <span className="text-xs text-muted-foreground">স্টক: {p.stock ?? "—"} · ৳{fmt(Number(p.cost))}</span>
+                                      </button>
+                                    ));
+                                  })()}
                                 </div>
                               )}
                             </div>
@@ -355,7 +449,7 @@ export default function Purchases() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-3 rounded-xl bg-background/50 p-3">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 rounded-xl bg-background/50 p-3">
                             <div>
                               <Label className="text-xs mb-1 block">ক্রয়মূল্য (৳)</Label>
                               <Input type="number" value={it.unit_cost} onChange={e => updateItem(idx, { unit_cost: +e.target.value })} className="h-10 bg-background" />
@@ -454,15 +548,25 @@ export default function Purchases() {
             </section>
           </div>
 
-          {/* Sticky footer */}
-          <div className="border-t border-[hsl(var(--surface-container-high))]/60 px-5 py-3 flex items-center justify-between bg-[hsl(var(--surface-container-lowest))]">
-            <button onClick={() => { setOpen(false); resetForm(); }} className="text-sm text-muted-foreground hover:text-foreground px-3 py-2">
-              বাতিল
-            </button>
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-2 rounded-lg bg-[hsl(var(--surface-container-low))] text-sm font-bold">মোট ৳{fmt(total)}</span>
-              <Button variant="outline" onClick={save} className="gap-2"><Printer className="h-4 w-4" />সেভ ও প্রিন্ট</Button>
-              <Button onClick={save} className="gradient-primary gap-2"><Save className="h-4 w-4" />পারচেজ সেভ</Button>
+          {/* Sticky footer — mobile responsive */}
+          <div className="border-t border-[hsl(var(--surface-container-high))]/60 px-3 sm:px-5 py-3 bg-[hsl(var(--surface-container-lowest))]">
+            <div className="hidden sm:flex items-center justify-between">
+              <button onClick={() => { setOpen(false); resetForm(); }} className="text-sm text-muted-foreground hover:text-foreground px-3 py-2">বাতিল</button>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-2 rounded-lg bg-[hsl(var(--surface-container-low))] text-sm font-bold">মোট ৳{fmt(total)}</span>
+                <Button variant="outline" onClick={() => save(true)} className="gap-2"><Printer className="h-4 w-4" />সেভ ও প্রিন্ট (A4)</Button>
+                <Button onClick={() => save(false)} className="gradient-primary gap-2"><Save className="h-4 w-4" />পারচেজ সেভ</Button>
+              </div>
+            </div>
+            <div className="sm:hidden space-y-2">
+              <div className="flex items-center justify-between">
+                <button onClick={() => { setOpen(false); resetForm(); }} className="text-xs text-muted-foreground px-2">বাতিল</button>
+                <span className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-black">মোট ৳{fmt(total)}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" onClick={() => save(true)} className="gap-1 h-11 text-xs"><Printer className="h-4 w-4" />সেভ + প্রিন্ট</Button>
+                <Button onClick={() => save(false)} className="gradient-primary gap-1 h-11 text-xs"><Save className="h-4 w-4" />সেভ</Button>
+              </div>
             </div>
           </div>
         </DialogContent>
