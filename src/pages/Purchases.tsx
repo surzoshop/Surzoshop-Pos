@@ -375,13 +375,15 @@ export default function Purchases() {
                   <td className="py-4">{fmt(Number(p.paid))}</td>
                   <td className="py-4"><StatusPill tone={Number(p.due) > 0 ? "warning" : "success"}>{fmt(Number(p.due))}</StatusPill></td>
                   <td className="py-4 text-right">
-                    <div className="inline-flex gap-1">
-                      <button onClick={() => viewItems(p)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"><Eye className="h-4 w-4" /></button>
+                    <div className="inline-flex gap-1 items-center">
+                      <button onClick={() => viewItems(p)} title="দেখুন" className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"><Eye className="h-4 w-4" /></button>
+                      <button onClick={() => printExisting(p)} title="প্রিন্ট" className="p-1.5 rounded-md hover:bg-info/10 text-info"><Printer className="h-4 w-4" /></button>
+                      {isAdmin && <button onClick={() => openEdit(p)} title="এডিট" className="p-1.5 rounded-md hover:bg-primary/10 text-primary"><FileText className="h-4 w-4" /></button>}
                       {Number(p.due) > 0 && (
                         <button onClick={() => { setPayTarget(p); setPayAmt(Number(p.due)); setPayOpen(true); }}
                           className="px-2 py-1 rounded-md text-xs font-bold bg-primary/10 text-primary hover:bg-primary/20">পরিশোধ</button>
                       )}
-                      {isAdmin && <button onClick={() => del(p.id)} className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive"><Trash2 className="h-4 w-4" /></button>}
+                      {isAdmin && <button onClick={() => del(p.id)} title="ডিলিট" className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive"><Trash2 className="h-4 w-4" /></button>}
                     </div>
                   </td>
                 </tr>
