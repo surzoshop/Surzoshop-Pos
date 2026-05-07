@@ -56,7 +56,17 @@ export default function Purchases() {
     ]);
     setPurchases(p.data ?? []); setSuppliers(s.data ?? []); setProducts(pr.data ?? []); setCategories(c.data ?? []);
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const ch = supabase
+      .channel("purchases-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "purchases" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "purchase_items" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "purchase_payments" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
 
   const subtotal = items.reduce((a, b) => a + (Number(b.subtotal) || 0), 0);
   const total = Math.max(subtotal - discount + delivery, 0);
