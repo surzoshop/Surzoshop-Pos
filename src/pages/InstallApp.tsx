@@ -22,9 +22,16 @@ export default function InstallApp() {
 
   const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
   const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+  const isAndroid = /Android/i.test(ua);
   const isStandalone =
     typeof window !== "undefined" &&
     (window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone);
+  const isInIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
+  const isPreviewHost = typeof window !== "undefined" && (
+    window.location.hostname.includes("id-preview--") ||
+    window.location.hostname.includes("lovableproject.com")
+  );
+  const publishedUrl = "https://easy-kisti-shop.lovable.app";
 
   useEffect(() => {
     const handler = (e: Event) => { e.preventDefault(); setDeferred(e as BIPEvent); };
@@ -41,15 +48,32 @@ export default function InstallApp() {
   }, []);
 
   const handleInstall = async () => {
-    if (!deferred) {
-      toast.info("ইনস্টল প্রম্পট এখনই উপলব্ধ নয়। ব্রাউজার মেনু থেকেও ইনস্টল করতে পারেন।");
+    if (isInIframe || isPreviewHost) {
+      window.open(publishedUrl, "_blank", "noopener,noreferrer");
+      toast.info("ইনস্টল করতে অ্যাপটি নতুন ট্যাবে খোলা হলো — সেখান থেকে ইনস্টল করুন।");
       return;
     }
-    await deferred.prompt();
-    const { outcome } = await deferred.userChoice;
-    if (outcome === "accepted") toast.success("ইনস্টল হচ্ছে...");
-    setDeferred(null);
+    if (!deferred) {
+      if (isAndroid) {
+        toast.info("ব্রাউজার মেনু (⋮) → 'Install app' / 'Add to Home screen' ব্যবহার করুন।");
+      } else {
+        toast.info("ইনস্টল প্রম্পট এখনই উপলব্ধ নয়। ব্রাউজার মেনু থেকে ইনস্টল করুন।");
+      }
+      return;
+    }
+    try {
+      await deferred.prompt();
+      const { outcome } = await deferred.userChoice;
+      if (outcome === "accepted") toast.success("ইনস্টল হচ্ছে...");
+      else toast.info("ইনস্টল বাতিল হয়েছে");
+    } catch (e: any) {
+      toast.error(e?.message || "ইনস্টল করা যায়নি");
+    } finally {
+      setDeferred(null);
+    }
   };
+
+  const openPublished = () => window.open(publishedUrl, "_blank", "noopener,noreferrer");
 
   const submitAnswer = async () => {
     try {
@@ -93,23 +117,45 @@ export default function InstallApp() {
           </div>
         </Card>
       ) : (
-        <Card className="p-6 md:p-8 text-center space-y-4">
-          <Download className="h-12 w-12 mx-auto text-primary" />
-          <div>
-            <h2 className="text-xl font-bold mb-1">মূল POS অ্যাপ ইনস্টল করুন</h2>
-            <p className="text-sm text-muted-foreground">
-              {isIOS
-                ? "iOS-এ Safari থেকে নিচের ধাপ অনুসরণ করুন"
-                : deferred
-                ? "নিচের বাটনে ক্লিক করে এখনই ইনস্টল করুন"
-                : "ব্রাউজার ইনস্টল প্রম্পট প্রস্তুত হলে বাটন সক্রিয় হবে। নিচের ম্যানুয়াল ধাপগুলোও দেখুন।"}
-            </p>
+        <Card className="p-6 md:p-8 space-y-5 border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
+          <div className="flex flex-col sm:flex-row gap-5 items-center sm:items-start">
+            <div className="bg-white rounded-2xl p-3 shadow-md shrink-0">
+              <QRCode value={publishedUrl} size={140} className="h-auto w-[140px]" />
+            </div>
+            <div className="flex-1 text-center sm:text-left space-y-3">
+              <div>
+                <h2 className="text-xl font-bold mb-1 flex items-center justify-center sm:justify-start gap-2">
+                  <Download className="h-5 w-5 text-primary" /> মূল POS অ্যাপ ইনস্টল করুন
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {isInIframe || isPreviewHost
+                    ? "এডিটর প্রিভিউতে ইনস্টল করা যায় না — নিচের বাটনে ক্লিক করে অ্যাপটি নতুন ট্যাবে খুলুন, তারপর সেখান থেকে ইনস্টল করুন।"
+                    : isIOS
+                    ? "iOS-এ Safari থেকে নিচের ধাপ অনুসরণ করুন (Share → Add to Home Screen)।"
+                    : deferred
+                    ? "নিচের বাটনে ক্লিক করে এখনই ইনস্টল করুন।"
+                    : isAndroid
+                    ? "ব্রাউজার মেনু (⋮) → 'Install app' / 'Add to Home screen' ব্যবহার করুন।"
+                    : "QR scan করে মোবাইলে অ্যাপটি খুলুন এবং ইনস্টল করুন।"}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                {!isIOS && (
+                  <Button size="lg" onClick={handleInstall} className="gradient-primary text-primary-foreground">
+                    <Download className="h-5 w-5" /> এখনই ইনস্টল করুন
+                  </Button>
+                )}
+                <Button size="lg" variant="outline" onClick={openPublished}>
+                  <ArrowRight className="h-5 w-5" /> অ্যাপ খুলুন
+                </Button>
+                <Button size="lg" variant="outline"
+                  onClick={() => { navigator.clipboard.writeText(publishedUrl); toast.success("লিংক কপি হয়েছে"); }}>
+                  <Copy className="h-5 w-5" /> লিংক কপি
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">মোবাইলে QR scan করুন: <span className="font-mono">{publishedUrl}</span></p>
+            </div>
           </div>
-          {!isIOS && (
-            <Button size="lg" onClick={handleInstall} className="gradient-primary text-primary-foreground">
-              <Download className="h-5 w-5" /> এখনই ইনস্টল করুন
-            </Button>
-          )}
         </Card>
       )}
 
