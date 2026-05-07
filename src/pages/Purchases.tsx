@@ -89,7 +89,7 @@ export default function Purchases() {
 
   const validItems = () => items.filter(i => i.product_id && i.qty > 0);
 
-  const save = async () => {
+  const save = async (alsoPrint = false) => {
     const rowsToSave = validItems();
     if (rowsToSave.length === 0) return toast({ title: "কমপক্ষে একটি পণ্য নির্বাচন করুন", variant: "destructive" });
     const { data, error } = await supabase.from("purchases").insert({
@@ -104,8 +104,89 @@ export default function Purchases() {
     }));
     const { error: e2 } = await supabase.from("purchase_items").insert(rows);
     if (e2) return toast({ title: e2.message, variant: "destructive" });
-    setOpen(false); resetForm(); load();
     toast({ title: "ক্রয় সংরক্ষিত ✓" });
+    if (alsoPrint) {
+      const supName = suppliers.find(s => s.id === supplierId)?.name ?? "—";
+      printA4Invoice({
+        billNo: data.bill_no, billDate, supplierName: supName,
+        shop: currentShop, items: rowsToSave, subtotal, discount, delivery, total, paid, due,
+        paymentMethod, notes,
+      });
+    }
+    setOpen(false); resetForm(); load();
+  };
+
+  const printA4Invoice = (p: any) => {
+    const w = window.open("", "_blank", "width=900,height=700"); if (!w) return;
+    const rows = p.items.map((it: any, i: number) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${it.product_name}</td>
+        <td style="text-align:center">${it.qty} ${it.unit ?? ""}</td>
+        <td style="text-align:right">${fmt(Number(it.unit_cost))}</td>
+        <td style="text-align:right">${fmt(Number(it.subtotal))}</td>
+      </tr>`).join("");
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${p.billNo}</title>
+      <style>
+        @page{size:A4;margin:14mm}
+        *{box-sizing:border-box;font-family:'Segoe UI',Tahoma,Arial,sans-serif}
+        body{margin:0;color:#0f172a;font-size:12px}
+        .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px double #0f172a;padding-bottom:10px;margin-bottom:14px}
+        .shop-name{font-size:22px;font-weight:800;letter-spacing:.3px}
+        .muted{color:#64748b;font-size:11px}
+        .title{display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px}
+        .title h2{margin:0;font-size:16px;letter-spacing:.5px}
+        .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f1f5f9;border-radius:6px;padding:10px;margin-bottom:12px}
+        table{width:100%;border-collapse:collapse;margin-top:6px}
+        th,td{border:1px solid #cbd5e1;padding:7px 8px;font-size:12px}
+        th{background:#0f172a;color:#fff;text-align:left;font-weight:600}
+        tfoot td{font-weight:700;background:#f8fafc}
+        .totals{margin-top:14px;display:flex;justify-content:flex-end}
+        .totals table{width:320px}
+        .totals td{border:none;padding:5px 6px}
+        .totals .grand{border-top:2px solid #0f172a;border-bottom:2px solid #0f172a;font-size:14px}
+        .sign{margin-top:60px;display:flex;justify-content:space-between}
+        .sign div{border-top:1px solid #0f172a;width:30%;padding-top:4px;text-align:center;font-size:11px}
+        .footer{margin-top:24px;text-align:center;color:#64748b;font-size:10px;border-top:1px dashed #94a3b8;padding-top:8px}
+        .badge{display:inline-block;padding:2px 8px;border-radius:10px;background:#0f172a;color:#fff;font-size:10px}
+      </style></head><body>
+      <div class="head">
+        <div>
+          ${p.shop?.logo_url ? `<img src="${p.shop.logo_url}" style="height:50px;margin-bottom:4px"/>` : ""}
+          <div class="shop-name">${p.shop?.name ?? "Shop"}</div>
+          ${p.shop?.address ? `<div class="muted">${p.shop.address}</div>` : ""}
+          ${p.shop?.phone ? `<div class="muted">📞 ${p.shop.phone}</div>` : ""}
+        </div>
+        <div style="text-align:right">
+          <div class="badge">PURCHASE INVOICE</div>
+          <div style="font-size:18px;font-weight:800;margin-top:6px">${p.billNo}</div>
+          <div class="muted">তারিখঃ ${p.billDate}</div>
+        </div>
+      </div>
+      <div class="meta">
+        <div><b>সরবরাহকারী:</b> ${p.supplierName}</div>
+        <div><b>পেমেন্ট:</b> ${p.paymentMethod}</div>
+      </div>
+      <table>
+        <thead><tr><th style="width:32px">#</th><th>পণ্যের নাম</th><th style="width:90px;text-align:center">পরিমাণ</th><th style="width:90px;text-align:right">দর (৳)</th><th style="width:110px;text-align:right">মোট (৳)</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="totals">
+        <table>
+          <tr><td>সাবটোটাল</td><td style="text-align:right">৳ ${fmt(p.subtotal)}</td></tr>
+          <tr><td>ডিসকাউন্ট</td><td style="text-align:right">- ৳ ${fmt(p.discount)}</td></tr>
+          <tr><td>ডেলিভারি</td><td style="text-align:right">৳ ${fmt(p.delivery)}</td></tr>
+          <tr class="grand"><td>সর্বমোট</td><td style="text-align:right">৳ ${fmt(p.total)}</td></tr>
+          <tr><td>পরিশোধিত</td><td style="text-align:right">৳ ${fmt(p.paid)}</td></tr>
+          <tr><td><b>বকেয়া</b></td><td style="text-align:right;color:#b91c1c"><b>৳ ${fmt(p.due)}</b></td></tr>
+        </table>
+      </div>
+      ${p.notes ? `<div style="margin-top:14px;padding:8px 10px;background:#fef9c3;border-left:3px solid #ca8a04;font-size:11px"><b>নোট:</b> ${p.notes}</div>` : ""}
+      <div class="sign"><div>সরবরাহকারীর স্বাক্ষর</div><div>প্রস্তুতকারী</div><div>অনুমোদনকারী</div></div>
+      <div class="footer">${p.shop?.name ?? ""} — ক্রয় চালান · কম্পিউটার-জেনারেটেড নথি</div>
+      <script>window.onload=()=>{setTimeout(()=>{window.print();},250)}</script>
+      </body></html>`);
+    w.document.close(); w.focus();
   };
 
   const del = async (id: string) => {
