@@ -39,6 +39,9 @@ export default function Products() {
   const [addSheet, setAddSheet] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [newCat, setNewCat] = useState("");
+  const [editCat, setEditCat] = useState<{ id: string; name: string } | null>(null);
+  const [selectedCat, setSelectedCat] = useState<string | null>(null);
+  const [showCatSuggest, setShowCatSuggest] = useState(false);
   const isAdmin = role === "admin";
 
   const empty = { name: "", category_id: "", price: 0, cost: 0, stock: 0, unit: "pcs", image_url: "" };
