@@ -158,11 +158,16 @@ export default function Products() {
     ? cats.filter(c => c.name.toLowerCase().startsWith(search.toLowerCase())).slice(0, 6)
     : [];
 
-  // Per-category product counts
-  const catCounts = cats.reduce<Record<string, number>>((acc, c) => {
-    acc[c.id] = items.filter(p => p.category_id === c.id).length;
+  // Per-category counts: number of distinct products & total stock units
+  const catCounts = cats.reduce<Record<string, { products: number; stock: number }>>((acc, c) => {
+    const list = items.filter(p => p.category_id === c.id);
+    acc[c.id] = {
+      products: list.length,
+      stock: list.reduce((s, p) => s + Number(p.stock || 0), 0),
+    };
     return acc;
   }, {});
+  const totalStockUnits = items.reduce((s, p) => s + Number(p.stock || 0), 0);
 
   const totalValue = filtered.reduce((a, p) => a + Number(p.price) * Number(p.stock), 0);
   const totalCostValue = filtered.reduce((a, p) => a + Number(p.cost) * Number(p.stock), 0);
