@@ -57,6 +57,7 @@ const App = () => (
                     <Route path="/pos" element={<PageGate page="pos"><POS /></PageGate>} />
                     <Route path="/products" element={<PageGate page="products"><Products /></PageGate>} />
                     <Route path="/products/barcodes" element={<PageGate page="products"><BarcodePrint /></PageGate>} />
+                    <Route path="/products/categories" element={<PageGate page="products"><Categories /></PageGate>} />
                     <Route path="/customers" element={<PageGate page="customers"><Customers /></PageGate>} />
                     <Route path="/installments" element={<PageGate page="installments"><Installments /></PageGate>} />
                     <Route path="/sales" element={<PageGate page="sales"><Sales /></PageGate>} />
