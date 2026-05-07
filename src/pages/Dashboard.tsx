@@ -346,8 +346,17 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* RIGHT: Quick actions + Top selling */}
+        {/* RIGHT: Daily comparison + Quick actions + Top selling */}
         <div className="space-y-5 md:space-y-8">
+          {/* Daily Stock & Sales Comparison */}
+          <DailyComparison
+            todayStock={stats.todayStockUnits}
+            yestStock={stats.yestStockUnits}
+            todaySold={stats.todaySoldQty}
+            yestSold={stats.yestSoldQty}
+            lang={lang}
+          />
+
           {/* Quick Actions — colorful tiles */}
           <div className="relative bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 dark:from-[hsl(var(--inverse-surface))] dark:via-[hsl(var(--inverse-surface))] dark:to-[hsl(var(--inverse-surface))] p-5 md:p-8 rounded-2xl text-white shadow-xl overflow-hidden">
             <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-fuchsia-500/20 blur-3xl pointer-events-none" />
@@ -363,15 +372,6 @@ export default function Dashboard() {
               <QAButton to="/installments" tone="fuchsia" icon={<Headset className="h-6 w-6 md:h-7 md:w-7" />} label={t("support")} />
             </div>
           </div>
-
-          {/* Daily Stock & Sales Comparison */}
-          <DailyComparison
-            todayStock={stats.todayStockUnits}
-            yestStock={stats.yestStockUnits}
-            todaySold={stats.todaySoldQty}
-            yestSold={stats.yestSoldQty}
-            lang={lang}
-          />
 
           {/* Top Selling */}
           <div className="bg-[hsl(var(--surface-container-lowest))] p-5 md:p-8 rounded-2xl border border-[hsl(var(--surface-container-high))]/40">
