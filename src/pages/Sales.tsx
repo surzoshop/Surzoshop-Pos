@@ -239,12 +239,14 @@ export default function Sales() {
         {/* Mobile: cards */}
         <div className="md:hidden space-y-2.5">
           {filtered.length === 0 && <div className="py-12 text-center text-muted-foreground text-sm">{t("noResults")}</div>}
-          {filtered.map(s => {
+          {filtered.map((s, i) => {
             const due = Number(s.due);
             const tone = due === 0 ? "success" : due === Number(s.total) ? "warning" : "destructive";
+            const accent = due === 0 ? "from-primary to-primary-glow" : due === Number(s.total) ? "from-secondary to-secondary/60" : "from-destructive to-destructive/70";
             return (
-              <div key={s.id} className="bg-[hsl(var(--surface-container-low))] rounded-xl p-3">
-                <div className="flex items-start justify-between gap-2">
+              <div key={s.id} className="relative overflow-hidden bg-[hsl(var(--surface-container-low))] rounded-xl p-3 animate-fade-in shadow-sm hover:shadow-md transition-all" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
+                <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${accent}`} />
+                <div className="flex items-start justify-between gap-2 pl-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-foreground text-sm">{s.invoice_no}</span>
@@ -260,19 +262,19 @@ export default function Sales() {
                     {due > 0 && <div className="text-[11px] text-destructive font-semibold">বকেয়া {fmt(due)}</div>}
                   </div>
                 </div>
-                <div className="mt-2 pt-2 border-t border-[hsl(var(--surface-container))] flex items-center justify-between">
+                <div className="mt-2 pt-2 border-t border-[hsl(var(--surface-container))] flex items-center justify-between pl-2">
                   <span className="text-[11px] text-muted-foreground">{t(s.payment_type === "cash" ? "cash" : "installmentSale")}</span>
                   <div className="flex items-center gap-1">
-                    <button onClick={() => printReceipt(s)} className="p-2 rounded-lg bg-info/10 text-info active:scale-95">
+                    <button onClick={() => printReceipt(s)} className="p-2 rounded-lg bg-info/10 text-info active:scale-95 hover:bg-info/20 transition-all">
                       <Printer className="h-4 w-4" />
                     </button>
                     {isAdmin && (
-                      <button onClick={() => openEdit(s)} className="p-2 rounded-lg bg-primary/10 text-primary active:scale-95">
+                      <button onClick={() => openEdit(s)} className="p-2 rounded-lg bg-primary/10 text-primary active:scale-95 hover:bg-primary/20 transition-all">
                         <Pencil className="h-4 w-4" />
                       </button>
                     )}
                     {isAdmin && (
-                      <button onClick={() => handleDelete(s)} className="p-2 rounded-lg bg-destructive/10 text-destructive active:scale-95">
+                      <button onClick={() => handleDelete(s)} className="p-2 rounded-lg bg-destructive/10 text-destructive active:scale-95 hover:bg-destructive/20 transition-all">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     )}
