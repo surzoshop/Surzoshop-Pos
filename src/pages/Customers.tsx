@@ -136,9 +136,10 @@ export default function Customers() {
                 )}
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-foreground text-base truncate">{c.name}</h3>
-                  {c.phone && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                  {(c.phone || c.alt_phone) && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5 flex-wrap">
                       <Phone className="h-3 w-3" /> {c.phone}
+                      {c.alt_phone && <span className="text-muted-foreground/70">· {c.alt_phone}</span>}
                     </div>
                   )}
                   {c.address && (
