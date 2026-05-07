@@ -673,6 +673,7 @@ function MiniStat({ label, value, icon: Icon, tone, active, onClick, hint }: any
         </div>
       </div>
       <div className="mt-2 text-xl font-black text-foreground truncate">{`৳${Number(value || 0).toLocaleString("bn-BD")}`}</div>
+      {hint && <div className="mt-1 text-[10px] sm:text-[11px] text-muted-foreground leading-tight line-clamp-2">{hint}</div>}
     </button>
   );
 }
