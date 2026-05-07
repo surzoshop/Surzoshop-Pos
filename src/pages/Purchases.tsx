@@ -761,45 +761,48 @@ export default function Purchases() {
                           })()}
 
                           {/* Warranty section */}
-                          <div className="rounded-xl border border-info/20 bg-info/5 p-3 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label className="text-xs font-bold flex items-center gap-1.5 cursor-pointer">
+                          <div className="rounded-xl border border-info/20 bg-info/5 p-3 space-y-2.5">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <label className="text-xs font-bold flex items-center gap-2 cursor-pointer select-none">
                                 <input
                                   type="checkbox"
                                   checked={!!it.has_warranty}
                                   onChange={e => updateItem(idx, { has_warranty: e.target.checked, warranty_months: e.target.checked ? (it.warranty_months || 12) : 0 })}
-                                  className="h-3.5 w-3.5 accent-info"
+                                  className="h-4 w-4 accent-info"
                                 />
+                                <ShieldCheck className="h-3.5 w-3.5 text-info" />
                                 ওয়ারেন্টি আছে
-                              </Label>
+                              </label>
                               {it.has_warranty && (
-                                <span className="text-[10px] text-info font-bold">{it.warranty_months} মাস · {it.warranty_type}</span>
+                                <span className="text-[10px] text-info font-bold bg-info/10 px-2 py-0.5 rounded-full">
+                                  {it.warranty_months} মাস · {it.warranty_type}
+                                </span>
                               )}
                             </div>
                             {it.has_warranty && (
                               <>
-                                <div className="flex flex-wrap gap-1.5">
+                                <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
                                   {[6, 12, 24, 36, 60].map(m => (
                                     <button key={m} type="button"
                                       onClick={() => updateItem(idx, { warranty_months: m })}
-                                      className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition ${
+                                      className={`px-2 py-1.5 rounded-md text-[11px] font-bold transition ${
                                         Number(it.warranty_months) === m
                                           ? "bg-info text-info-foreground"
-                                          : "bg-background hover:bg-info/10"
+                                          : "bg-background hover:bg-info/10 border border-info/20"
                                       }`}>
-                                      {m === 12 ? "১ বছর" : m === 24 ? "২ বছর" : m === 36 ? "৩ বছর" : m === 60 ? "৫ বছর" : "৬ মাস"}
+                                      {m === 6 ? "৬ মাস" : m === 12 ? "১ বছর" : m === 24 ? "২ বছর" : m === 36 ? "৩ বছর" : "৫ বছর"}
                                     </button>
                                   ))}
                                 </div>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                   <div>
-                                    <Label className="text-[10px] mb-1 block">কাস্টম (মাস)</Label>
+                                    <Label className="text-[10px] mb-1 block text-muted-foreground">কাস্টম (মাস)</Label>
                                     <Input type="number" min={1} value={it.warranty_months}
                                       onChange={e => updateItem(idx, { warranty_months: +e.target.value })}
                                       className="h-9 bg-background text-xs" />
                                   </div>
                                   <div>
-                                    <Label className="text-[10px] mb-1 block">ধরন</Label>
+                                    <Label className="text-[10px] mb-1 block text-muted-foreground">ওয়ারেন্টির ধরন</Label>
                                     <select value={it.warranty_type || "ম্যানুফ্যাকচারার"}
                                       onChange={e => updateItem(idx, { warranty_type: e.target.value })}
                                       className="w-full h-9 rounded-md bg-background px-2 text-xs border border-input">
