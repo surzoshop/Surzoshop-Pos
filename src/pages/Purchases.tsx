@@ -28,6 +28,8 @@ export default function Purchases() {
   const [payOpen, setPayOpen] = useState(false);
   const [payTarget, setPayTarget] = useState<any>(null);
   const [payAmt, setPayAmt] = useState(0);
+  const [supplierFocus, setSupplierFocus] = useState(false);
+  const [productFocusIdx, setProductFocusIdx] = useState<number | null>(null);
 
   // form state
   const [supplierId, setSupplierId] = useState("");
