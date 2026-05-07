@@ -55,7 +55,7 @@ export default function Customers() {
     setPreviewSales(data ?? []);
   };
 
-  const filtered = items.filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search));
+  const filtered = items.filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search) || c.alt_phone?.includes(search));
 
   const totals = useMemo(() => {
     const totalCustomers = items.length;
@@ -136,9 +136,10 @@ export default function Customers() {
                 )}
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-foreground text-base truncate">{c.name}</h3>
-                  {c.phone && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                  {(c.phone || c.alt_phone) && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5 flex-wrap">
                       <Phone className="h-3 w-3" /> {c.phone}
+                      {c.alt_phone && <span className="text-muted-foreground/70">· {c.alt_phone}</span>}
                     </div>
                   )}
                   {c.address && (
@@ -209,6 +210,7 @@ export default function Customers() {
 
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {previewing.phone && <InfoItem icon={<Phone className="h-4 w-4" />} label="মোবাইল" value={previewing.phone} />}
+                {previewing.alt_phone && <InfoItem icon={<Phone className="h-4 w-4" />} label="বিকল্প মোবাইল" value={previewing.alt_phone} />}
                 {previewing.nid && <InfoItem icon={<IdCard className="h-4 w-4" />} label="NID" value={previewing.nid} />}
                 {previewing.occupation && <InfoItem icon={<Briefcase className="h-4 w-4" />} label="পেশা" value={previewing.occupation} />}
                 {previewing.monthly_income && <InfoItem icon={<Wallet className="h-4 w-4" />} label="মাসিক আয়" value={`৳${fmt(previewing.monthly_income)}`} />}
