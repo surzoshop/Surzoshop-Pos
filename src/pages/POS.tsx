@@ -19,7 +19,7 @@ import { ThermalReceipt } from "@/components/ThermalReceipt";
 type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number; image_url?: string | null };
 type CartItem = { product: Product; qty: number };
 
-const VAT_RATE = 0.05;
+const VAT_RATE = 0; // VAT disabled — to be configured later via dedicated VAT settings page
 
 export default function POS() {
   const { t, fmt, lang } = useT();
@@ -33,7 +33,10 @@ export default function POS() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [discount, setDiscount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "bkash" | "nagad">("cash");
-  const [paymentType, setPaymentType] = useState<"cash" | "installment">("cash");
+  const [paymentType, setPaymentType] = useState<"cash" | "installment" | "due">("cash");
+  const [duePaid, setDuePaid] = useState(0); // for "বাকিতে" — how much customer pays now
+  const [totalOverride, setTotalOverride] = useState<number | null>(null);
+  const [editingTotal, setEditingTotal] = useState(false);
   const [customers, setCustomers] = useState<any[]>([]);
   const [customerId, setCustomerId] = useState<string>("");
   const [installmentCount, setInstallmentCount] = useState(3);
@@ -96,7 +99,9 @@ export default function POS() {
 
   const subtotal = cart.reduce((a, i) => a + i.product.price * i.qty, 0);
   const vat = subtotal * VAT_RATE;
-  const baseTotal = Math.max(0, subtotal + vat - discount);
+  const computedBase = Math.max(0, subtotal + vat - discount);
+  // Allow user to override grand total (for negotiation / round-off). Override applies before installment interest.
+  const baseTotal = totalOverride !== null ? Math.max(0, totalOverride) : computedBase;
   // EMI calculation: simple interest over tenure (more transparent for retail)
   const principal = paymentType === "installment" ? Math.max(baseTotal - downPayment, 0) : 0;
   const interestAmount = paymentType === "installment"
@@ -104,8 +109,14 @@ export default function POS() {
     : 0;
   const total = baseTotal + interestAmount;
   const financed = principal + interestAmount;
-  const due = paymentType === "installment" ? financed : 0;
-  const paid = paymentType === "installment" ? downPayment : total;
+  const due =
+    paymentType === "installment" ? financed
+    : paymentType === "due" ? Math.max(total - duePaid, 0)
+    : 0;
+  const paid =
+    paymentType === "installment" ? downPayment
+    : paymentType === "due" ? Math.min(duePaid, total)
+    : total;
   const emi = paymentType === "installment" && installmentCount > 0 ? financed / installmentCount : 0;
 
   // EMI schedule preview
@@ -150,11 +161,15 @@ export default function POS() {
       toast({ title: lang === "bn" ? "জামিনদার নির্বাচন করুন" : "Select a guarantor", variant: "destructive" });
       return;
     }
+    if (paymentType === "due" && !customerId) {
+      toast({ title: lang === "bn" ? "বাকির জন্য ক্রেতা নির্বাচন করুন" : "Select a customer for credit sale", variant: "destructive" });
+      return;
+    }
 
     const salePayload: any = {
       customer_id: customerId || null,
       subtotal, discount, total, paid, due,
-      payment_type: paymentType,
+      payment_type: paymentType === "due" ? "cash" : paymentType,
       status: due > 0 ? "partial" : "completed",
       created_by: user!.id,
     };
@@ -205,6 +220,7 @@ export default function POS() {
     setShowReceipt(true);
     setCart([]); setDiscount(0); setCustomerId(""); setPaymentType("cash"); setPaymentMethod("cash");
     setDownPayment(0); setInterestRate(0); setLateFeePerDay(0); setGuarantorId("");
+    setDuePaid(0); setTotalOverride(null); setEditingTotal(false);
     load();
     toast({ title: lang === "bn" ? "বিক্রয় সম্পন্ন" : "Sale completed" });
   };
@@ -361,6 +377,7 @@ export default function POS() {
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="cash">{t("cash")}</SelectItem>
+                    <SelectItem value="due">বাকিতে</SelectItem>
                     <SelectItem value="installment">{t("installmentSale")}</SelectItem>
                   </SelectContent>
                 </Select>
@@ -420,6 +437,31 @@ export default function POS() {
                 )}
               </div>
             )}
+            {paymentType === "due" && (
+              <div className="mb-3 space-y-2 p-3 rounded-xl bg-warning/10">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-warning">বাকিতে বিক্রয়</div>
+                <div>
+                  <Label className="text-xs">এখন নগদ পরিশোধ (৳)</Label>
+                  <Input type="number" min={0} value={duePaid || ""}
+                    onChange={e => setDuePaid(Math.max(0, +e.target.value || 0))}
+                    placeholder="0" className="h-9" />
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-xs pt-1">
+                  <div className="rounded-lg bg-[hsl(var(--surface-container-lowest))] p-2">
+                    <div className="text-muted-foreground">মোট</div>
+                    <div className="font-bold">{fmt(total)}</div>
+                  </div>
+                  <div className="rounded-lg bg-[hsl(var(--surface-container-lowest))] p-2">
+                    <div className="text-muted-foreground">নগদ</div>
+                    <div className="font-bold text-success">{fmt(Math.min(duePaid, total))}</div>
+                  </div>
+                  <div className="rounded-lg bg-[hsl(var(--surface-container-lowest))] p-2">
+                    <div className="text-muted-foreground">বকেয়া</div>
+                    <div className="font-bold text-destructive">{fmt(Math.max(total - duePaid, 0))}</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -439,9 +481,41 @@ export default function POS() {
 
           <div className="space-y-2 text-sm">
             <div className="flex justify-between text-muted-foreground"><span>{t("subtotal")}:</span><span>{fmt(subtotal)}</span></div>
-            <div className="flex justify-between text-muted-foreground"><span>{t("vat")}:</span><span>{fmt(vat)}</span></div>
+            <div className="flex justify-between text-muted-foreground"><span>{t("vat")} (0%):</span><span>{fmt(0)}</span></div>
             <div className="flex justify-between text-muted-foreground"><span>{t("discount")}:</span><span className="text-destructive">-{fmt(discount)}</span></div>
-            <div className="flex justify-between text-xl font-black pt-2 border-t border-dashed border-[hsl(var(--surface-container-highest))]"><span>{t("grandTotal")}:</span><span className="text-primary">{fmt(total)}</span></div>
+            <div className="flex justify-between items-center text-xl font-black pt-2 border-t border-dashed border-[hsl(var(--surface-container-highest))]">
+              <span>{t("grandTotal")}:</span>
+              {editingTotal ? (
+                <input
+                  autoFocus
+                  type="number"
+                  min={0}
+                  defaultValue={total}
+                  onBlur={(e) => {
+                    const v = +e.target.value;
+                    setTotalOverride(Number.isFinite(v) ? v : null);
+                    setEditingTotal(false);
+                  }}
+                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                  className="w-32 text-right bg-[hsl(var(--surface-container-low))] rounded-lg px-2 py-1 text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setEditingTotal(true)}
+                  title="মোট টাকা পরিবর্তন করতে ক্লিক করুন"
+                  className="text-primary hover:underline decoration-dashed underline-offset-4 flex items-center gap-1"
+                >
+                  {fmt(total)}
+                  {totalOverride !== null && <span className="text-[10px] font-normal text-muted-foreground">(edited)</span>}
+                </button>
+              )}
+            </div>
+            {totalOverride !== null && (
+              <button onClick={() => setTotalOverride(null)} className="text-[11px] text-muted-foreground hover:text-primary underline">
+                মূল মোট ({fmt(computedBase)}) এ ফিরে যান
+              </button>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
