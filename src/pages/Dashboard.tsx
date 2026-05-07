@@ -5,6 +5,7 @@ import { useT } from "@/i18n/LanguageContext";
 import {
   Calendar, Wallet, ShoppingBag, AlertTriangle, PlusCircle, ScanLine,
   UserPlus, TrendingUp, Headset, Package, Users, Boxes, CircleDollarSign,
+  ArrowUpRight, ArrowDownRight, Archive, PackageCheck,
 } from "lucide-react";
 import { AddProductSheet } from "@/components/AddProductSheet";
 import { AddCustomerSheet } from "@/components/AddCustomerSheet";
@@ -16,6 +17,8 @@ export default function Dashboard() {
     monthSalesCount: 0, deliveredToday: 0, lowStockCount: 0,
     totalProducts: 0, stockUnits: 0, stockCostValue: 0, stockSaleValue: 0,
     totalCustomers: 0, totalDue: 0,
+    todayStockUnits: 0, yestStockUnits: 0,
+    todaySoldQty: 0, yestSoldQty: 0,
   });
   const [weekly, setWeekly] = useState<{ day: string; total: number }[]>([]);
   const [topProducts, setTopProducts] = useState<{ name: string; qty: number; revenue: number }[]>([]);
@@ -33,7 +36,7 @@ export default function Dashboard() {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const weekStart = new Date(today); weekStart.setDate(weekStart.getDate() - 6);
 
-    const [salesToday, salesYest, salesMonth, salesWeek, itemsMonth, items30, lowStockData, recentSales, productsAll, customersCount, duesData] = await Promise.all([
+    const [salesToday, salesYest, salesMonth, salesWeek, itemsMonth, items30, lowStockData, recentSales, productsAll, customersCount, duesData, soldTodayData, soldYestData, purchasedTodayData] = await Promise.all([
       supabase.from("sales").select("total,due").gte("created_at", today.toISOString()),
       supabase.from("sales").select("total").gte("created_at", yest.toISOString()).lt("created_at", today.toISOString()),
       supabase.from("sales").select("total").gte("created_at", monthStart.toISOString()),
@@ -45,6 +48,9 @@ export default function Dashboard() {
       supabase.from("products").select("stock,cost,price", { count: "exact" }).eq("is_active", true),
       supabase.from("customers").select("id", { count: "exact", head: true }),
       supabase.from("sales").select("due").gt("due", 0),
+      supabase.from("sale_items").select("qty,sales!inner(created_at)").gte("sales.created_at", today.toISOString()),
+      supabase.from("sale_items").select("qty,sales!inner(created_at)").gte("sales.created_at", yest.toISOString()).lt("sales.created_at", today.toISOString()),
+      supabase.from("purchase_items").select("qty,purchases!inner(created_at)").gte("purchases.created_at", today.toISOString()),
     ]);
 
     const todayTotal = (salesToday.data ?? []).reduce((a, b) => a + Number(b.total), 0);
@@ -81,6 +87,11 @@ export default function Dashboard() {
     const stockCostValue = productsArr.reduce((a, p) => a + Number(p.stock) * Number(p.cost), 0);
     const stockSaleValue = productsArr.reduce((a, p) => a + Number(p.stock) * Number(p.price), 0);
     const totalDue = (duesData.data ?? []).reduce((a: number, d: any) => a + Number(d.due), 0);
+    const todaySoldQty = (soldTodayData.data ?? []).reduce((a: number, b: any) => a + Number(b.qty), 0);
+    const yestSoldQty = (soldYestData.data ?? []).reduce((a: number, b: any) => a + Number(b.qty), 0);
+    const purchasedTodayQty = (purchasedTodayData.data ?? []).reduce((a: number, b: any) => a + Number(b.qty), 0);
+    // আজকের সকাল = বর্তমান stock + আজ বিক্রি − আজ ক্রয়
+    const yestStockUnits = stockUnits + todaySoldQty - purchasedTodayQty;
     setStats({
       todaySales: todayTotal, todayCount: salesToday.data?.length ?? 0,
       monthSales, monthProfit,
@@ -91,6 +102,8 @@ export default function Dashboard() {
       stockUnits, stockCostValue, stockSaleValue,
       totalCustomers: customersCount.count ?? 0,
       totalDue,
+      todayStockUnits: stockUnits, yestStockUnits,
+      todaySoldQty, yestSoldQty,
     });
   };
 
@@ -351,6 +364,15 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* Daily Stock & Sales Comparison */}
+          <DailyComparison
+            todayStock={stats.todayStockUnits}
+            yestStock={stats.yestStockUnits}
+            todaySold={stats.todaySoldQty}
+            yestSold={stats.yestSoldQty}
+            lang={lang}
+          />
+
           {/* Top Selling */}
           <div className="bg-[hsl(var(--surface-container-lowest))] p-5 md:p-8 rounded-2xl border border-[hsl(var(--surface-container-high))]/40">
             <div className="flex items-center gap-3 mb-4 md:mb-6">
@@ -473,5 +495,61 @@ function MiniStat({ to, theme, icon, label, value }: any) {
         <p className={`text-sm md:text-base font-extrabold text-foreground truncate font-bn ${T.valueText} transition-colors`}>{value}</p>
       </div>
     </Link>
+  );
+}
+
+function DailyComparison({ todayStock, yestStock, todaySold, yestSold, lang }: any) {
+  const fmtN = (n: number) => new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-US").format(Math.max(0, Math.round(n)));
+  const stockDiff = todayStock - yestStock;
+  const soldDiff = todaySold - yestSold;
+  const cells = [
+    { label: "গতকালের স্টক", value: fmtN(yestStock), tone: "indigo", icon: <Archive className="h-4 w-4" /> },
+    { label: "আজকের স্টক",   value: fmtN(todayStock), tone: "teal",  icon: <Boxes className="h-4 w-4" />, diff: stockDiff },
+    { label: "গতকাল বিক্রি", value: fmtN(yestSold),   tone: "amber", icon: <PackageCheck className="h-4 w-4" /> },
+    { label: "আজ বিক্রি",     value: fmtN(todaySold),  tone: "emerald", icon: <ShoppingBag className="h-4 w-4" />, diff: soldDiff },
+  ];
+  const toneMap: Record<string, { grad: string; shadow: string; ring: string; bg: string }> = {
+    indigo:  { grad: "from-indigo-400 to-indigo-600",  shadow: "shadow-indigo-500/30",  ring: "border-indigo-500/20",  bg: "bg-indigo-500/5" },
+    teal:    { grad: "from-teal-400 to-teal-600",      shadow: "shadow-teal-500/30",    ring: "border-teal-500/20",    bg: "bg-teal-500/5" },
+    amber:   { grad: "from-amber-400 to-orange-500",   shadow: "shadow-amber-500/30",   ring: "border-amber-500/20",   bg: "bg-amber-500/5" },
+    emerald: { grad: "from-emerald-400 to-emerald-600",shadow: "shadow-emerald-500/30", ring: "border-emerald-500/20", bg: "bg-emerald-500/5" },
+  };
+  return (
+    <div className="bg-[hsl(var(--surface-container-lowest))] p-5 md:p-6 rounded-2xl border border-[hsl(var(--surface-container-high))]/40">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
+          <TrendingUp className="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h3 className="text-base md:text-lg font-bold text-foreground">আজ বনাম গতকাল</h3>
+          <p className="text-[11px] text-muted-foreground">স্টক ও বিক্রয় তুলনা</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2.5">
+        {cells.map((c, i) => {
+          const T = toneMap[c.tone];
+          const diff = c.diff;
+          const up = diff !== undefined && diff > 0;
+          const down = diff !== undefined && diff < 0;
+          return (
+            <div key={i} className={`relative ${T.bg} border ${T.ring} rounded-xl p-3 flex flex-col gap-1.5 hover:-translate-y-0.5 transition-all`}>
+              <div className="flex items-center justify-between gap-2">
+                <div className={`h-8 w-8 bg-gradient-to-br ${T.grad} text-white rounded-lg flex items-center justify-center shadow ${T.shadow}`}>
+                  {c.icon}
+                </div>
+                {diff !== undefined && diff !== 0 && (
+                  <span className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${up ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-rose-500/15 text-rose-600 dark:text-rose-400"}`}>
+                    {up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                    {fmtN(Math.abs(diff))}
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider truncate font-bn">{c.label}</p>
+              <p className="text-lg md:text-xl font-black text-foreground truncate font-bn">{c.value}</p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
