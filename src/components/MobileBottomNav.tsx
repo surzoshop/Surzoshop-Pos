@@ -1,5 +1,5 @@
 import { NavLink, useLocation, Link } from "react-router-dom";
-import { LayoutDashboard, Wallet, Smartphone, Menu, ScanLine } from "lucide-react";
+import { LayoutDashboard, Wallet, AppWindow, Menu, ScanLine } from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 import { useShop, PageKey } from "@/hooks/useShop";
 
