@@ -64,8 +64,9 @@ export default function Categories() {
   };
 
   const del = async (c: Category) => {
-    if ((counts[c.id] ?? 0) > 0) {
-      return toast({ title: `এই ক্যাটাগরিতে ${counts[c.id]} টি পণ্য আছে — আগে পণ্য সরান`, variant: "destructive" });
+    const n = counts[c.id]?.products ?? 0;
+    if (n > 0) {
+      return toast({ title: `এই ক্যাটাগরিতে ${n} টি পণ্য আছে — আগে পণ্য সরান`, variant: "destructive" });
     }
     if (!confirm(`"${c.name}" মুছবেন?`)) return;
     const { error } = await supabase.from("categories").delete().eq("id", c.id);
@@ -75,7 +76,8 @@ export default function Categories() {
   };
 
   const filtered = cats.filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()));
-  const totalProducts = Object.values(counts).reduce((a, b) => a + b, 0);
+  const totalProducts = Object.values(counts).reduce((a, b) => a + b.products, 0);
+  const totalStock = Object.values(counts).reduce((a, b) => a + b.stock, 0);
 
   return (
     <div>
