@@ -276,7 +276,7 @@ export default function Products() {
                 <Tag className="h-3 w-3" /> {c.name}
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${
                   selectedCat === c.id ? "bg-primary-foreground/20" : "bg-primary/15 text-primary"
-                }`}>{catCounts[c.id] ?? 0}</span>
+                }`}>{catCounts[c.id]?.stock ?? 0}</span>
               </button>
             ))}
           </div>
