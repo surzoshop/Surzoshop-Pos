@@ -277,11 +277,16 @@ export default function Ledger() {
     if (lowFrom && e.entry_date < lowFrom) return false;
     if (lowTo   && e.entry_date > lowTo)   return false;
 
-    if (tab === "income"  && e.entry_type !== "deposit")  return false;
-    if (tab === "expense" && e.entry_type !== "withdraw") return false;
-    if (tab === "cash"    && (e.payment_method ?? "cash") !== "cash") return false;
-    if (tab === "sales"    && !((e.category ?? "").toLowerCase().includes("sales")    || (e.category ?? "").includes("বিক্রয়"))) return false;
-    if (tab === "purchase" && !((e.category ?? "").toLowerCase().includes("purchase") || (e.category ?? "").includes("ক্রয়")))    return false;
+    const catLow = (e.category ?? "").toLowerCase();
+    const isSales    = catLow.includes("sales")    || catLow.includes("বিক্রয়");
+    const isPurchase = catLow.includes("purchase") || catLow.includes("ক্রয়");
+    const isExpense  = catLow.startsWith("expense") || (e.entry_type === "withdraw" && !isPurchase);
+
+    if (tab === "income"   && e.entry_type !== "deposit") return false;
+    if (tab === "expense"  && (!isExpense || isPurchase)) return false;
+    if (tab === "cash"     && (e.payment_method ?? "cash") !== "cash") return false;
+    if (tab === "sales"    && !isSales) return false;
+    if (tab === "purchase" && !isPurchase) return false;
 
     if (tab === "ledger" && account !== "account") {
       const cat = (e.category ?? "").toLowerCase();
