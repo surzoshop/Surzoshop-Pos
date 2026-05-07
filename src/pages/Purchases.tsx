@@ -325,90 +325,90 @@ export default function Purchases() {
           <div style="flex:1">
             <h1 class="shop-name">${p.shop?.name ?? "Shop"}</h1>
             <div class="shop-info">
-              ${p.shop?.address ? `<div><b>Address:</b> ${p.shop.address}</div>` : ""}
-              ${p.shop?.phone ? `<div><b>Phone No.:</b> ${p.shop.phone}</div>` : ""}
-              ${p.shop?.email ? `<div><b>Email:</b> ${p.shop.email}</div>` : ""}
-              <div><b>Best From Best</b></div>
+              ${p.shop?.address ? `<div><b>ঠিকানা:</b> ${p.shop.address}</div>` : ""}
+              ${p.shop?.phone ? `<div><b>ফোন নং:</b> ${p.shop.phone}</div>` : ""}
+              ${p.shop?.email ? `<div><b>ইমেইল:</b> ${p.shop.email}</div>` : ""}
+              <div><b>সেরাদের মাঝে সেরা</b></div>
             </div>
           </div>
         </div>
 
-        <div class="banner">Purchase Invoice / ক্রয় চালান</div>
+        <div class="banner">ক্রয় চালান</div>
 
         <div class="meta">
-          <div><div class="lbl">Bill No #:</div><div class="val">${p.billNo}</div></div>
-          <div><div class="lbl">ITEM:</div><div class="val">${itemsCount} ITEM${itemsCount>1?'S':''}</div></div>
-          <div><div class="lbl">Date:</div><div class="val">${p.billDate}</div></div>
-          <div><div class="lbl">Time:</div><div class="val">${timeStr}</div></div>
-          <div><div class="lbl">Order Status:</div><div class="val">${orderStatus}</div></div>
-          <div><div class="lbl">Payment Method:</div><div class="val">${(p.paymentMethod||'CASH').toUpperCase()}</div></div>
-          <div><div class="lbl">Payment Status:</div><div class="val">${status}</div></div>
-          <div><div class="lbl">Created By:</div><div class="val">OWNER</div></div>
+          <div><div class="lbl">বিল নং #:</div><div class="val">${p.billNo}</div></div>
+          <div><div class="lbl">পণ্য:</div><div class="val">${itemsCount} টি</div></div>
+          <div><div class="lbl">তারিখ:</div><div class="val">${dateBn}</div></div>
+          <div><div class="lbl">সময়:</div><div class="val">${timeStr}</div></div>
+          <div><div class="lbl">অর্ডার অবস্থা:</div><div class="val">${orderStatus}</div></div>
+          <div><div class="lbl">পেমেন্ট পদ্ধতি:</div><div class="val">${payMethodBn}</div></div>
+          <div><div class="lbl">পেমেন্ট অবস্থা:</div><div class="val">${status}</div></div>
+          <div><div class="lbl">তৈরি করেছেন:</div><div class="val">মালিক</div></div>
         </div>
 
-        <h3 class="sec">Billing To / সরবরাহকারী</h3>
+        <h3 class="sec">সরবরাহকারী</h3>
         <div class="billto">
-          <div><b>Name:</b> ${p.supplierName}</div>
+          <div><b>নাম:</b> ${p.supplierName}</div>
         </div>
 
         <table class="items">
           <thead><tr>
-            <th>Name</th><th>Price/Unit</th><th>Quantity</th><th>GST</th><th>Amount</th>
+            <th>পণ্যের নাম</th><th>একক মূল্য</th><th>পরিমাণ</th><th>ভ্যাট</th><th>মোট</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
 
         <div class="items-banner">
-          <span>Total Items: ${itemsCount}</span>
-          <span>Item Total : ৳${fmt(itemTotal).replace("৳","")}</span>
+          <span>মোট পণ্য: ${itemsCount}</span>
+          <span>পণ্যের মোট : ৳${fmt(itemTotal).replace("৳","")}</span>
         </div>
 
         <div class="twocol">
           <div>
             <div class="terms">
-              <b>Terms &amp; Conditions</b>
+              <b>শর্তাবলী</b>
               <ol>
-                <li>Goods once sold will not be taken back or exchanged.</li>
-                <li>All disputes are subject to jurisdiction only.</li>
+                <li>বিক্রিত পণ্য ফেরত বা পরিবর্তনযোগ্য নয়।</li>
+                <li>সকল বিরোধ স্থানীয় আদালতের এখতিয়ারভুক্ত।</li>
               </ol>
             </div>
             <div class="payopt" style="margin-top:12px">
-              <b>Payment Option</b>
+              <b>পেমেন্ট অপশন</b>
             </div>
             <div class="bank" style="margin-top:6px;font-size:11.5px;line-height:1.6">
-              <b>Bank Details</b>
-              <div>Shop : ${p.shop?.name ?? ""}</div>
-              ${p.shop?.phone ? `<div>Contact : ${p.shop.phone}</div>` : ""}
+              <b>ব্যাংক বিবরণ</b>
+              <div>দোকান : ${p.shop?.name ?? ""}</div>
+              ${p.shop?.phone ? `<div>যোগাযোগ : ${p.shop.phone}</div>` : ""}
             </div>
             <div class="qr" style="align-items:flex-start;margin-top:10px">
               <img src="${qrUrl}" alt="QR" width="130" height="130"/>
-              <div class="scan">SCAN TO PAY</div>
+              <div class="scan">পেমেন্টের জন্য স্ক্যান করুন</div>
             </div>
           </div>
           <div>
             <div class="totals">
-              <div class="row"><span>Item Total:</span><b>৳${fmt(itemTotal).replace("৳","")}</b></div>
-              ${disc>0 ? `<div class="row"><span>Bill Discount:</span><b>- ৳${fmt(disc).replace("৳","")}</b></div>` : ""}
-              <div class="row b"><span>Subtotal:</span><b>৳${fmt(subAfterDisc).replace("৳","")}</b></div>
-              ${deliv>0 ? `<div class="row"><span>Delivery:</span><b>৳${fmt(deliv).replace("৳","")}</b></div>` : ""}
-              <div class="row grand"><span>Grand Total:</span><span>৳${fmt(grand).replace("৳","")}</span></div>
-              <div class="row"><span>Paid Amount:</span><b>৳${fmt(paidAmt).replace("৳","")}</b></div>
-              ${dueAmt>0 ? `<div class="row" style="color:#b91c1c"><span>Due:</span><b>৳${fmt(dueAmt).replace("৳","")}</b></div>` : ""}
+              <div class="row"><span>পণ্যের মোট:</span><b>৳${fmt(itemTotal).replace("৳","")}</b></div>
+              ${disc>0 ? `<div class="row"><span>বিল ছাড়:</span><b>- ৳${fmt(disc).replace("৳","")}</b></div>` : ""}
+              <div class="row b"><span>উপমোট:</span><b>৳${fmt(subAfterDisc).replace("৳","")}</b></div>
+              ${deliv>0 ? `<div class="row"><span>ডেলিভারি:</span><b>৳${fmt(deliv).replace("৳","")}</b></div>` : ""}
+              <div class="row grand"><span>সর্বমোট:</span><span>৳${fmt(grand).replace("৳","")}</span></div>
+              <div class="row"><span>পরিশোধিত:</span><b>৳${fmt(paidAmt).replace("৳","")}</b></div>
+              ${dueAmt>0 ? `<div class="row due-row"><span>বকেয়া:</span><b>৳${fmt(dueAmt).replace("৳","")}</b></div>` : ""}
             </div>
             <div class="words">
-              <b>Amount in Words</b>
+              <b>কথায় টাকার পরিমাণ</b>
               <div style="font-size:11.5px">${numToWords(grand)}</div>
             </div>
             <div class="powered">
-              Powered by <b style="color:#5b5fc7">${p.shop?.name ?? "সূর্য শপ"}</b>
-              <span class="grow">Grow with us!</span>
+              পরিচালনায় <b style="color:#5b5fc7">${p.shop?.name ?? "সূর্য শপ"}</b>
+              <span class="grow">আমাদের সাথে এগিয়ে চলুন!</span>
             </div>
           </div>
         </div>
 
-        ${p.notes ? `<div class="remark">Remark: <span style="color:#1f2937;font-weight:400">${p.notes}</span></div>` : `<div class="remark">Remark</div>`}
+        ${p.notes ? `<div class="remark">মন্তব্য: <span style="color:#1f2937;font-weight:400">${p.notes}</span></div>` : `<div class="remark">মন্তব্য</div>`}
 
-        <div class="footer">Thank You, Visit Again.<br/>Feels Best</div>
+        <div class="footer">ধন্যবাদ, আবার আসবেন।<br/>সেরা অনুভূতি</div>
       </div>
       <script>window.onload=()=>{setTimeout(()=>{try{window.focus();window.print();}catch(e){}}, 350)}</script>
       </body></html>`;
