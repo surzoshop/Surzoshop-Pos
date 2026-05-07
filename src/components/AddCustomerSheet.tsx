@@ -13,9 +13,10 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onSaved?: () => void;
+  customer?: any | null;
 }
 
-export function AddCustomerSheet({ open, onOpenChange, onSaved }: Props) {
+export function AddCustomerSheet({ open, onOpenChange, onSaved, customer }: Props) {
   const { toast } = useToast();
   const empty = {
     name: "", phone: "", address: "", nid: "",
@@ -25,16 +26,37 @@ export function AddCustomerSheet({ open, onOpenChange, onSaved }: Props) {
   const [form, setForm] = useState<any>(empty);
   const [saving, setSaving] = useState(false);
   const [sameAsPresent, setSameAsPresent] = useState(false);
+  const isEdit = !!customer?.id;
 
   useEffect(() => {
-    if (open) { setForm(empty); setSameAsPresent(false); }
+    if (open) {
+      if (customer) {
+        setForm({
+          name: customer.name || "",
+          phone: customer.phone || "",
+          address: customer.address || "",
+          nid: customer.nid || "",
+          present_address: customer.present_address || "",
+          permanent_address: customer.permanent_address || "",
+          occupation: customer.occupation || "",
+          monthly_income: customer.monthly_income ?? "",
+          photo_url: customer.photo_url || "",
+          nid_front_url: customer.nid_front_url || "",
+          nid_back_url: customer.nid_back_url || "",
+        });
+        setSameAsPresent(false);
+      } else {
+        setForm(empty);
+        setSameAsPresent(false);
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, customer]);
 
   const save = async () => {
     if (!form.name?.trim()) return toast({ title: "নাম প্রয়োজন", variant: "destructive" });
     setSaving(true);
-    const { error } = await supabase.from("customers").insert({
+    const payload = {
       name: form.name.trim(),
       phone: form.phone || null,
       address: form.address || null,
@@ -46,10 +68,13 @@ export function AddCustomerSheet({ open, onOpenChange, onSaved }: Props) {
       photo_url: form.photo_url || null,
       nid_front_url: form.nid_front_url || null,
       nid_back_url: form.nid_back_url || null,
-    });
+    };
+    const { error } = isEdit
+      ? await supabase.from("customers").update(payload).eq("id", customer.id)
+      : await supabase.from("customers").insert(payload);
     setSaving(false);
     if (error) return toast({ title: error.message, variant: "destructive" });
-    toast({ title: "ক্রেতা যোগ হয়েছে" });
+    toast({ title: isEdit ? "ক্রেতা আপডেট হয়েছে" : "ক্রেতা যোগ হয়েছে" });
     onOpenChange(false);
     onSaved?.();
   };
@@ -66,7 +91,7 @@ export function AddCustomerSheet({ open, onOpenChange, onSaved }: Props) {
               <UserPlus className="h-6 w-6 text-info" />
             </div>
             <div>
-              <SheetTitle className="text-xl font-black">নতুন ক্রেতা যুক্ত করুন</SheetTitle>
+              <SheetTitle className="text-xl font-black">{isEdit ? "ক্রেতা সম্পাদনা" : "নতুন ক্রেতা যুক্ত করুন"}</SheetTitle>
               <SheetDescription className="text-xs">ক্রেতার সম্পূর্ণ KYC তথ্য পূরণ করুন</SheetDescription>
             </div>
           </div>
@@ -172,7 +197,7 @@ export function AddCustomerSheet({ open, onOpenChange, onSaved }: Props) {
         <div className="border-t border-[hsl(var(--surface-container))] px-6 py-4 flex gap-3 bg-[hsl(var(--surface-container-lowest))]">
           <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>ক্যানসেল</Button>
           <Button onClick={save} disabled={saving} className="flex-1 gradient-primary text-primary-foreground font-bold">
-            {saving ? "যোগ হচ্ছে..." : "ক্রেতা যুক্ত করুন"}
+            {saving ? "সংরক্ষণ হচ্ছে..." : isEdit ? "আপডেট করুন" : "ক্রেতা যুক্ত করুন"}
           </Button>
         </div>
       </SheetContent>
