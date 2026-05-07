@@ -61,8 +61,8 @@ export default function Purchases() {
   const fullyPaid = total > 0 && due === 0;
 
   const supplierMatches = useMemo(() =>
-    !supplierSearch ? suppliers.slice(0, 6)
-      : suppliers.filter(s => s.name.toLowerCase().includes(supplierSearch.toLowerCase())).slice(0, 6),
+    !supplierSearch ? suppliers
+      : suppliers.filter(s => s.name.toLowerCase().includes(supplierSearch.toLowerCase()) || s.phone?.includes(supplierSearch)),
     [supplierSearch, suppliers]);
 
   const updateItem = (idx: number, patch: any) => {
