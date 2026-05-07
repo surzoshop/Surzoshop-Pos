@@ -556,8 +556,8 @@ export default function Purchases() {
             </button>
             <div className="flex items-center gap-2">
               <span className="px-3 py-2 rounded-lg bg-[hsl(var(--surface-container-low))] text-sm font-bold">মোট ৳{fmt(total)}</span>
-              <Button variant="outline" onClick={save} className="gap-2"><Printer className="h-4 w-4" />সেভ ও প্রিন্ট</Button>
-              <Button onClick={save} className="gradient-primary gap-2"><Save className="h-4 w-4" />পারচেজ সেভ</Button>
+              <Button variant="outline" onClick={() => save(true)} className="gap-2"><Printer className="h-4 w-4" />সেভ ও প্রিন্ট (A4)</Button>
+              <Button onClick={() => save(false)} className="gradient-primary gap-2"><Save className="h-4 w-4" />পারচেজ সেভ</Button>
             </div>
           </div>
         </DialogContent>
