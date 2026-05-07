@@ -17,7 +17,7 @@ export default function Categories() {
   const isAdmin = role === "admin";
 
   const [cats, setCats] = useState<Category[]>([]);
-  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [counts, setCounts] = useState<Record<string, { products: number; stock: number }>>({});
   const [search, setSearch] = useState("");
   const [newCat, setNewCat] = useState("");
   const [editing, setEditing] = useState<Category | null>(null);
@@ -25,12 +25,15 @@ export default function Categories() {
   const load = async () => {
     const [{ data: c }, { data: p }] = await Promise.all([
       supabase.from("categories").select("id,name").order("name"),
-      supabase.from("products").select("category_id").eq("is_active", true),
+      supabase.from("products").select("category_id,stock").eq("is_active", true),
     ]);
     setCats(c ?? []);
-    const m: Record<string, number> = {};
+    const m: Record<string, { products: number; stock: number }> = {};
     (p ?? []).forEach((row: any) => {
-      if (row.category_id) m[row.category_id] = (m[row.category_id] ?? 0) + 1;
+      if (!row.category_id) return;
+      if (!m[row.category_id]) m[row.category_id] = { products: 0, stock: 0 };
+      m[row.category_id].products += 1;
+      m[row.category_id].stock += Number(row.stock || 0);
     });
     setCounts(m);
   };
@@ -61,8 +64,9 @@ export default function Categories() {
   };
 
   const del = async (c: Category) => {
-    if ((counts[c.id] ?? 0) > 0) {
-      return toast({ title: `এই ক্যাটাগরিতে ${counts[c.id]} টি পণ্য আছে — আগে পণ্য সরান`, variant: "destructive" });
+    const n = counts[c.id]?.products ?? 0;
+    if (n > 0) {
+      return toast({ title: `এই ক্যাটাগরিতে ${n} টি পণ্য আছে — আগে পণ্য সরান`, variant: "destructive" });
     }
     if (!confirm(`"${c.name}" মুছবেন?`)) return;
     const { error } = await supabase.from("categories").delete().eq("id", c.id);
@@ -72,7 +76,8 @@ export default function Categories() {
   };
 
   const filtered = cats.filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()));
-  const totalProducts = Object.values(counts).reduce((a, b) => a + b, 0);
+  const totalProducts = Object.values(counts).reduce((a, b) => a + b.products, 0);
+  const totalStock = Object.values(counts).reduce((a, b) => a + b.stock, 0);
 
   return (
     <div>
@@ -132,7 +137,7 @@ export default function Categories() {
             <div className="col-span-full py-12 text-center text-muted-foreground text-sm">কোনো ক্যাটাগরি নেই</div>
           )}
           {filtered.map(c => {
-            const n = counts[c.id] ?? 0;
+            const info = counts[c.id] ?? { products: 0, stock: 0 };
             return (
               <div
                 key={c.id}
@@ -149,8 +154,9 @@ export default function Categories() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-extrabold text-foreground truncate">{c.name}</p>
-                    <p className="text-xs font-bold text-primary mt-0.5">
-                      <span className="bg-primary/10 px-2 py-0.5 rounded-full">{n} পণ্য</span>
+                    <p className="text-xs font-bold text-primary mt-1 flex flex-wrap gap-1">
+                      <span className="bg-success/15 text-success px-2 py-0.5 rounded-full">{info.stock} টি স্টক</span>
+                      <span className="bg-primary/10 px-2 py-0.5 rounded-full">{info.products} পণ্য</span>
                     </p>
                   </div>
                   {isAdmin && (

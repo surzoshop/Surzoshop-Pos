@@ -158,11 +158,16 @@ export default function Products() {
     ? cats.filter(c => c.name.toLowerCase().startsWith(search.toLowerCase())).slice(0, 6)
     : [];
 
-  // Per-category product counts
-  const catCounts = cats.reduce<Record<string, number>>((acc, c) => {
-    acc[c.id] = items.filter(p => p.category_id === c.id).length;
+  // Per-category counts: number of distinct products & total stock units
+  const catCounts = cats.reduce<Record<string, { products: number; stock: number }>>((acc, c) => {
+    const list = items.filter(p => p.category_id === c.id);
+    acc[c.id] = {
+      products: list.length,
+      stock: list.reduce((s, p) => s + Number(p.stock || 0), 0),
+    };
     return acc;
   }, {});
+  const totalStockUnits = items.reduce((s, p) => s + Number(p.stock || 0), 0);
 
   const totalValue = filtered.reduce((a, p) => a + Number(p.price) * Number(p.stock), 0);
   const totalCostValue = filtered.reduce((a, p) => a + Number(p.cost) * Number(p.stock), 0);
@@ -238,7 +243,7 @@ export default function Products() {
                   <span className="flex items-center gap-2 text-sm font-bold text-foreground">
                     <Tag className="h-3.5 w-3.5 text-primary" /> {c.name}
                   </span>
-                  <span className="text-[10px] font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{catCounts[c.id] ?? 0} পণ্য</span>
+                  <span className="text-[10px] font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{catCounts[c.id]?.stock ?? 0} টি · {catCounts[c.id]?.products ?? 0} পণ্য</span>
                 </button>
               ))}
             </div>
@@ -256,7 +261,7 @@ export default function Products() {
                   : "bg-[hsl(var(--surface-container-low))] text-foreground hover:bg-primary/10"
               }`}
             >
-              সব ({items.length})
+              সব ({totalStockUnits} টি)
             </button>
             {cats.map(c => (
               <button
@@ -271,7 +276,7 @@ export default function Products() {
                 <Tag className="h-3 w-3" /> {c.name}
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${
                   selectedCat === c.id ? "bg-primary-foreground/20" : "bg-primary/15 text-primary"
-                }`}>{catCounts[c.id] ?? 0}</span>
+                }`}>{catCounts[c.id]?.stock ?? 0}</span>
               </button>
             ))}
           </div>
@@ -389,7 +394,7 @@ export default function Products() {
                 <div key={c.id} className="flex items-center justify-between bg-[hsl(var(--surface-container-low))] px-3 py-2 rounded-lg">
                   <span className="text-sm font-bold flex items-center gap-2">
                     <Tag className="h-3.5 w-3.5 text-primary" /> {c.name}
-                    <span className="text-[10px] font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{catCounts[c.id] ?? 0} পণ্য</span>
+                    <span className="text-[10px] font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{catCounts[c.id]?.stock ?? 0} টি · {catCounts[c.id]?.products ?? 0} পণ্য</span>
                   </span>
                   <div className="flex items-center gap-1">
                     <Button size="icon" variant="ghost" className="h-7 w-7 text-info" onClick={() => setEditCat({ id: c.id, name: c.name })}><Pencil className="h-3.5 w-3.5" /></Button>
