@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { ImageUpload } from "@/components/ImageUpload";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, ShoppingBag, Calendar, FileText, Receipt, Search, Eye, Wallet, ArrowLeft, Building2, Package, DollarSign, StickyNote, Printer, Save, ImagePlus, CheckCircle2, X } from "lucide-react";
 import { PageHeader, SurfaceCard, PrimaryButton, StatusPill } from "@/components/PageHeader";
@@ -37,7 +39,7 @@ export default function Purchases() {
   const [billDate, setBillDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<any[]>([
-    { product_id: "", product_name: "", search: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0 },
+    { product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "" },
   ]);
   const [discount, setDiscount] = useState(0);
   const [delivery, setDelivery] = useState(0);
@@ -73,43 +75,93 @@ export default function Purchases() {
       return next;
     }));
   };
-  const addItemRow = () => setItems([...items, { product_id: "", product_name: "", search: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0 }]);
+  const addItemRow = () => setItems([...items, { product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "" }]);
   const removeItemRow = (idx: number) => setItems(items.length === 1 ? items : items.filter((_, i) => i !== idx));
 
   const pickProduct = (idx: number, p: any) => updateItem(idx, {
     product_id: p.id, product_name: p.name, search: p.name,
     unit_cost: Number(p.cost), sell_price: Number(p.price),
     unit: p.unit ?? "pcs", category_id: p.category_id ?? "",
+    image_url: p.image_url ?? "",
   });
 
   const resetForm = () => {
-    setItems([{ product_id: "", product_name: "", search: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0 }]);
+    setItems([{ product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "" }]);
     setPaid(0); setDiscount(0); setDelivery(0); setSupplierId(""); setSupplierSearch(""); setNotes("");
   };
 
-  const validItems = () => items.filter(i => i.product_id && i.qty > 0);
+  const validItems = () => items.filter(i => (i.product_id || (i.search && i.search.trim())) && i.qty > 0);
 
   const save = async (alsoPrint = false) => {
     const rowsToSave = validItems();
-    if (rowsToSave.length === 0) return toast({ title: "কমপক্ষে একটি পণ্য নির্বাচন করুন", variant: "destructive" });
+    if (rowsToSave.length === 0) return toast({ title: "কমপক্ষে একটি পণ্য নির্বাচন বা লিখুন", variant: "destructive" });
+
+    // Step 1: Create new products on the fly (so POS / Products list automatically gets them)
+    const prepared: any[] = [];
+    for (const it of rowsToSave) {
+      let pid = it.product_id;
+      let pname = it.product_name || it.search;
+      if (!pid) {
+        const { data: created, error: pe } = await supabase.from("products").insert({
+          name: pname.trim(),
+          cost: Number(it.unit_cost) || 0,
+          price: Number(it.sell_price) || Number(it.unit_cost) || 0,
+          unit: it.unit ?? "pcs",
+          category_id: it.category_id || null,
+          image_url: it.image_url || null,
+          stock: 0, // trigger will increment
+          shop_id: currentShop?.id ?? null,
+        }).select().single();
+        if (pe) return toast({ title: "নতুন পণ্য তৈরিতে সমস্যা: " + pe.message, variant: "destructive" });
+        pid = created.id;
+      } else if (it.image_url) {
+        // Update existing product image / cost when changed
+        await supabase.from("products").update({
+          image_url: it.image_url || null,
+          cost: Number(it.unit_cost) || 0,
+          ...(it.sell_price ? { price: Number(it.sell_price) } : {}),
+        }).eq("id", pid);
+      }
+      prepared.push({ ...it, product_id: pid, product_name: pname });
+    }
+
+    // Step 2: Create purchase
     const { data, error } = await supabase.from("purchases").insert({
       supplier_id: supplierId || null, subtotal, discount, total, paid, due,
       notes: notes || null, created_by: user!.id, shop_id: currentShop?.id ?? null,
     }).select().single();
     if (error) return toast({ title: error.message, variant: "destructive" });
-    const rows = rowsToSave.map(i => ({
+
+    // Step 3: Insert items (DB trigger auto-increments product stock)
+    const rows = prepared.map(i => ({
       product_id: i.product_id, product_name: i.product_name, qty: i.qty,
       unit_cost: i.unit_cost, subtotal: i.subtotal,
       purchase_id: data.id, shop_id: currentShop?.id ?? null,
     }));
     const { error: e2 } = await supabase.from("purchase_items").insert(rows);
     if (e2) return toast({ title: e2.message, variant: "destructive" });
-    toast({ title: "ক্রয় সংরক্ষিত ✓" });
+
+    // Step 4: Cash book entry for paid amount (so it shows up in Ledger)
+    if (paid > 0) {
+      await supabase.from("cash_book").insert({
+        entry_type: "out",
+        amount: paid,
+        category: "ক্রয়",
+        payment_method: paymentMethod,
+        party_name: suppliers.find(s => s.id === supplierId)?.name ?? null,
+        reference_no: data.bill_no,
+        notes: `ক্রয় বিল ${data.bill_no}`,
+        created_by: user!.id,
+        shop_id: currentShop?.id ?? null,
+      });
+    }
+
+    toast({ title: "ক্রয় সংরক্ষিত ✓ স্টক ও পণ্য তালিকা আপডেট হয়েছে" });
     if (alsoPrint) {
       const supName = suppliers.find(s => s.id === supplierId)?.name ?? "—";
       printA4Invoice({
         billNo: data.bill_no, billDate, supplierName: supName,
-        shop: currentShop, items: rowsToSave, subtotal, discount, delivery, total, paid, due,
+        shop: currentShop, items: prepared, subtotal, discount, delivery, total, paid, due,
         paymentMethod, notes,
       });
     }
@@ -278,11 +330,14 @@ export default function Purchases() {
         </div>
       </SurfaceCard>
 
-      {/* === New Purchase — Bongo-style full-screen sectioned form === */}
-      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
-        <DialogContent className="bg-[hsl(var(--surface-container-lowest))] p-0 max-w-5xl w-[100vw] sm:w-[96vw] h-[100vh] sm:h-[94vh] sm:max-h-[94vh] sm:rounded-2xl rounded-none overflow-hidden flex flex-col gap-0">
+      {/* === New Purchase — Slide-in side sheet === */}
+      <Sheet open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
+        <SheetContent
+          side="right"
+          className="p-0 w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl sm:w-[92vw] bg-[hsl(var(--surface-container-lowest))] flex flex-col gap-0 [&>button]:hidden"
+        >
           {/* Header */}
-          <div className="flex items-center justify-between gap-2 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-[hsl(var(--surface-container-high))]/60 bg-[hsl(var(--surface-container-lowest))]">
+          <div className="flex items-center justify-between gap-2 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-[hsl(var(--surface-container-high))]/60 bg-[hsl(var(--surface-container-lowest))] shrink-0">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <button onClick={() => { setOpen(false); resetForm(); }} className="h-9 w-9 grid place-items-center rounded-full hover:bg-muted shrink-0">
                 <ArrowLeft className="h-5 w-5" />
@@ -291,7 +346,7 @@ export default function Purchases() {
                 <Receipt className="h-5 w-5 text-primary" />
               </div>
               <div className="min-w-0">
-                <DialogTitle className="text-sm sm:text-base font-bold">নতুন ক্রয়</DialogTitle>
+                <h2 className="text-sm sm:text-base font-bold">নতুন ক্রয়</h2>
                 <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">নতুন পারচেজ এন্ট্রি তৈরি করুন</p>
               </div>
             </div>
@@ -303,10 +358,10 @@ export default function Purchases() {
           </div>
 
           {/* Scroll body */}
-          <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-3 sm:py-5 space-y-4 sm:space-y-5">
-            {/* Supplier card */}
-            <section className="rounded-2xl bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/50 overflow-hidden">
-              <div className="h-1 bg-gradient-to-r from-primary via-primary/70 to-primary/30" />
+          <div className="flex-1 overflow-y-auto overflow-x-visible px-3 sm:px-5 py-3 sm:py-5 space-y-4 sm:space-y-5">
+            {/* Supplier card — overflow-visible so dropdown is not clipped */}
+            <section className="rounded-2xl bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/50 relative">
+              <div className="h-1 bg-gradient-to-r from-primary via-primary/70 to-primary/30 rounded-t-2xl" />
               <div className="p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="h-10 w-10 rounded-xl bg-primary/10 grid place-items-center">
@@ -322,13 +377,13 @@ export default function Purchases() {
                     placeholder="সাপ্লায়ারের নাম লিখুন বা ক্লিক করে তালিকা থেকে বাছুন"
                     value={supplierSearch}
                     onFocus={() => setSupplierFocus(true)}
-                    onBlur={() => setTimeout(() => setSupplierFocus(false), 150)}
+                    onBlur={() => setTimeout(() => setSupplierFocus(false), 200)}
                     onChange={e => { setSupplierSearch(e.target.value); setSupplierId(""); setSupplierFocus(true); }}
                     className="h-11 bg-[hsl(var(--surface-container-low))] border-none pr-28"
                   />
                   <span className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded-md bg-primary/10 text-primary text-xs font-bold pointer-events-none">তালিকা ▾</span>
                   {supplierFocus && (
-                    <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl max-h-60 overflow-y-auto shadow-xl">
+                    <div className="absolute z-[60] left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl max-h-60 overflow-y-auto shadow-2xl">
                       {supplierMatches.length === 0 && <div className="px-4 py-4 text-sm text-muted-foreground text-center">কোন সরবরাহকারী পাওয়া যায়নি — সরবরাহকারী পেইজ থেকে যোগ করুন</div>}
                       {supplierMatches.map(s => (
                         <button key={s.id} type="button"
@@ -346,8 +401,8 @@ export default function Purchases() {
             </section>
 
             {/* Product list card */}
-            <section className="rounded-2xl bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/50 overflow-hidden">
-              <div className="h-1 bg-gradient-to-r from-info via-primary to-primary/40" />
+            <section className="rounded-2xl bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/50 relative">
+              <div className="h-1 bg-gradient-to-r from-info via-primary to-primary/40 rounded-t-2xl" />
               <div className="p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="h-10 w-10 rounded-xl bg-info/10 grid place-items-center">
@@ -355,7 +410,7 @@ export default function Purchases() {
                   </div>
                   <div>
                     <h3 className="font-bold">পণ্য তালিকা</h3>
-                    <p className="text-xs text-muted-foreground">ক্রয়কৃত পণ্য যোগ করুন</p>
+                    <p className="text-xs text-muted-foreground">ক্রয়কৃত পণ্য যোগ করুন — নতুন পণ্য সেভ হলে সয়ংক্রিয়ভাবে POS-এ যুক্ত হবে</p>
                   </div>
                 </div>
 
@@ -374,24 +429,28 @@ export default function Purchases() {
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-[88px_1fr] gap-4">
-                        {/* Image placeholder */}
-                        <div className="hidden md:grid place-items-center h-[88px] w-[88px] rounded-xl border-2 border-dashed border-[hsl(var(--surface-container-high))] text-muted-foreground bg-background/40">
-                          <ImagePlus className="h-6 w-6" />
+                      <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] gap-4">
+                        {/* Product image upload */}
+                        <div>
+                          <Label className="text-xs mb-1 block md:hidden">পণ্যের ছবি</Label>
+                          <ImageUpload
+                            value={it.image_url || null}
+                            onChange={(url) => updateItem(idx, { image_url: url ?? "" })}
+                          />
                         </div>
                         <div className="space-y-3">
                           <div>
                             <Label className="text-xs flex items-center gap-1 mb-1"><Package className="h-3 w-3" />পণ্য</Label>
                             <div className="relative">
-                              <Input placeholder="পণ্যের নাম লিখুন বা ক্লিক করে তালিকা থেকে বাছুন"
+                              <Input placeholder="পণ্যের নাম লিখুন (নতুন হলে অটো যুক্ত হবে) বা ক্লিক করে বাছুন"
                                 value={it.search}
                                 onFocus={() => setProductFocusIdx(idx)}
-                                onBlur={() => setTimeout(() => setProductFocusIdx(p => p === idx ? null : p), 150)}
-                                onChange={e => { updateItem(idx, { search: e.target.value, product_id: "" }); setProductFocusIdx(idx); }}
+                                onBlur={() => setTimeout(() => setProductFocusIdx(p => p === idx ? null : p), 200)}
+                                onChange={e => { updateItem(idx, { search: e.target.value, product_name: e.target.value, product_id: "" }); setProductFocusIdx(idx); }}
                                 className="h-10 bg-background pr-28" />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-bold pointer-events-none">পণ্য সিলেক্ট ▾</span>
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-bold pointer-events-none">পণ্য ▾</span>
                               {productFocusIdx === idx && (
-                                <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl max-h-60 overflow-y-auto shadow-xl">
+                                <div className="absolute z-[60] left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl max-h-60 overflow-y-auto shadow-2xl">
                                   {(() => {
                                     const list = products.filter(p =>
                                       !it.search ||
@@ -399,26 +458,30 @@ export default function Purchases() {
                                       p.barcode?.toLowerCase().includes(it.search.toLowerCase()) ||
                                       p.sku?.toLowerCase().includes(it.search.toLowerCase())
                                     );
-                                    if (list.length === 0) return <div className="px-4 py-4 text-sm text-muted-foreground text-center">কোন পণ্য পাওয়া যায়নি</div>;
+                                    if (list.length === 0) return <div className="px-4 py-4 text-sm text-muted-foreground text-center">এই নামে কোন পণ্য নেই — সেভ করলে নতুন হিসেবে যুক্ত হবে</div>;
                                     return list.slice(0, 12).map(p => (
                                       <button key={p.id} type="button"
                                         onMouseDown={(e) => e.preventDefault()}
                                         onClick={() => { pickProduct(idx, p); setProductFocusIdx(null); }}
-                                        className="w-full text-left px-3 py-2 text-sm hover:bg-primary/10 flex justify-between items-center">
-                                        <span className="font-medium">{p.name}</span>
-                                        <span className="text-xs text-muted-foreground">স্টক: {p.stock ?? "—"} · ৳{fmt(Number(p.cost))}</span>
+                                        className="w-full text-left px-3 py-2 text-sm hover:bg-primary/10 flex justify-between items-center gap-2">
+                                        <span className="flex items-center gap-2 min-w-0">
+                                          {p.image_url && <img src={p.image_url} alt="" className="h-7 w-7 rounded object-cover" />}
+                                          <span className="font-medium truncate">{p.name}</span>
+                                        </span>
+                                        <span className="text-xs text-muted-foreground shrink-0">স্টক: {p.stock ?? "—"} · ৳{fmt(Number(p.cost))}</span>
                                       </button>
                                     ));
                                   })()}
                                 </div>
                               )}
                             </div>
+                            <p className="text-[10px] text-muted-foreground mt-1">তালিকায় না থাকলে নতুন পণ্যের নাম লিখুন — সেভ করলে অটোমেটিক পণ্য তালিকা ও POS-এ যুক্ত হবে।</p>
                           </div>
 
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <Label className="text-xs mb-1 block">ব্র্যান্ড</Label>
-                              <Input placeholder="ব্র্যান্ড নাম" className="h-10 bg-background" />
+                              <Input value={it.brand || ""} onChange={e => updateItem(idx, { brand: e.target.value })} placeholder="ব্র্যান্ড নাম" className="h-10 bg-background" />
                             </div>
                             <div>
                               <Label className="text-xs mb-1 block">ক্যাটাগরি</Label>
@@ -435,6 +498,7 @@ export default function Purchases() {
                             <div>
                               <Label className="text-xs mb-1 block">পরিমাণ</Label>
                               <Input type="number" value={it.qty} onChange={e => updateItem(idx, { qty: +e.target.value })} className="h-10 bg-background" />
+                              <p className="text-[10px] text-muted-foreground mt-1">যত পিস ক্রয় করেছেন — স্টকে যুক্ত হবে।</p>
                             </div>
                             <div>
                               <Label className="text-xs mb-1 block">ইউনিট</Label>
@@ -453,14 +517,17 @@ export default function Purchases() {
                             <div>
                               <Label className="text-xs mb-1 block">ক্রয়মূল্য (৳)</Label>
                               <Input type="number" value={it.unit_cost} onChange={e => updateItem(idx, { unit_cost: +e.target.value })} className="h-10 bg-background" />
+                              <p className="text-[10px] text-muted-foreground mt-1">প্রতি পিসের কেনা দাম।</p>
                             </div>
                             <div>
                               <Label className="text-xs mb-1 block">বিক্রয়মূল্য (৳)</Label>
                               <Input type="number" placeholder="ঐচ্ছিক" value={it.sell_price || ""} onChange={e => updateItem(idx, { sell_price: +e.target.value })} className="h-10 bg-background" />
+                              <p className="text-[10px] text-muted-foreground mt-1">POS-এ কত টাকায় বিক্রি হবে।</p>
                             </div>
                             <div>
                               <Label className="text-xs mb-1 block">মোট (৳)</Label>
                               <div className="h-10 rounded-md bg-primary/10 grid place-items-center text-primary font-bold">৳{fmt(it.subtotal)}</div>
+                              <p className="text-[10px] text-muted-foreground mt-1">পরিমাণ × ক্রয়মূল্য।</p>
                             </div>
                           </div>
                         </div>
@@ -477,8 +544,8 @@ export default function Purchases() {
             </section>
 
             {/* Bill summary card */}
-            <section className="rounded-2xl bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/50 overflow-hidden">
-              <div className="h-1 bg-gradient-to-r from-success via-primary to-info" />
+            <section className="rounded-2xl bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/50 relative">
+              <div className="h-1 bg-gradient-to-r from-success via-primary to-info rounded-t-2xl" />
               <div className="p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="h-10 w-10 rounded-xl bg-success/10 grid place-items-center">
@@ -495,14 +562,17 @@ export default function Purchases() {
                     <span className="font-medium">সাবটোটাল</span>
                     <span className="font-bold">৳{fmt(subtotal)}</span>
                   </div>
+                  <p className="text-[10px] text-muted-foreground -mt-2">সব পণ্যের মোট ক্রয়মূল্যের যোগফল।</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label className="text-xs mb-1 block">ডিসকাউন্ট (৳)</Label>
                       <Input type="number" value={discount} onChange={e => setDiscount(+e.target.value)} className="h-10 bg-background" />
+                      <p className="text-[10px] text-muted-foreground mt-1">সরবরাহকারী যত টাকা ছাড় দিয়েছেন — মোট থেকে বিয়োগ হবে।</p>
                     </div>
                     <div>
                       <Label className="text-xs mb-1 block">ডেলিভারি চার্জ (৳)</Label>
                       <Input type="number" value={delivery} onChange={e => setDelivery(+e.target.value)} className="h-10 bg-background" />
+                      <p className="text-[10px] text-muted-foreground mt-1">পণ্য আনার পরিবহন খরচ — মোটে যোগ হবে।</p>
                     </div>
                   </div>
                   <div className="border-t border-[hsl(var(--surface-container-high))]/60 pt-3 flex justify-between items-center">
@@ -519,10 +589,12 @@ export default function Purchases() {
                         <option value="nagad">নগদ (Mobile)</option>
                         <option value="bank">ব্যাংক</option>
                       </select>
+                      <p className="text-[10px] text-muted-foreground mt-1">কিভাবে পরিশোধ করেছেন — ক্যাশবুকে রেকর্ড হবে।</p>
                     </div>
                     <div>
-                      <Label className="text-xs mb-1 block">পেমেন্ট (৳)</Label>
+                      <Label className="text-xs mb-1 block">পরিশোধিত (৳)</Label>
                       <Input type="number" value={paid} onChange={e => setPaid(+e.target.value)} className="h-10 bg-background" />
+                      <p className="text-[10px] text-muted-foreground mt-1">এখন কত টাকা দিয়েছেন — বাকিটা বকেয়া থাকবে।</p>
                     </div>
                   </div>
                   <div className={`rounded-lg px-4 py-3 flex justify-between items-center font-bold ${fullyPaid ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}`}>
@@ -549,7 +621,7 @@ export default function Purchases() {
           </div>
 
           {/* Sticky footer — mobile responsive */}
-          <div className="border-t border-[hsl(var(--surface-container-high))]/60 px-3 sm:px-5 py-3 bg-[hsl(var(--surface-container-lowest))]">
+          <div className="border-t border-[hsl(var(--surface-container-high))]/60 px-3 sm:px-5 py-3 bg-[hsl(var(--surface-container-lowest))] shrink-0">
             <div className="hidden sm:flex items-center justify-between">
               <button onClick={() => { setOpen(false); resetForm(); }} className="text-sm text-muted-foreground hover:text-foreground px-3 py-2">বাতিল</button>
               <div className="flex items-center gap-2">
@@ -569,8 +641,8 @@ export default function Purchases() {
               </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       {/* View bill */}
       <Dialog open={!!viewBill} onOpenChange={(v) => !v && setViewBill(null)}>
