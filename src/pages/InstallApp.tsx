@@ -34,44 +34,56 @@ export default function InstallApp() {
   const publishedUrl = "https://easy-kisti-shop.lovable.app";
 
   useEffect(() => {
-    const handler = (e: Event) => { e.preventDefault(); setDeferred(e as BIPEvent); };
-    const installedHandler = () => {
+    // Pick up any prompt captured globally before this page mounted
+    const existing = (window as any).__deferredInstallPrompt;
+    if (existing) setDeferred(existing);
+
+    const onAvailable = () => {
+      const evt = (window as any).__deferredInstallPrompt;
+      if (evt) setDeferred(evt);
+    };
+    const onInstalled = () => {
       setInstalled(true); setDeferred(null);
       toast.success("অ্যাপ সফলভাবে ইনস্টল হয়েছে! 🎉");
     };
-    window.addEventListener("beforeinstallprompt", handler);
-    window.addEventListener("appinstalled", installedHandler);
+    window.addEventListener("pwa-install-available", onAvailable);
+    window.addEventListener("pwa-installed", onInstalled);
     return () => {
-      window.removeEventListener("beforeinstallprompt", handler);
-      window.removeEventListener("appinstalled", installedHandler);
+      window.removeEventListener("pwa-install-available", onAvailable);
+      window.removeEventListener("pwa-installed", onInstalled);
     };
   }, []);
 
-  const triggerInstall = async (deferredEvt: BIPEvent | null, label: string) => {
-    if (isInIframe || isPreviewHost) {
-      window.open(publishedUrl, "_blank", "noopener,noreferrer");
-      toast.info(`${label} ইনস্টলের জন্য নতুন ট্যাবে খোলা হলো`);
-      return;
-    }
-    if (deferredEvt) {
+  const triggerInstall = async (label: string) => {
+    const evt: BIPEvent | null = deferred ?? (window as any).__deferredInstallPrompt ?? null;
+    if (evt) {
       try {
-        await deferredEvt.prompt();
-        const { outcome } = await deferredEvt.userChoice;
+        await evt.prompt();
+        const { outcome } = await evt.userChoice;
         if (outcome === "accepted") toast.success(`${label} ইনস্টল হচ্ছে...`);
         else toast.info("ইনস্টল বাতিল হয়েছে");
       } catch (e: any) {
         toast.error(e?.message || "ইনস্টল করা যায়নি");
       } finally {
+        (window as any).__deferredInstallPrompt = null;
         setDeferred(null);
       }
       return;
     }
-    // No deferred prompt — open in new tab so browser can offer install there
-    window.open(publishedUrl, "_blank", "noopener,noreferrer");
-    toast.info(`${label} নতুন ট্যাবে খোলা হলো — সেখান থেকে ইনস্টল হবে`);
+    if (isInIframe || isPreviewHost) {
+      window.open(publishedUrl, "_blank", "noopener,noreferrer");
+      toast.info(`${label} ইনস্টলের জন্য নতুন ট্যাবে খোলা হলো`);
+      return;
+    }
+    if (isIOS) {
+      toast.info("iOS-এ Safari → Share → 'Add to Home Screen' ব্যবহার করুন");
+      return;
+    }
+    // Android/desktop without prompt yet — reload may help SW register first
+    toast.info("ইনস্টল প্রম্পট প্রস্তুত হচ্ছে — কিছুক্ষণ পর আবার চাপুন");
   };
 
-  const handleInstall = () => triggerInstall(deferred, "মূল অ্যাপ");
+  const handleInstall = () => triggerInstall("মূল অ্যাপ");
   const handleInstallScanner = () => {
     // Open scanner page so its own beforeinstallprompt can fire there
     window.open(`${window.location.origin}/scanner.html`, "_blank", "noopener,noreferrer");

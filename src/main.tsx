@@ -2,6 +2,19 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
+// Capture beforeinstallprompt globally — fires once and very early,
+// often before the InstallApp page mounts. We stash it on window so the
+// install page can use it any time the user clicks "Install".
+(window as any).__deferredInstallPrompt = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  (window as any).__deferredInstallPrompt = e;
+  window.dispatchEvent(new CustomEvent("pwa-install-available"));
+});
+window.addEventListener("appinstalled", () => {
+  (window as any).__deferredInstallPrompt = null;
+  window.dispatchEvent(new CustomEvent("pwa-installed"));
+});
 const isInIframe = (() => {
   try { return window.self !== window.top; } catch { return true; }
 })();
