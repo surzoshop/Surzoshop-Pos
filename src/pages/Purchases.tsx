@@ -39,7 +39,7 @@ export default function Purchases() {
   const [billDate, setBillDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<any[]>([
-    { product_id: "", product_name: "", search: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0 },
+    { product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "" },
   ]);
   const [discount, setDiscount] = useState(0);
   const [delivery, setDelivery] = useState(0);
