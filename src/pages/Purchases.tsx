@@ -276,28 +276,33 @@ export default function Purchases() {
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>${p.billNo}</title>
       <style>
         @page{size:A4;margin:10mm}
-        @media print{body{margin:0}}
-        *{box-sizing:border-box;font-family:'Segoe UI',Tahoma,Arial,sans-serif}
+        *,*::before,*::after{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}
+        html,body{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+        @media print{
+          body{margin:0}
+          *,*::before,*::after{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}
+        }
+        *{box-sizing:border-box;font-family:'Noto Sans Bengali','SolaimanLipi','Kalpurush','Segoe UI',Tahoma,Arial,sans-serif}
         body{margin:0;color:#1f2937;font-size:12px;background:#fff}
         .wrap{max-width:780px;margin:0 auto;padding:6px}
         .head{display:flex;gap:14px;align-items:flex-start;margin-bottom:14px}
         .logo-box{width:96px;height:96px;border-radius:10px;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #eef0f5}
         .logo-box img{max-width:100%;max-height:100%;object-fit:contain}
-        .shop-name{font-size:26px;font-weight:800;color:#5b5fc7;margin:0 0 4px;line-height:1.1}
+        .shop-name{font-size:26px;font-weight:800;color:#5b5fc7 !important;margin:0 0 4px;line-height:1.1}
         .shop-info{font-size:11.5px;line-height:1.55;color:#1f2937}
         .shop-info b{color:#0f172a}
-        .banner{background:#7c83ff;color:#fff;text-align:center;padding:8px;font-weight:700;letter-spacing:.5px;border-radius:4px;margin:10px 0}
+        .banner{background:#7c83ff !important;color:#fff !important;text-align:center;padding:8px;font-weight:700;letter-spacing:.5px;border-radius:4px;margin:10px 0}
         .meta{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 16px;padding:10px 4px;border-bottom:1px solid #eef0f5;margin-bottom:8px}
         .meta .lbl{font-weight:700;font-size:11px;color:#0f172a}
         .meta .val{font-size:12px;color:#1f2937;margin-top:2px}
-        h3.sec{color:#5b5fc7;font-size:13px;margin:12px 0 6px;font-weight:700}
+        h3.sec{color:#5b5fc7 !important;font-size:13px;margin:12px 0 6px;font-weight:700}
         .billto{font-size:12px;line-height:1.7}
         .billto b{color:#0f172a}
         table.items{width:100%;border-collapse:collapse;margin-top:6px;border-radius:4px;overflow:hidden}
-        table.items thead th{background:#7c83ff;color:#fff;text-align:left;padding:9px 10px;font-weight:600;font-size:12px}
-        .items-banner{background:#7c83ff;color:#fff;display:flex;justify-content:space-between;padding:7px 12px;font-weight:700;font-size:12px;border-radius:4px;margin-top:6px}
+        table.items thead th{background:#7c83ff !important;color:#fff !important;text-align:left;padding:9px 10px;font-weight:600;font-size:12px}
+        .items-banner{background:#7c83ff !important;color:#fff !important;display:flex;justify-content:space-between;padding:7px 12px;font-weight:700;font-size:12px;border-radius:4px;margin-top:6px}
         .twocol{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;margin-top:14px}
-        .terms b,.payopt b,.bank b{color:#5b5fc7;display:block;margin-bottom:4px;font-size:12.5px}
+        .terms b,.payopt b,.bank b{color:#5b5fc7 !important;display:block;margin-bottom:4px;font-size:12.5px}
         .terms ol{margin:0;padding-left:18px;font-size:11.5px;line-height:1.6}
         .totals{font-size:12px}
         .totals .row{display:flex;justify-content:space-between;padding:3px 0}
@@ -305,13 +310,14 @@ export default function Purchases() {
         .totals .grand{border-top:1px dashed #94a3b8;border-bottom:1px dashed #94a3b8;padding:5px 0;margin:4px 0;font-weight:800;color:#0f172a}
         .qr{display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:6px}
         .qr img{border:1px solid #eef0f5;border-radius:6px}
-        .qr .scan{background:#7c83ff;color:#fff;padding:4px 16px;border-radius:4px;font-size:11px;font-weight:700;margin-top:2px}
+        .qr .scan{background:#7c83ff !important;color:#fff !important;padding:4px 16px;border-radius:4px;font-size:11px;font-weight:700;margin-top:2px}
         .words{margin-top:10px}
-        .words b{color:#5b5fc7;display:block;margin-bottom:3px}
+        .words b{color:#5b5fc7 !important;display:block;margin-bottom:3px}
         .powered{text-align:right;font-size:11px;margin-top:14px;color:#0f172a}
         .powered .grow{display:block;font-weight:700;margin-top:3px}
-        .footer{background:#7c83ff;color:#fff;text-align:center;padding:10px;margin-top:16px;border-radius:4px;font-weight:700;line-height:1.5}
-        .remark{font-size:11px;color:#5b5fc7;margin-top:14px;font-weight:700}
+        .footer{background:#7c83ff !important;color:#fff !important;text-align:center;padding:10px;margin-top:16px;border-radius:4px;font-weight:700;line-height:1.5}
+        .remark{font-size:11px;color:#5b5fc7 !important;margin-top:14px;font-weight:700}
+        .due-row{color:#b91c1c !important}
       </style></head><body>
       <div class="wrap">
         <div class="head">
