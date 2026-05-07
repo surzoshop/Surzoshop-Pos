@@ -54,8 +54,8 @@ export default function Products() {
   };
   useEffect(() => { load(); }, []);
 
-  const startEdit = (p: any) => { setEditing(p); setForm({ ...p, category_id: p.category_id ?? "", image_url: p.image_url ?? "" }); setOpen(true); };
-  const startNew = () => { setAddSheet(true); };
+  const startEdit = (p: any) => { setEditing(p); setAddSheet(true); };
+  const startNew = () => { setEditing(null); setAddSheet(true); };
 
   const save = async () => {
     if (!form.name?.trim()) return toast({ title: "নাম দিন", variant: "destructive" });
