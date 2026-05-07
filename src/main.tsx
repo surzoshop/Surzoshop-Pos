@@ -15,6 +15,7 @@ window.addEventListener("appinstalled", () => {
   (window as any).__deferredInstallPrompt = null;
   window.dispatchEvent(new CustomEvent("pwa-installed"));
 });
+const isInIframe = (() => {
   try { return window.self !== window.top; } catch { return true; }
 })();
 const isPreviewHost =
