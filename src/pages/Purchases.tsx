@@ -51,7 +51,7 @@ export default function Purchases() {
     const [p, s, pr, c] = await Promise.all([
       supabase.from("purchases").select("*, suppliers(name)").order("created_at", { ascending: false }).limit(200),
       supabase.from("suppliers").select("id,name,phone").order("name"),
-      supabase.from("products").select("id,name,cost,price,unit,barcode,sku,image_url,category_id").order("name"),
+      supabase.from("products").select("id,name,cost,price,unit,barcode,sku,image_url,category_id,has_warranty,warranty_months").order("name"),
       supabase.from("categories").select("id,name").order("name"),
     ]);
     setPurchases(p.data ?? []); setSuppliers(s.data ?? []); setProducts(pr.data ?? []); setCategories(c.data ?? []);
