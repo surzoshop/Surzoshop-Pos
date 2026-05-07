@@ -457,3 +457,21 @@ function QAButton({ to, onClick, icon, label, tone = "emerald" }: any) {
   if (onClick) return <button onClick={onClick} className={cls}>{inner}</button>;
   return <Link to={to} className={cls}>{inner}</Link>;
 }
+
+function MiniStat({ to, theme, icon, label, value }: any) {
+  const T = THEMES[theme] ?? THEMES.violet;
+  return (
+    <Link
+      to={to ?? "#"}
+      className={`group flex items-center gap-2.5 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--border))] ${T.accent} rounded-xl px-3 py-2.5 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200`}
+    >
+      <div className={`h-8 w-8 shrink-0 ${T.iconGrad} text-white rounded-lg flex items-center justify-center shadow ${T.iconShadow}`}>
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider truncate font-bn">{label}</p>
+        <p className={`text-sm md:text-base font-extrabold text-foreground truncate font-bn ${T.valueText} transition-colors`}>{value}</p>
+      </div>
+    </Link>
+  );
+}
