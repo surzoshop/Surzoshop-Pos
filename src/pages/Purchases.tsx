@@ -303,24 +303,33 @@ export default function Purchases() {
                           <div>
                             <Label className="text-xs flex items-center gap-1 mb-1"><Package className="h-3 w-3" />পণ্য</Label>
                             <div className="relative">
-                              <Input placeholder="পণ্যের নাম লিখুন বা স্ক্যান করুন"
+                              <Input placeholder="পণ্যের নাম লিখুন বা ক্লিক করে তালিকা থেকে বাছুন"
                                 value={it.search}
-                                onChange={e => updateItem(idx, { search: e.target.value, product_id: "" })}
+                                onFocus={() => setProductFocusIdx(idx)}
+                                onBlur={() => setTimeout(() => setProductFocusIdx(p => p === idx ? null : p), 150)}
+                                onChange={e => { updateItem(idx, { search: e.target.value, product_id: "" }); setProductFocusIdx(idx); }}
                                 className="h-10 bg-background pr-28" />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-bold">পণ্য সিলেক্ট ▾</span>
-                              {it.search && !it.product_id && (
-                                <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl max-h-52 overflow-y-auto shadow-lg">
-                                  {products.filter(p =>
-                                    p.name.toLowerCase().includes(it.search.toLowerCase()) ||
-                                    p.barcode?.toLowerCase().includes(it.search.toLowerCase()) ||
-                                    p.sku?.toLowerCase().includes(it.search.toLowerCase())
-                                  ).slice(0, 8).map(p => (
-                                    <button key={p.id} type="button" onClick={() => pickProduct(idx, p)}
-                                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted/60 flex justify-between">
-                                      <span>{p.name}</span>
-                                      <span className="text-xs text-muted-foreground">{fmt(Number(p.cost))}</span>
-                                    </button>
-                                  ))}
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-bold pointer-events-none">পণ্য সিলেক্ট ▾</span>
+                              {productFocusIdx === idx && (
+                                <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl max-h-60 overflow-y-auto shadow-xl">
+                                  {(() => {
+                                    const list = products.filter(p =>
+                                      !it.search ||
+                                      p.name.toLowerCase().includes(it.search.toLowerCase()) ||
+                                      p.barcode?.toLowerCase().includes(it.search.toLowerCase()) ||
+                                      p.sku?.toLowerCase().includes(it.search.toLowerCase())
+                                    );
+                                    if (list.length === 0) return <div className="px-4 py-4 text-sm text-muted-foreground text-center">কোন পণ্য পাওয়া যায়নি</div>;
+                                    return list.slice(0, 12).map(p => (
+                                      <button key={p.id} type="button"
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => { pickProduct(idx, p); setProductFocusIdx(null); }}
+                                        className="w-full text-left px-3 py-2 text-sm hover:bg-primary/10 flex justify-between items-center">
+                                        <span className="font-medium">{p.name}</span>
+                                        <span className="text-xs text-muted-foreground">স্টক: {p.stock ?? "—"} · ৳{fmt(Number(p.cost))}</span>
+                                      </button>
+                                    ));
+                                  })()}
                                 </div>
                               )}
                             </div>
