@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, X, User, Receipt, Package, Loader2, Phone, ArrowRight } from "lucide-react";
+import { Search, X, User, Receipt, Package, Loader2, Phone, ArrowRight, Tag } from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 
 type Hit =
   | { kind: "customer"; id: string; title: string; sub: string }
   | { kind: "sale"; id: string; title: string; sub: string }
-  | { kind: "product"; id: string; title: string; sub: string };
+  | { kind: "product"; id: string; title: string; sub: string }
+  | { kind: "category"; id: string; title: string; sub: string; stock: number; count: number };
 
 export function GlobalSearch() {
   const navigate = useNavigate();
