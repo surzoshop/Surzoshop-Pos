@@ -137,7 +137,7 @@ export default function Categories() {
             <div className="col-span-full py-12 text-center text-muted-foreground text-sm">কোনো ক্যাটাগরি নেই</div>
           )}
           {filtered.map(c => {
-            const n = counts[c.id] ?? 0;
+            const info = counts[c.id] ?? { products: 0, stock: 0 };
             return (
               <div
                 key={c.id}
@@ -154,8 +154,9 @@ export default function Categories() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-extrabold text-foreground truncate">{c.name}</p>
-                    <p className="text-xs font-bold text-primary mt-0.5">
-                      <span className="bg-primary/10 px-2 py-0.5 rounded-full">{n} পণ্য</span>
+                    <p className="text-xs font-bold text-primary mt-1 flex flex-wrap gap-1">
+                      <span className="bg-success/15 text-success px-2 py-0.5 rounded-full">{info.stock} টি স্টক</span>
+                      <span className="bg-primary/10 px-2 py-0.5 rounded-full">{info.products} পণ্য</span>
                     </p>
                   </div>
                   {isAdmin && (
