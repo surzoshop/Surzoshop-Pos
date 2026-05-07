@@ -298,14 +298,14 @@ export default function Products() {
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="text-[11px] uppercase tracking-widest text-muted-foreground border-b border-[hsl(var(--surface-container))]">
-                <th className="pb-3 font-bold w-14"></th>
-                <th className="pb-3 font-bold">{t("name")}</th>
-                <th className="pb-3 font-bold">{t("category")}</th>
-                <th className="pb-3 font-bold">{t("barcode")}</th>
-                <th className="pb-3 font-bold">{t("price")}</th>
-                <th className="pb-3 font-bold">{t("stock")}</th>
-                {isAdmin && <th className="pb-3 font-bold text-right">{t("actions")}</th>}
+              <tr className="text-xs uppercase tracking-wider text-foreground border-b-2 border-[hsl(var(--surface-container))]">
+                <th className="pb-3 font-extrabold w-14"></th>
+                <th className="pb-3 font-extrabold">{t("name")}</th>
+                <th className="pb-3 font-extrabold">{t("category")}</th>
+                <th className="pb-3 font-extrabold">{t("barcode")}</th>
+                <th className="pb-3 font-extrabold">{t("price")}</th>
+                <th className="pb-3 font-extrabold">{t("stock")}</th>
+                {isAdmin && <th className="pb-3 font-extrabold text-right">{t("actions")}</th>}
               </tr>
             </thead>
             <tbody className="text-sm divide-y divide-[hsl(var(--surface-container))]">
@@ -323,15 +323,11 @@ export default function Products() {
                       )}
                     </div>
                   </td>
-                  <td className="py-2 font-semibold text-foreground">{p.name}</td>
-                  <td className="py-2 text-muted-foreground">{catName(p.category_id)}</td>
-                  <td className="py-2 text-muted-foreground font-mono text-xs">{p.barcode || "—"}</td>
-                  <td className="py-2 font-bold text-primary">{fmt(p.price)}</td>
-                  <td className="py-2">
-                    {p.stock === 0 ? <StatusPill tone="destructive">{t("outOfStock")}</StatusPill>
-                      : p.stock <= 5 ? <StatusPill tone="warning">{p.stock} {p.unit}</StatusPill>
-                      : <span className="text-foreground font-medium">{p.stock} {p.unit}</span>}
-                  </td>
+                  <td className="py-2 font-bold text-foreground">{p.name}</td>
+                  <td className="py-2 text-foreground/80 font-semibold">{catName(p.category_id)}</td>
+                  <td className="py-2 text-foreground/70 font-mono text-xs font-bold">{p.barcode || "—"}</td>
+                  <td className="py-2 font-extrabold text-primary">{fmt(p.price)}</td>
+                  <td className="py-2">{stockBadge(p)}</td>
                   {isAdmin && (
                     <td className="py-2 text-right">
                       <Button size="icon" variant="ghost" onClick={() => startEdit(p)}><Pencil className="h-4 w-4" /></Button>
