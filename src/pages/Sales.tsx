@@ -138,12 +138,47 @@ export default function Sales() {
   };
 
   const handleDelete = async (sale: any) => {
-    if (!confirm(`ইনভয়েস ${sale.invoice_no} মুছে ফেলবেন?`)) return;
-    await supabase.from("sale_items").delete().eq("sale_id", sale.id);
-    const { error } = await supabase.from("sales").delete().eq("id", sale.id);
-    if (error) return toast({ title: error.message, variant: "destructive" });
-    toast({ title: "ইনভয়েস মুছে ফেলা হয়েছে" });
-    load();
+    if (!confirm(`ইনভয়েস ${sale.invoice_no} সম্পূর্ণ মুছে ফেলবেন? এটি ফিরিয়ে আনা যাবে না।`)) return;
+    try {
+      // 1) Restock sold items back to inventory
+      const { data: items } = await supabase.from("sale_items").select("product_id, qty").eq("sale_id", sale.id);
+      for (const it of items ?? []) {
+        if (!it.product_id) continue;
+        const { data: p } = await supabase.from("products").select("stock").eq("id", it.product_id).maybeSingle();
+        if (p) {
+          await supabase.from("products").update({ stock: Number(p.stock) + Number(it.qty) }).eq("id", it.product_id);
+        }
+      }
+
+      // 2) Delete dependents that reference this sale
+      const { data: insts } = await supabase.from("installments").select("id").eq("sale_id", sale.id);
+      const instIds = (insts ?? []).map((i: any) => i.id);
+      if (instIds.length) {
+        await supabase.from("installment_payments").delete().in("installment_id", instIds);
+        await supabase.from("installments").delete().in("id", instIds);
+      }
+
+      const { data: rets } = await supabase.from("sales_returns").select("id").eq("sale_id", sale.id);
+      const retIds = (rets ?? []).map((r: any) => r.id);
+      if (retIds.length) {
+        await supabase.from("sales_return_items").delete().in("return_id", retIds);
+        await supabase.from("sales_returns").delete().in("id", retIds);
+      }
+
+      await supabase.from("guarantors").delete().eq("sale_id", sale.id);
+      await supabase.from("sale_items").delete().eq("sale_id", sale.id);
+
+      // 3) Finally delete sale
+      const { error } = await supabase.from("sales").delete().eq("id", sale.id);
+      if (error) throw error;
+
+      // Optimistic UI: drop from local list right away
+      setItems(prev => prev.filter(x => x.id !== sale.id));
+      toast({ title: "ইনভয়েস ও সকল সংশ্লিষ্ট তথ্য মুছে ফেলা হয়েছে ✓" });
+      load();
+    } catch (e: any) {
+      toast({ title: "ডিলিট ব্যর্থ", description: e?.message ?? String(e), variant: "destructive" });
+    }
   };
 
   const openEdit = (sale: any) => {
