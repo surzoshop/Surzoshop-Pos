@@ -535,31 +535,33 @@ export default function Installments() {
   );
 }
 
-function SummaryCard({ icon, bg, label, value }: any) {
+function SummaryCard({ icon, accent, iconText, label, value, delay = 0 }: any) {
   return (
-    <div className="bg-[hsl(var(--surface-container-lowest))] p-5 rounded-2xl transition-all hover:-translate-y-1">
-      <div className={`p-2.5 ${bg} rounded-xl w-fit mb-3`}>{icon}</div>
-      <p className="text-muted-foreground text-xs font-medium">{label}</p>
-      <h3 className="text-xl md:text-2xl font-bold text-foreground mt-1">{value}</h3>
+    <div style={{ animationDelay: `${delay}ms` }}
+      className="relative overflow-hidden bg-[hsl(var(--surface-container-lowest))] p-5 rounded-2xl shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 animate-fade-in border border-[hsl(var(--surface-container-high))]/40">
+      <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full bg-gradient-to-br ${accent} opacity-20 blur-2xl`} />
+      <div className={`p-2.5 bg-gradient-to-br ${accent} rounded-xl w-fit mb-3 shadow-md ${iconText}`}>{icon}</div>
+      <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">{label}</p>
+      <h3 className="text-xl md:text-2xl font-black text-foreground mt-1">{value}</h3>
     </div>
   );
 }
 
-function Cell({ icon, label, value }: { icon: any; label: string; value: string }) {
+function Cell({ icon, label, value, accent, iconColor, border }: { icon: any; label: string; value: string; accent: string; iconColor: string; border: string }) {
   return (
-    <div className="bg-[hsl(var(--surface-container-lowest))] rounded-lg px-3 py-2">
-      <div className="flex items-center gap-1 text-muted-foreground text-[10px] uppercase tracking-wider font-bold">{icon}{label}</div>
-      <div className="font-bold text-foreground text-sm mt-0.5">{value}</div>
+    <div className={`bg-gradient-to-br ${accent} rounded-xl px-3 py-2.5 border ${border} transition-all hover:-translate-y-0.5`}>
+      <div className={`flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold ${iconColor}`}>{icon}<span className="text-muted-foreground">{label}</span></div>
+      <div className="font-black text-foreground text-sm mt-1">{value}</div>
     </div>
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone?: "primary" | "destructive" }) {
-  const cls = tone === "primary" ? "text-primary" : tone === "destructive" ? "text-destructive" : "text-foreground";
+function Stat({ icon, label, value, accent, iconColor, border, valueColor, delay = 0 }: { icon?: any; label: string; value: string; accent: string; iconColor: string; border: string; valueColor?: string; delay?: number }) {
   return (
-    <div>
-      <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{label}</div>
-      <div className={`font-bold ${cls}`}>{value}</div>
+    <div style={{ animationDelay: `${delay}ms` }}
+      className={`bg-gradient-to-br ${accent} rounded-xl p-3 border ${border} animate-fade-in transition-all hover:-translate-y-0.5 hover:shadow-md`}>
+      <div className={`flex items-center gap-1.5 text-[11px] uppercase tracking-widest font-bold ${iconColor}`}>{icon}<span className="text-muted-foreground">{label}</span></div>
+      <div className={`font-black text-base mt-1 ${valueColor || "text-foreground"}`}>{value}</div>
     </div>
   );
 }
