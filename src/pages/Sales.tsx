@@ -203,20 +203,68 @@ export default function Sales() {
     <div>
       <PageHeader title={t("salesLedger")} subtitle={t("salesSubtitle")} />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Stat icon={<Receipt className="h-6 w-6 text-primary" />} bg="bg-primary/10" label={t("recentSales")} value={filtered.length.toString()} />
-        <Stat icon={<Receipt className="h-6 w-6 text-info" />} bg="bg-info/10" label={t("totalRevenue")} value={fmt(totalRevenue)} />
-        <Stat icon={<Receipt className="h-6 w-6 text-[hsl(var(--secondary-foreground))]" />} bg="bg-secondary/30" label={t("pendingDue")} value={fmt(totalDue)} />
+      <div className="grid grid-cols-3 gap-2 sm:gap-6 mb-4 sm:mb-8">
+        <Stat icon={<Receipt className="h-4 w-4 sm:h-6 sm:w-6 text-primary" />} bg="bg-primary/10" label={t("recentSales")} value={filtered.length.toString()} />
+        <Stat icon={<Receipt className="h-4 w-4 sm:h-6 sm:w-6 text-info" />} bg="bg-info/10" label={t("totalRevenue")} value={fmt(totalRevenue)} />
+        <Stat icon={<Receipt className="h-4 w-4 sm:h-6 sm:w-6 text-[hsl(var(--secondary-foreground))]" />} bg="bg-secondary/30" label={t("pendingDue")} value={fmt(totalDue)} />
       </div>
 
-      <SurfaceCard className="p-4 sm:p-6">
-        <div className="relative mb-6">
+      <SurfaceCard className="p-3 sm:p-6">
+        <div className="relative mb-4 sm:mb-6">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t("search")}
             className="w-full h-12 pl-12 pr-4 rounded-xl bg-[hsl(var(--surface-container-low))] border-none focus:outline-none focus:ring-2 focus:ring-primary/30 text-sm" />
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile: cards */}
+        <div className="md:hidden space-y-2.5">
+          {filtered.length === 0 && <div className="py-12 text-center text-muted-foreground text-sm">{t("noResults")}</div>}
+          {filtered.map(s => {
+            const due = Number(s.due);
+            const tone = due === 0 ? "success" : due === Number(s.total) ? "warning" : "destructive";
+            return (
+              <div key={s.id} className="bg-[hsl(var(--surface-container-low))] rounded-xl p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-foreground text-sm">{s.invoice_no}</span>
+                      <StatusPill tone={tone}>{t(s.status as any)}</StatusPill>
+                    </div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">
+                      {new Date(s.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US")}
+                      {s.customers?.name ? ` · ${s.customers.name}` : ""}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="font-bold text-primary text-sm">{fmt(Number(s.total))}</div>
+                    {due > 0 && <div className="text-[11px] text-destructive font-semibold">বকেয়া {fmt(due)}</div>}
+                  </div>
+                </div>
+                <div className="mt-2 pt-2 border-t border-[hsl(var(--surface-container))] flex items-center justify-between">
+                  <span className="text-[11px] text-muted-foreground">{t(s.payment_type === "cash" ? "cash" : "installmentSale")}</span>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => printReceipt(s)} className="p-2 rounded-lg bg-info/10 text-info active:scale-95">
+                      <Printer className="h-4 w-4" />
+                    </button>
+                    {isAdmin && (
+                      <button onClick={() => openEdit(s)} className="p-2 rounded-lg bg-primary/10 text-primary active:scale-95">
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                    )}
+                    {isAdmin && (
+                      <button onClick={() => handleDelete(s)} className="p-2 rounded-lg bg-destructive/10 text-destructive active:scale-95">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop: table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[720px]">
             <thead>
               <tr className="text-[11px] uppercase tracking-widest text-muted-foreground">
@@ -306,11 +354,11 @@ export default function Sales() {
 
 function Stat({ icon, bg, label, value }: any) {
   return (
-    <div className="bg-[hsl(var(--surface-container-lowest))] p-6 rounded-2xl flex items-center gap-4 transition-all hover:-translate-y-1">
-      <div className={`p-3 ${bg} rounded-xl`}>{icon}</div>
-      <div>
-        <p className="text-muted-foreground text-sm font-medium">{label}</p>
-        <h3 className="text-xl font-bold text-foreground mt-0.5">{value}</h3>
+    <div className="bg-[hsl(var(--surface-container-lowest))] p-2.5 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:gap-4 transition-all hover:-translate-y-1">
+      <div className={`p-1.5 sm:p-3 ${bg} rounded-lg sm:rounded-xl shrink-0`}>{icon}</div>
+      <div className="min-w-0 w-full">
+        <p className="text-muted-foreground text-[10px] sm:text-sm font-medium truncate">{label}</p>
+        <h3 className="text-sm sm:text-xl font-bold text-foreground mt-0.5 truncate">{value}</h3>
       </div>
     </div>
   );
