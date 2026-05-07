@@ -203,6 +203,9 @@ export default function InstallApp() {
             <div className="space-y-2 text-sm">
               <p className="text-muted-foreground">মোবাইল camera দিয়ে এই QR scan করুন, অথবা link খুলে phone-এ Scanner App হিসেবে install করুন।</p>
               <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={handleInstallScanner} className="gradient-primary text-primary-foreground">
+                  <Download className="h-4 w-4" /> Scanner App ইনস্টল
+                </Button>
                 <Button asChild size="sm" variant="outline">
                   <a href="/scanner.html" target="_blank" rel="noopener noreferrer">
                     Open Scanner <ArrowRight className="h-4 w-4" />
