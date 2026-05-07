@@ -129,8 +129,8 @@ export default function InstallApp() {
         <Card className="p-6 flex items-center gap-4 border-primary/30 bg-primary/5">
           <CheckCircle2 className="h-10 w-10 text-primary shrink-0" />
           <div>
-            <h3 className="font-bold">মূল অ্যাপ ইনস্টল করা আছে</h3>
-            <p className="text-sm text-muted-foreground">আপনি বর্তমানে ইনস্টল করা অ্যাপটি ব্যবহার করছেন।</p>
+            <h3 className="font-bold">সূর্য শপ ইনস্টল করা আছে</h3>
+            <p className="text-sm text-muted-foreground">আপনি বর্তমানে ইনস্টল করা সূর্য শপ অ্যাপটি ব্যবহার করছেন।</p>
           </div>
         </Card>
       ) : (
