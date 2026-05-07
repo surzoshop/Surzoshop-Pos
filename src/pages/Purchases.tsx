@@ -409,8 +409,8 @@ export default function Purchases() {
                 <Receipt className="h-5 w-5 text-primary" />
               </div>
               <div className="min-w-0">
-                <h2 className="text-sm sm:text-base font-bold">নতুন ক্রয়</h2>
-                <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">নতুন পারচেজ এন্ট্রি তৈরি করুন</p>
+                <h2 className="text-sm sm:text-base font-bold">{editingId ? "ক্রয় এডিট" : "নতুন ক্রয়"}</h2>
+                <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">{editingId ? "বিদ্যমান পারচেজ আপডেট করুন" : "নতুন পারচেজ এন্ট্রি তৈরি করুন"}</p>
               </div>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
