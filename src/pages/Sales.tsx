@@ -68,7 +68,7 @@ export default function Sales() {
         .small{font-size:10px}
       </style></head><body>
       <div class="c">
-        ${currentShop?.logo_url ? `<img src="${currentShop.logo_url}" style="max-height:40px"/>` : ""}
+        <img src="${currentShop?.logo_url || '/brand-logo.png'}" style="max-height:48px" onerror="this.style.display='none'"/>
         <h1>${shopName}</h1>
         ${currentShop?.address ? `<div class="small">${currentShop.address}</div>` : ""}
         ${currentShop?.phone ? `<div class="small">📞 ${currentShop.phone}</div>` : ""}
