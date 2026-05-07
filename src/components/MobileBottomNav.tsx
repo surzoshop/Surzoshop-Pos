@@ -27,7 +27,7 @@ export function MobileBottomNav({ onOpenMenu }: Props) {
   const leftFiltered = left.filter(i => canAccess(i.key));
 
   const right: { url: string; icon: any; label: string; tone: Tone }[] = [
-    { url: "/scanner", icon: Smartphone, label: "Scanner", tone: "slate" },
+    { url: "/install", icon: AppWindow, label: "Apps", tone: "slate" },
   ];
 
   const renderItem = (item: { url: string; icon: any; label: string; tone: Tone }) => {
