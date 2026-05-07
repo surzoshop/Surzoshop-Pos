@@ -443,9 +443,9 @@ export default function Ledger() {
 
       {/* 3 totals */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-        <BigStat label="মোট জমা (Cr)" value={fmt(totals.cr)}      icon={<ArrowDownToLine className="h-5 w-5" />} accent="emerald" />
-        <BigStat label="মোট খরচ (Dr)" value={fmt(totals.dr)}      icon={<ArrowUpFromLine className="h-5 w-5" />} accent="rose" />
-        <BigStat label="নীট ব্যালেন্স"  value={fmt(totals.balance)} icon={<BookOpen className="h-5 w-5" />}        accent="indigo" />
+        <BigStat label="মোট জমা (Cr)" value={fmt(totals.cr)}      icon={<ArrowDownToLine className="h-5 w-5" />} accent="emerald" hint="নির্বাচিত ট্যাব ও তারিখে সকল আয়/জমার যোগফল" />
+        <BigStat label="মোট খরচ (Dr)" value={fmt(totals.dr)}      icon={<ArrowUpFromLine className="h-5 w-5" />} accent="rose"    hint="নির্বাচিত ট্যাব ও তারিখে সকল খরচ/উত্তোলনের যোগফল" />
+        <BigStat label="নীট ব্যালেন্স"  value={fmt(totals.balance)} icon={<BookOpen className="h-5 w-5" />}        accent="indigo"  hint="মোট জমা − মোট খরচ" />
       </div>
 
       {/* Lower filter row */}
