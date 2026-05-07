@@ -83,7 +83,7 @@ export default function InstallApp() {
     toast.info("ইনস্টল প্রম্পট প্রস্তুত হচ্ছে — কিছুক্ষণ পর আবার চাপুন");
   };
 
-  const handleInstall = () => triggerInstall(deferred, "মূল অ্যাপ");
+  const handleInstall = () => triggerInstall("মূল অ্যাপ");
   const handleInstallScanner = () => {
     // Open scanner page so its own beforeinstallprompt can fire there
     window.open(`${window.location.origin}/scanner.html`, "_blank", "noopener,noreferrer");
