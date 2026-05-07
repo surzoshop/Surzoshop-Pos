@@ -84,10 +84,17 @@ export default function Products() {
   };
 
   const saveCat = async () => {
+    if (editCat) {
+      if (!editCat.name.trim()) return;
+      const { error } = await supabase.from("categories").update({ name: editCat.name.trim() }).eq("id", editCat.id);
+      if (error) return toast({ title: error.message, variant: "destructive" });
+      setEditCat(null); load();
+      return toast({ title: "ক্যাটাগরি আপডেট হয়েছে" });
+    }
     if (!newCat.trim()) return;
     const { error } = await supabase.from("categories").insert({ name: newCat.trim() });
     if (error) return toast({ title: error.message, variant: "destructive" });
-    setNewCat(""); setCatOpen(false); load();
+    setNewCat(""); load();
     toast({ title: "ক্যাটাগরি যোগ হয়েছে" });
   };
 
