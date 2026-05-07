@@ -377,6 +377,7 @@ export default function POS() {
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="cash">{t("cash")}</SelectItem>
+                    <SelectItem value="due">বাকিতে</SelectItem>
                     <SelectItem value="installment">{t("installmentSale")}</SelectItem>
                   </SelectContent>
                 </Select>
