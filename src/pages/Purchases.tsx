@@ -239,23 +239,26 @@ export default function Purchases() {
                 </div>
                 <div className="relative">
                   <Input
-                    placeholder="সাপ্লায়ারের নাম লিখুন বা সিলেক্ট করুন"
+                    placeholder="সাপ্লায়ারের নাম লিখুন বা ক্লিক করে তালিকা থেকে বাছুন"
                     value={supplierSearch}
-                    onChange={e => { setSupplierSearch(e.target.value); setSupplierId(""); }}
+                    onFocus={() => setSupplierFocus(true)}
+                    onBlur={() => setTimeout(() => setSupplierFocus(false), 150)}
+                    onChange={e => { setSupplierSearch(e.target.value); setSupplierId(""); setSupplierFocus(true); }}
                     className="h-11 bg-[hsl(var(--surface-container-low))] border-none pr-28"
                   />
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded-md bg-muted text-xs text-muted-foreground">তালিকা ▾</span>
-                  {supplierSearch && !supplierId && (
-                    <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl max-h-56 overflow-y-auto shadow-lg">
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded-md bg-primary/10 text-primary text-xs font-bold pointer-events-none">তালিকা ▾</span>
+                  {supplierFocus && (
+                    <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl max-h-60 overflow-y-auto shadow-xl">
+                      {supplierMatches.length === 0 && <div className="px-4 py-4 text-sm text-muted-foreground text-center">কোন সরবরাহকারী পাওয়া যায়নি — সরবরাহকারী পেইজ থেকে যোগ করুন</div>}
                       {supplierMatches.map(s => (
                         <button key={s.id} type="button"
-                          onClick={() => { setSupplierId(s.id); setSupplierSearch(s.name); }}
-                          className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted/60 flex justify-between">
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => { setSupplierId(s.id); setSupplierSearch(s.name); setSupplierFocus(false); }}
+                          className={`w-full text-left px-4 py-2.5 text-sm hover:bg-primary/10 flex justify-between items-center ${supplierId===s.id ? "bg-primary/10" : ""}`}>
                           <span className="font-medium">{s.name}</span>
                           <span className="text-xs text-muted-foreground">{s.phone ?? ""}</span>
                         </button>
                       ))}
-                      {supplierMatches.length === 0 && <div className="px-4 py-3 text-sm text-muted-foreground">কোন সাপ্লায়ার নেই</div>}
                     </div>
                   )}
                 </div>
