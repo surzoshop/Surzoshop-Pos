@@ -280,31 +280,30 @@ export default function Purchases() {
 
       {/* === New Purchase — Bongo-style full-screen sectioned form === */}
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
-        <DialogContent className="bg-[hsl(var(--surface-container-lowest))] p-0 max-w-5xl w-[96vw] h-[94vh] overflow-hidden flex flex-col gap-0">
+        <DialogContent className="bg-[hsl(var(--surface-container-lowest))] p-0 max-w-5xl w-[100vw] sm:w-[96vw] h-[100vh] sm:h-[94vh] sm:max-h-[94vh] sm:rounded-2xl rounded-none overflow-hidden flex flex-col gap-0">
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-3 border-b border-[hsl(var(--surface-container-high))]/60 bg-[hsl(var(--surface-container-lowest))]">
-            <div className="flex items-center gap-3">
-              <button onClick={() => { setOpen(false); resetForm(); }} className="h-9 w-9 grid place-items-center rounded-full hover:bg-muted">
+          <div className="flex items-center justify-between gap-2 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-[hsl(var(--surface-container-high))]/60 bg-[hsl(var(--surface-container-lowest))]">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <button onClick={() => { setOpen(false); resetForm(); }} className="h-9 w-9 grid place-items-center rounded-full hover:bg-muted shrink-0">
                 <ArrowLeft className="h-5 w-5" />
               </button>
-              <div className="h-10 w-10 rounded-xl bg-primary/10 grid place-items-center">
+              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-primary/10 grid place-items-center shrink-0">
                 <Receipt className="h-5 w-5 text-primary" />
               </div>
-              <div>
-                <DialogTitle className="text-base font-bold">নতুন ক্রয়</DialogTitle>
-                <p className="text-xs text-muted-foreground">নতুন পারচেজ এন্ট্রি তৈরি করুন</p>
+              <div className="min-w-0">
+                <DialogTitle className="text-sm sm:text-base font-bold">নতুন ক্রয়</DialogTitle>
+                <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">নতুন পারচেজ এন্ট্রি তৈরি করুন</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">তারিখ:</span>
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <input type="date" value={billDate} onChange={e => setBillDate(e.target.value)}
-                className="h-8 px-2 rounded-md bg-[hsl(var(--surface-container-low))] text-xs border-none focus:outline-none focus:ring-2 focus:ring-primary/30" />
-              <span className="ml-3 px-3 py-1 rounded-full bg-[hsl(var(--surface-container-low))] text-xs font-bold">আইটেম: {validItems().length}</span>
+                className="h-8 px-2 rounded-md bg-[hsl(var(--surface-container-low))] text-[11px] sm:text-xs border-none focus:outline-none focus:ring-2 focus:ring-primary/30 w-[120px] sm:w-auto" />
+              <span className="px-2 sm:px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] sm:text-xs font-bold whitespace-nowrap">আইটেম: {validItems().length}</span>
             </div>
           </div>
 
           {/* Scroll body */}
-          <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+          <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-3 sm:py-5 space-y-4 sm:space-y-5">
             {/* Supplier card */}
             <section className="rounded-2xl bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/50 overflow-hidden">
               <div className="h-1 bg-gradient-to-r from-primary via-primary/70 to-primary/30" />
