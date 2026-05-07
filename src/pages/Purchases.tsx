@@ -249,27 +249,28 @@ export default function Purchases() {
       </tr>`).join("");
 
     const numToWords = (n: number) => {
-      // simple english words for the amount-in-words section
-      const a = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
-      const b = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+      const a = ['','এক','দুই','তিন','চার','পাঁচ','ছয়','সাত','আট','নয়','দশ','এগারো','বারো','তেরো','চৌদ্দ','পনেরো','ষোলো','সতেরো','আঠারো','উনিশ'];
+      const b = ['','','বিশ','ত্রিশ','চল্লিশ','পঞ্চাশ','ষাট','সত্তর','আশি','নব্বই'];
       const inWords = (num: number): string => {
         if (num < 20) return a[num];
         if (num < 100) return b[Math.floor(num/10)] + (num%10 ? ' ' + a[num%10] : '');
-        if (num < 1000) return a[Math.floor(num/100)] + ' Hundred' + (num%100 ? ' ' + inWords(num%100) : '');
-        if (num < 100000) return inWords(Math.floor(num/1000)) + ' Thousand' + (num%1000 ? ' ' + inWords(num%1000) : '');
-        if (num < 10000000) return inWords(Math.floor(num/100000)) + ' Lakh' + (num%100000 ? ' ' + inWords(num%100000) : '');
-        return inWords(Math.floor(num/10000000)) + ' Crore' + (num%10000000 ? ' ' + inWords(num%10000000) : '');
+        if (num < 1000) return a[Math.floor(num/100)] + ' শত' + (num%100 ? ' ' + inWords(num%100) : '');
+        if (num < 100000) return inWords(Math.floor(num/1000)) + ' হাজার' + (num%1000 ? ' ' + inWords(num%1000) : '');
+        if (num < 10000000) return inWords(Math.floor(num/100000)) + ' লক্ষ' + (num%100000 ? ' ' + inWords(num%100000) : '');
+        return inWords(Math.floor(num/10000000)) + ' কোটি' + (num%10000000 ? ' ' + inWords(num%10000000) : '');
       };
       const r = Math.round(n);
-      return (inWords(r) || 'Zero') + ' Taka Only';
+      return (inWords(r) || 'শূন্য') + ' টাকা মাত্র';
     };
 
     const logoUrl = p.shop?.logo_url || "/brand-logo.png";
     const qrData = encodeURIComponent(`Invoice:${p.billNo}|Total:${grand}|Shop:${p.shop?.name ?? ""}|Date:${p.billDate}`);
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${qrData}`;
-    const timeStr = new Date().toLocaleTimeString("en-GB", { hour12: false }).slice(0,5);
-    const status = dueAmt === 0 ? "PAID" : dueAmt === grand ? "UNPAID" : "PARTIAL";
-    const orderStatus = "COMPLETED";
+    const timeStr = new Date().toLocaleTimeString("bn-BD", { hour12: true });
+    const dateBn = new Date(p.billDate).toLocaleDateString("bn-BD", { day: "2-digit", month: "long", year: "numeric" });
+    const payMethodBn = ((p.paymentMethod||'cash')+"").toLowerCase()==="cash" ? "নগদ" : ((p.paymentMethod||'')+"").toUpperCase();
+    const status = dueAmt === 0 ? "পরিশোধিত" : dueAmt === grand ? "অপরিশোধিত" : "আংশিক";
+    const orderStatus = "সম্পন্ন";
 
     const w = window.open("", "_blank", "width=950,height=750");
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>${p.billNo}</title>
