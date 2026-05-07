@@ -159,47 +159,74 @@ export default function Purchases() {
       prepared.push({ ...it, product_id: pid, product_name: pname });
     }
 
-    // Step 2: Create purchase
-    const { data, error } = await supabase.from("purchases").insert({
-      supplier_id: supplierId || null, subtotal, discount, total, paid, due,
-      notes: notes || null, created_by: user!.id, shop_id: currentShop?.id ?? null,
-    }).select().single();
-    if (error) return toast({ title: error.message, variant: "destructive" });
+    // Step 2: Create or update purchase
+    let purchaseRow: any;
+    if (editingId) {
+      const { data, error } = await supabase.from("purchases").update({
+        supplier_id: supplierId || null, subtotal, discount, total, paid, due,
+        notes: notes || null,
+      }).eq("id", editingId).select().single();
+      if (error) return toast({ title: error.message, variant: "destructive" });
+      purchaseRow = data;
+      // Remove old items (trigger only adds on insert; for simplicity we delete + re-insert)
+      await supabase.from("purchase_items").delete().eq("purchase_id", editingId);
+    } else {
+      const { data, error } = await supabase.from("purchases").insert({
+        supplier_id: supplierId || null, subtotal, discount, total, paid, due,
+        notes: notes || null, created_by: user!.id, shop_id: currentShop?.id ?? null,
+      }).select().single();
+      if (error) return toast({ title: error.message, variant: "destructive" });
+      purchaseRow = data;
+    }
 
     // Step 3: Insert items (DB trigger auto-increments product stock)
     const rows = prepared.map(i => ({
       product_id: i.product_id, product_name: i.product_name, qty: i.qty,
       unit_cost: i.unit_cost, subtotal: i.subtotal,
-      purchase_id: data.id, shop_id: currentShop?.id ?? null,
+      purchase_id: purchaseRow.id, shop_id: currentShop?.id ?? null,
     }));
     const { error: e2 } = await supabase.from("purchase_items").insert(rows);
     if (e2) return toast({ title: e2.message, variant: "destructive" });
 
-    // Step 4: Cash book entry for paid amount (so it shows up in Ledger)
-    if (paid > 0) {
+    // Step 4: Cash book entry for paid amount (so it shows up in Ledger) — only on new
+    if (!editingId && paid > 0) {
       await supabase.from("cash_book").insert({
         entry_type: "out",
         amount: paid,
         category: "ক্রয়",
         payment_method: paymentMethod,
         party_name: suppliers.find(s => s.id === supplierId)?.name ?? null,
-        reference_no: data.bill_no,
-        notes: `ক্রয় বিল ${data.bill_no}`,
+        reference_no: purchaseRow.bill_no,
+        notes: `ক্রয় বিল ${purchaseRow.bill_no}`,
         created_by: user!.id,
         shop_id: currentShop?.id ?? null,
       });
     }
 
-    toast({ title: "ক্রয় সংরক্ষিত ✓ স্টক ও পণ্য তালিকা আপডেট হয়েছে" });
+    toast({ title: editingId ? "ক্রয় আপডেট হয়েছে ✓" : "ক্রয় সংরক্ষিত ✓ স্টক ও পণ্য তালিকা আপডেট হয়েছে" });
     if (alsoPrint) {
       const supName = suppliers.find(s => s.id === supplierId)?.name ?? "—";
       printA4Invoice({
-        billNo: data.bill_no, billDate, supplierName: supName,
+        billNo: purchaseRow.bill_no, billDate, supplierName: supName,
         shop: currentShop, items: prepared, subtotal, discount, delivery, total, paid, due,
         paymentMethod, notes,
       });
     }
     setOpen(false); resetForm(); load();
+  };
+
+  const printExisting = async (p: any) => {
+    const { data: its } = await supabase.from("purchase_items").select("*").eq("purchase_id", p.id);
+    printA4Invoice({
+      billNo: p.bill_no,
+      billDate: (p.created_at ?? "").slice(0, 10),
+      supplierName: p.suppliers?.name ?? "—",
+      shop: currentShop,
+      items: (its ?? []).map((it: any) => ({ product_name: it.product_name, qty: it.qty, unit: "", unit_cost: Number(it.unit_cost), subtotal: Number(it.subtotal) })),
+      subtotal: Number(p.subtotal), discount: Number(p.discount), delivery: 0,
+      total: Number(p.total), paid: Number(p.paid), due: Number(p.due),
+      paymentMethod: "—", notes: p.notes ?? "",
+    });
   };
 
   const printA4Invoice = (p: any) => {
