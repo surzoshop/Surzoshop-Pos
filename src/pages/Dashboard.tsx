@@ -157,8 +157,8 @@ export default function Dashboard() {
         />
         <ColorStatCard
           to="/sales" theme="sky" icon={<ShoppingBag />}
-          chip={`${stats.todayCount} ${t("newOrders")}`}
-          label={t("orderCount")} value={`${stats.orderCount}`} sub={`${t("deliveredToday")}: ${stats.deliveredToday}`}
+          chip={`${stats.todayCount} আজ`}
+          label="মাসিক বিক্রয় সংখ্যা" value={`${stats.monthSalesCount}`} sub={`আজকের বিক্রয়: ${stats.deliveredToday}`}
         />
         <ColorStatCard
           to="/products" theme="amber" icon={<AlertTriangle />}
@@ -175,7 +175,7 @@ export default function Dashboard() {
         <ColorStatCard
           to="/products" theme="teal" icon={<Package />}
           chip={t("live")}
-          label={t("stockValue")} value={fmt(stats.stockValue)} sub={t("inventoryWorth")}
+          label="মোট স্টক" value={`${stats.stockUnits}`} sub="ইউনিট"
         />
         <ColorStatCard
           to="/customers" theme="pink" icon={<Users />}
@@ -187,6 +187,14 @@ export default function Dashboard() {
           chip={t("urgent")}
           label={t("pendingDue")} value={fmt(stats.totalDue)} sub={t("uncollected")}
         />
+      </div>
+
+      {/* Mini stat row — secondary metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
+        <MiniStat to="/products" theme="teal" icon={<Package className="h-4 w-4" />} label="স্টক ক্রয় মূল্য" value={fmt(stats.stockCostValue)} />
+        <MiniStat to="/products" theme="emerald" icon={<CircleDollarSign className="h-4 w-4" />} label="স্টক বিক্রয় মূল্য" value={fmt(stats.stockSaleValue)} />
+        <MiniStat to="/reports" theme="violet" icon={<TrendingUp className="h-4 w-4" />} label="মাসিক লাভ" value={fmt(stats.monthProfit)} />
+        <MiniStat to="/sales" theme="sky" icon={<ShoppingBag className="h-4 w-4" />} label="আজকের বিক্রয়" value={fmt(stats.todaySales)} />
       </div>
 
       {/* Main Layout */}
