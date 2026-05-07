@@ -55,7 +55,15 @@ export default function Products() {
     setItems(p ?? []);
     setCats(c ?? []);
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const ch = supabase
+      .channel("products-categories-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
 
   const startEdit = (p: any) => { setEditing(p); setAddSheet(true); };
   const startNew = () => { setEditing(null); setAddSheet(true); };
