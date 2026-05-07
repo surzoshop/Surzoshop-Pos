@@ -651,7 +651,7 @@ export default function Ledger() {
   );
 }
 
-function MiniStat({ label, value, icon: Icon, tone, active, onClick }: any) {
+function MiniStat({ label, value, icon: Icon, tone, active, onClick, hint }: any) {
   const tones: Record<string, { border: string; bg: string; icon: string; text: string; activeBg: string }> = {
     income:   { border: "border-emerald-500/60", bg: "bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/40 dark:to-emerald-900/20", icon: "text-white bg-emerald-500", text: "text-emerald-700 dark:text-emerald-300", activeBg: "ring-2 ring-emerald-500" },
     expense:  { border: "border-rose-500/60",    bg: "bg-gradient-to-br from-rose-50 to-rose-100/50 dark:from-rose-950/40 dark:to-rose-900/20",          icon: "text-white bg-rose-500",    text: "text-rose-700 dark:text-rose-300",    activeBg: "ring-2 ring-rose-500" },
