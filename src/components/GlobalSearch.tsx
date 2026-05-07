@@ -179,11 +179,17 @@ export function GlobalSearch() {
                         {h.kind === "customer" && <Phone className="h-4 w-4" />}
                         {h.kind === "sale" && <Receipt className="h-4 w-4" />}
                         {h.kind === "product" && <Package className="h-4 w-4" />}
+                        {h.kind === "category" && <Tag className="h-4 w-4" />}
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-bold text-foreground truncate">{h.title}</p>
                         <p className="text-xs text-muted-foreground truncate">{h.sub}</p>
                       </div>
+                      {h.kind === "category" && (
+                        <span className={`shrink-0 text-[10px] font-extrabold px-2 py-1 rounded-full ${h.stock > 0 ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>
+                          স্টক {h.stock}
+                        </span>
+                      )}
                       <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
                     </button>
                   ))}
