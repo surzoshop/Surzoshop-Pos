@@ -22,9 +22,16 @@ export default function InstallApp() {
 
   const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
   const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+  const isAndroid = /Android/i.test(ua);
   const isStandalone =
     typeof window !== "undefined" &&
     (window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone);
+  const isInIframe = (() => { try { return window.self !== window.top; } catch { return true; } })();
+  const isPreviewHost = typeof window !== "undefined" && (
+    window.location.hostname.includes("id-preview--") ||
+    window.location.hostname.includes("lovableproject.com")
+  );
+  const publishedUrl = "https://easy-kisti-shop.lovable.app";
 
   useEffect(() => {
     const handler = (e: Event) => { e.preventDefault(); setDeferred(e as BIPEvent); };
