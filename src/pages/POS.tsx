@@ -220,7 +220,7 @@ export default function POS() {
     setShowReceipt(true);
     setCart([]); setDiscount(0); setCustomerId(""); setPaymentType("cash"); setPaymentMethod("cash");
     setDownPayment(0); setInterestRate(0); setLateFeePerDay(0); setGuarantorId("");
-    setDuePaid(0); setTotalOverride(null); setEditingTotal(false);
+    setDuePaid(0); setTotalOverride(null);
     load();
     toast({ title: lang === "bn" ? "বিক্রয় সম্পন্ন" : "Sale completed" });
   };
