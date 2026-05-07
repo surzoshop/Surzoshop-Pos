@@ -146,16 +146,20 @@ export default function Purchases() {
           category_id: it.category_id || null,
           image_url: it.image_url || null,
           stock: 0, // trigger will increment
+          has_warranty: !!it.has_warranty,
+          warranty_months: it.has_warranty ? Number(it.warranty_months) || null : null,
           shop_id: currentShop?.id ?? null,
         }).select().single();
         if (pe) return toast({ title: "নতুন পণ্য তৈরিতে সমস্যা: " + pe.message, variant: "destructive" });
         pid = created.id;
-      } else if (it.image_url) {
-        // Update existing product image / cost when changed
+      } else {
+        // Update existing product cost / image / warranty
         await supabase.from("products").update({
-          image_url: it.image_url || null,
+          ...(it.image_url ? { image_url: it.image_url } : {}),
           cost: Number(it.unit_cost) || 0,
           ...(it.sell_price ? { price: Number(it.sell_price) } : {}),
+          has_warranty: !!it.has_warranty,
+          warranty_months: it.has_warranty ? Number(it.warranty_months) || null : null,
         }).eq("id", pid);
       }
       prepared.push({ ...it, product_id: pid, product_name: pname });
