@@ -53,7 +53,7 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
     { url: "/products", icon: Package, label: "পণ্য তালিকা", key: "products", tone: "teal" },
     { url: "/stock-ledger", icon: Layers, label: "স্টক ম্যানেজমেন্ট", key: "stock-ledger", tone: "blue" },
     { url: "/stock-adjustments", icon: Warehouse, label: "স্টক সমন্বয়", key: "stock-adjustments", tone: "blue" },
-    { url: "/expenses", icon: ClipboardList, label: "জমা খরচ এন্ট্রি", key: "expenses", tone: "rose" },
+    { url: "/expenses", icon: ClipboardList, label: "খরচ এন্ট্রি", key: "expenses", tone: "rose" },
     { url: "/ledger", icon: BookOpen, label: "হিসাব ব্যবস্থাপনা", key: "dashboard", tone: "indigo" },
     { url: "/installments", icon: Wallet, label: "কিস্তি ম্যানেজমেন্ট", key: "installments", tone: "amber" },
     { url: "/warranty", icon: ShieldCheck, label: "ওয়ারেন্টি ম্যানেজমেন্ট", key: "warranty", tone: "lime" },

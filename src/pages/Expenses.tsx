@@ -411,8 +411,36 @@ export default function Expenses() {
           <div className="space-y-3">
             <div>
               <Label className="font-bold">শিরোনাম <span className="text-destructive">*</span></Label>
-              <Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
-                placeholder="যেমনঃ দোকান ভাড়া, বিদ্যুৎ বিল" className="h-11" />
+              <Input
+                value={form.title}
+                onChange={e => setForm({ ...form, title: e.target.value })}
+                placeholder="যেমনঃ দোকান ভাড়া, বিদ্যুৎ বিল"
+                className="h-11"
+                list="expense-title-suggestions"
+                autoComplete="off"
+              />
+              <datalist id="expense-title-suggestions">
+                {Array.from(new Set(items.map((i: any) => i.title).filter(Boolean))).slice(0, 100).map((t: string) => (
+                  <option key={t} value={t} />
+                ))}
+              </datalist>
+              {form.title.trim().length > 0 && (() => {
+                const q = form.title.trim().toLowerCase();
+                const sugg = Array.from(new Set(items.map((i: any) => i.title as string).filter(Boolean)))
+                  .filter(t => t.toLowerCase().includes(q) && t.toLowerCase() !== q)
+                  .slice(0, 6);
+                if (sugg.length === 0) return null;
+                return (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {sugg.map(s => (
+                      <button key={s} type="button" onClick={() => setForm({ ...form, title: s })}
+                        className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-info/10 text-info hover:bg-info/20 transition">
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -427,30 +455,35 @@ export default function Expenses() {
               </div>
             </div>
             <div>
-              <Label className="font-bold">ক্যাটাগরি</Label>
-              <div className="flex flex-wrap gap-1.5 mt-1.5 max-h-44 overflow-y-auto p-1">
-                <button type="button" onClick={() => setForm({ ...form, category_id: "" })}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-                    !form.category_id
-                      ? "bg-primary text-primary-foreground shadow"
-                      : "bg-[hsl(var(--surface-container-low))] hover:bg-primary/10"
-                  }`}
-                >— কোনোটি না —</button>
-                {cats.map(c => {
-                  const Icon = catIcon(c.name);
-                  const active = form.category_id === c.id;
-                  return (
-                    <button key={c.id} type="button" onClick={() => setForm({ ...form, category_id: c.id })}
-                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all inline-flex items-center gap-1.5 ${
-                        active
-                          ? "bg-destructive text-destructive-foreground shadow"
-                          : "bg-[hsl(var(--surface-container-low))] hover:bg-destructive/10"
-                      }`}
-                    >
-                      <Icon className="h-3 w-3" /> {c.name}
-                    </button>
-                  );
-                })}
+              <div className="flex items-center justify-between mb-1.5">
+                <Label className="font-bold">ক্যাটাগরি</Label>
+                <span className="text-[10px] text-muted-foreground font-semibold">{cats.length} টি · scroll করুন</span>
+              </div>
+              <div className="rounded-xl border-2 border-dashed border-border bg-[hsl(var(--surface-container-lowest))] p-2 max-h-40 overflow-y-auto">
+                <div className="flex flex-wrap gap-1.5">
+                  <button type="button" onClick={() => setForm({ ...form, category_id: "" })}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                      !form.category_id
+                        ? "bg-primary text-primary-foreground shadow"
+                        : "bg-[hsl(var(--surface-container-low))] hover:bg-primary/10"
+                    }`}
+                  >— কোনোটি না —</button>
+                  {cats.map(c => {
+                    const Icon = catIcon(c.name);
+                    const active = form.category_id === c.id;
+                    return (
+                      <button key={c.id} type="button" onClick={() => setForm({ ...form, category_id: c.id })}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all inline-flex items-center gap-1.5 ${
+                          active
+                            ? "bg-destructive text-destructive-foreground shadow"
+                            : "bg-[hsl(var(--surface-container-low))] hover:bg-destructive/10"
+                        }`}
+                      >
+                        <Icon className="h-3 w-3" /> {c.name}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
             <div>
