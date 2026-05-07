@@ -33,7 +33,10 @@ export default function POS() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [discount, setDiscount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "bkash" | "nagad">("cash");
-  const [paymentType, setPaymentType] = useState<"cash" | "installment">("cash");
+  const [paymentType, setPaymentType] = useState<"cash" | "installment" | "due">("cash");
+  const [duePaid, setDuePaid] = useState(0); // for "বাকিতে" — how much customer pays now
+  const [totalOverride, setTotalOverride] = useState<number | null>(null);
+  const [editingTotal, setEditingTotal] = useState(false);
   const [customers, setCustomers] = useState<any[]>([]);
   const [customerId, setCustomerId] = useState<string>("");
   const [installmentCount, setInstallmentCount] = useState(3);
