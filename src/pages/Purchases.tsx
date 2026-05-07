@@ -99,6 +99,29 @@ export default function Purchases() {
   const resetForm = () => {
     setItems([{ product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "" }]);
     setPaid(0); setDiscount(0); setDelivery(0); setSupplierId(""); setSupplierSearch(""); setNotes("");
+    setEditingId(null);
+  };
+
+  const openEdit = async (p: any) => {
+    const { data: its } = await supabase.from("purchase_items").select("*").eq("purchase_id", p.id);
+    setEditingId(p.id);
+    setSupplierId(p.supplier_id ?? "");
+    setSupplierSearch(p.suppliers?.name ?? "");
+    setBillDate((p.created_at ?? new Date().toISOString()).slice(0, 10));
+    setNotes(p.notes ?? "");
+    setDiscount(Number(p.discount) || 0);
+    setDelivery(0);
+    setPaid(Number(p.paid) || 0);
+    setItems((its ?? []).map((it: any) => {
+      const prod = products.find(pp => pp.id === it.product_id);
+      return {
+        product_id: it.product_id, product_name: it.product_name, search: it.product_name,
+        brand: "", category_id: prod?.category_id ?? "", qty: it.qty, unit: prod?.unit ?? "pcs",
+        unit_cost: Number(it.unit_cost), sell_price: prod?.price ?? 0,
+        subtotal: Number(it.subtotal), image_url: prod?.image_url ?? "",
+      };
+    }));
+    setOpen(true);
   };
 
   const validItems = () => items.filter(i => (i.product_id || (i.search && i.search.trim())) && i.qty > 0);
