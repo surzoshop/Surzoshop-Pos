@@ -125,7 +125,7 @@ export default function Products() {
   );
 
   const totalValue = filtered.reduce((a, p) => a + Number(p.price) * Number(p.stock), 0);
-  const lowCount = filtered.filter(p => p.stock <= 5).length;
+  const totalCostValue = filtered.reduce((a, p) => a + Number(p.cost) * Number(p.stock), 0);
   const catName = (id: string | null) => cats.find(c => c.id === id)?.name ?? "—";
 
   return (
@@ -159,7 +159,7 @@ export default function Products() {
         <MiniStat icon={<Package className="h-5 w-5 md:h-6 md:w-6 text-info" />} bg="bg-info/10"
           label="মোট স্টক বিক্রয় মূল্য" value={fmt(totalValue)} />
         <MiniStat icon={<Package className="h-5 w-5 md:h-6 md:w-6 text-[hsl(var(--secondary-foreground))]" />} bg="bg-secondary/30"
-          label={t("lowStock")} value={`${lowCount} ${t("productsLow")}`} />
+          label="মোট স্টক ক্রয় মূল্য" value={fmt(totalCostValue)} />
       </div>
 
       <SurfaceCard className="p-3 md:p-6">
