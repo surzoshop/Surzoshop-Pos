@@ -155,11 +155,15 @@ export default function Products() {
   const totalCostValue = filtered.reduce((a, p) => a + Number(p.cost) * Number(p.stock), 0);
   const catName = (id: string | null) => cats.find(c => c.id === id)?.name ?? "—";
 
-  // Stock status: alert ONLY when exactly 1 piece left (per user request)
+  // Stock status: alert when 1 or 2 pieces left, otherwise green rounded pill
   const stockBadge = (p: any) => {
     if (p.stock === 0) return <StatusPill tone="destructive">{t("outOfStock")}</StatusPill>;
-    if (p.stock === 1) return <StatusPill tone="warning">⚠ {p.stock} {p.unit}</StatusPill>;
-    return <span className="text-sm font-extrabold text-success">{p.stock} {p.unit}</span>;
+    if (p.stock <= 2) return <StatusPill tone="warning">⚠ {p.stock} {p.unit}</StatusPill>;
+    return (
+      <span className="inline-flex items-center rounded-full border border-success/30 bg-success/10 px-2.5 py-0.5 text-xs font-extrabold text-success">
+        {p.stock} {p.unit}
+      </span>
+    );
   };
 
 
