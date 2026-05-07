@@ -354,11 +354,11 @@ export default function Sales() {
 
 function Stat({ icon, bg, label, value }: any) {
   return (
-    <div className="bg-[hsl(var(--surface-container-lowest))] p-6 rounded-2xl flex items-center gap-4 transition-all hover:-translate-y-1">
-      <div className={`p-3 ${bg} rounded-xl`}>{icon}</div>
-      <div>
-        <p className="text-muted-foreground text-sm font-medium">{label}</p>
-        <h3 className="text-xl font-bold text-foreground mt-0.5">{value}</h3>
+    <div className="bg-[hsl(var(--surface-container-lowest))] p-2.5 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:gap-4 transition-all hover:-translate-y-1">
+      <div className={`p-1.5 sm:p-3 ${bg} rounded-lg sm:rounded-xl shrink-0`}>{icon}</div>
+      <div className="min-w-0 w-full">
+        <p className="text-muted-foreground text-[10px] sm:text-sm font-medium truncate">{label}</p>
+        <h3 className="text-sm sm:text-xl font-bold text-foreground mt-0.5 truncate">{value}</h3>
       </div>
     </div>
   );
