@@ -136,6 +136,40 @@ export default function Expenses() {
 
   const startNew = () => { setEditing(null); setForm(empty); setOpen(true); };
 
+  // Find last entry matching a title (case-insensitive) — used to auto-fill amount
+  const lastByTitle = (title: string) => {
+    const q = title.trim().toLowerCase();
+    if (!q) return null;
+    return items.find((i: any) => (i.title || "").toLowerCase() === q) || null;
+  };
+  // Find last entry by category id
+  const lastByCategory = (catId: string) => {
+    if (!catId) return null;
+    return items.find((i: any) => i.category_id === catId) || null;
+  };
+
+  // Click a category chip in the form: set category, set title to category name, autofill amount from history
+  const pickCategory = (c: { id: string; name: string }) => {
+    const prev = lastByCategory(c.id) || lastByTitle(c.name);
+    setForm((f: any) => ({
+      ...f,
+      category_id: c.id,
+      title: f.title.trim() ? f.title : c.name,
+      amount: (!f.amount || Number(f.amount) === 0) && prev ? Number(prev.amount) : f.amount,
+    }));
+  };
+
+  // Click a title suggestion: set title + autofill amount/category from history
+  const pickTitleSuggestion = (s: string) => {
+    const prev = lastByTitle(s);
+    setForm((f: any) => ({
+      ...f,
+      title: s,
+      amount: prev && (!f.amount || Number(f.amount) === 0) ? Number(prev.amount) : f.amount,
+      category_id: prev && !f.category_id ? (prev.category_id ?? "") : f.category_id,
+    }));
+  };
+
   const saveCat = async () => {
     if (editCat) {
       if (!editCat.name.trim()) return;
