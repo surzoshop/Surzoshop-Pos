@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, X, User, Receipt, Package, Loader2, Phone, ArrowRight } from "lucide-react";
+import { Search, X, User, Receipt, Package, Loader2, Phone, ArrowRight, Tag } from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 
 type Hit =
   | { kind: "customer"; id: string; title: string; sub: string }
   | { kind: "sale"; id: string; title: string; sub: string }
-  | { kind: "product"; id: string; title: string; sub: string };
+  | { kind: "product"; id: string; title: string; sub: string }
+  | { kind: "category"; id: string; title: string; sub: string; stock: number; count: number };
 
 export function GlobalSearch() {
   const navigate = useNavigate();
@@ -43,28 +44,41 @@ export function GlobalSearch() {
   // Debounced search
   useEffect(() => {
     const term = q.trim();
-    if (term.length < 2) { setHits([]); setLoading(false); return; }
+    if (term.length < 1) { setHits([]); setLoading(false); return; }
     setLoading(true);
     const handle = setTimeout(async () => {
-      const isNumeric = /^[0-9+\-\s]+$/.test(term);
       const like = `%${term}%`;
-      const [cust, sale, prod] = await Promise.all([
-        supabase.from("customers")
+      const [cust, sale, prod, cats] = await Promise.all([
+        term.length >= 2 ? supabase.from("customers")
           .select("id,name,phone,address")
-          .or(`name.ilike.${like},phone.ilike.${like}${isNumeric ? "" : ""}`)
-          .limit(5),
-        supabase.from("sales")
+          .or(`name.ilike.${like},phone.ilike.${like}`)
+          .limit(5) : Promise.resolve({ data: [] as any[] }),
+        term.length >= 2 ? supabase.from("sales")
           .select("id,invoice_no,total,due,created_at,customers(name)")
           .ilike("invoice_no", like)
           .order("created_at", { ascending: false })
-          .limit(5),
-        supabase.from("products")
+          .limit(5) : Promise.resolve({ data: [] as any[] }),
+        term.length >= 2 ? supabase.from("products")
           .select("id,name,sku,barcode,price,stock")
           .or(`name.ilike.${like},sku.ilike.${like},barcode.ilike.${like}`)
-          .limit(5),
+          .limit(5) : Promise.resolve({ data: [] as any[] }),
+        supabase.from("categories")
+          .select("id,name,products(stock)")
+          .ilike("name", `${term}%`)
+          .limit(8),
       ]);
 
       const merged: Hit[] = [
+        ...(cats.data ?? []).map((c: any): Hit => {
+          const products = c.products ?? [];
+          const stock = products.reduce((a: number, p: any) => a + Number(p.stock || 0), 0);
+          return {
+            kind: "category", id: c.id,
+            title: c.name,
+            sub: `${products.length} পণ্য • মোট স্টক ${stock}`,
+            stock, count: products.length,
+          };
+        }),
         ...(cust.data ?? []).map((c: any): Hit => ({
           kind: "customer", id: c.id,
           title: c.name || "—",
@@ -92,13 +106,15 @@ export function GlobalSearch() {
     setQ("");
     if (h.kind === "customer") navigate(`/customers?focus=${h.id}`);
     else if (h.kind === "sale") navigate(`/sales?focus=${h.id}`);
+    else if (h.kind === "category") navigate(`/products?category=${h.id}`);
     else navigate(`/products?focus=${h.id}`);
   };
 
   const groups: { kind: Hit["kind"]; label: string; icon: any; color: string; items: Hit[] }[] = [
-    { kind: "customer", label: "ক্রেতা", icon: User,    color: "text-sky-600 bg-sky-500/10",         items: hits.filter(h => h.kind === "customer") },
-    { kind: "sale",     label: "ইনভয়েস", icon: Receipt, color: "text-violet-600 bg-violet-500/10", items: hits.filter(h => h.kind === "sale") },
-    { kind: "product",  label: "পণ্য",   icon: Package, color: "text-teal-600 bg-teal-500/10",       items: hits.filter(h => h.kind === "product") },
+    { kind: "category", label: "ক্যাটেগরি", icon: Tag,    color: "text-amber-600 bg-amber-500/10",   items: hits.filter(h => h.kind === "category") },
+    { kind: "customer", label: "ক্রেতা",   icon: User,    color: "text-sky-600 bg-sky-500/10",       items: hits.filter(h => h.kind === "customer") },
+    { kind: "sale",     label: "ইনভয়েস",   icon: Receipt, color: "text-violet-600 bg-violet-500/10", items: hits.filter(h => h.kind === "sale") },
+    { kind: "product",  label: "পণ্য",     icon: Package, color: "text-teal-600 bg-teal-500/10",     items: hits.filter(h => h.kind === "product") },
   ];
 
   return (
@@ -128,7 +144,7 @@ export function GlobalSearch() {
         </kbd>
       </div>
 
-      {open && q.trim().length >= 2 && (
+      {open && q.trim().length >= 1 && (
         <div className="absolute left-0 right-0 mt-2 bg-background border border-border rounded-2xl shadow-2xl z-50 overflow-hidden animate-fade-in">
           {loading && (
             <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
@@ -163,11 +179,17 @@ export function GlobalSearch() {
                         {h.kind === "customer" && <Phone className="h-4 w-4" />}
                         {h.kind === "sale" && <Receipt className="h-4 w-4" />}
                         {h.kind === "product" && <Package className="h-4 w-4" />}
+                        {h.kind === "category" && <Tag className="h-4 w-4" />}
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-bold text-foreground truncate">{h.title}</p>
                         <p className="text-xs text-muted-foreground truncate">{h.sub}</p>
                       </div>
+                      {h.kind === "category" && (
+                        <span className={`shrink-0 text-[10px] font-extrabold px-2 py-1 rounded-full ${h.stock > 0 ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>
+                          স্টক {h.stock}
+                        </span>
+                      )}
                       <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
                     </button>
                   ))}
