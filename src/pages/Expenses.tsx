@@ -113,9 +113,17 @@ export default function Expenses() {
         <DialogContent className="bg-[hsl(var(--surface-container-lowest))]">
           <DialogHeader><DialogTitle>{t("addExpense")}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div><Label>{t("title")}</Label><Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><Label>{t("amount")}</Label><Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: +e.target.value })} /></div>
+            <div>
+              <Label>খরচের শিরোনাম <span className="text-destructive">*</span></Label>
+              <Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="যেমনঃ দোকান ভাড়া, বিদ্যুৎ বিল, যাতায়াত" />
+              <p className="text-[11px] text-muted-foreground mt-1">সংক্ষিপ্ত নাম — কী খাতে টাকা খরচ হলো তা বুঝতে সহজ হয়।</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label>খরচের পরিমাণ (৳) <span className="text-destructive">*</span></Label>
+                <Input type="number" min={0} value={form.amount || ""} onChange={e => setForm({ ...form, amount: +e.target.value })} placeholder="0" />
+                <p className="text-[11px] text-muted-foreground mt-1">যত টাকা খরচ হয়েছে — শুধু সংখ্যায় লিখুন।</p>
+              </div>
               <div><Label>{t("expenseDate")}</Label><Input type="date" value={form.expense_date} onChange={e => setForm({ ...form, expense_date: e.target.value })} /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
