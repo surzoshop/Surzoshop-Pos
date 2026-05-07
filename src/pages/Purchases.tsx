@@ -450,7 +450,7 @@ export default function Purchases() {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-3 rounded-xl bg-background/50 p-3">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 rounded-xl bg-background/50 p-3">
                             <div>
                               <Label className="text-xs mb-1 block">ক্রয়মূল্য (৳)</Label>
                               <Input type="number" value={it.unit_cost} onChange={e => updateItem(idx, { unit_cost: +e.target.value })} className="h-10 bg-background" />
