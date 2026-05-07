@@ -144,7 +144,7 @@ export function GlobalSearch() {
         </kbd>
       </div>
 
-      {open && q.trim().length >= 2 && (
+      {open && q.trim().length >= 1 && (
         <div className="absolute left-0 right-0 mt-2 bg-background border border-border rounded-2xl shadow-2xl z-50 overflow-hidden animate-fade-in">
           {loading && (
             <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
