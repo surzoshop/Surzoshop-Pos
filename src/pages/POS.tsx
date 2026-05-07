@@ -168,6 +168,8 @@ export default function POS() {
       return;
     }
 
+    setSubmitting(true);
+    try {
     const salePayload: any = {
       customer_id: customerId || null,
       subtotal, discount, total, paid, due,
