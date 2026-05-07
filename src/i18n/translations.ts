@@ -112,7 +112,7 @@ const base = {
     tenureMonths: "মেয়াদ (মাস)", emi: "মাসিক কিস্তি (EMI)",
     lateFee: "বিলম্ব ফি (%)", agreement: "চুক্তিপত্র",
     upload: "আপলোড", remaining: "অবশিষ্ট",
-    managePlan: "কিস্তি পরিচালনা", schedule: "কিস্তির তালিকা", startDate: "শুরুর তারিখ",
+    managePlan: "কিস্তি পরিচালনা", startDate: "শুরুর তারিখ",
     frequency: "ধরন", monthly: "মাসিক", planTotal: "মোট মূল্য", noOfInstallments: "কিস্তি সংখ্যা",
     lateFeeAccrued: "বিলম্ব ফি", payable: "পরিশোধ্য", overdueDays: "দিন বিলম্ব",
     // ===== Reports =====
