@@ -161,11 +161,15 @@ export default function POS() {
       toast({ title: lang === "bn" ? "জামিনদার নির্বাচন করুন" : "Select a guarantor", variant: "destructive" });
       return;
     }
+    if (paymentType === "due" && !customerId) {
+      toast({ title: lang === "bn" ? "বাকির জন্য ক্রেতা নির্বাচন করুন" : "Select a customer for credit sale", variant: "destructive" });
+      return;
+    }
 
     const salePayload: any = {
       customer_id: customerId || null,
       subtotal, discount, total, paid, due,
-      payment_type: paymentType,
+      payment_type: paymentType === "due" ? "cash" : paymentType,
       status: due > 0 ? "partial" : "completed",
       created_by: user!.id,
     };
