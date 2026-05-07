@@ -17,7 +17,7 @@ export default function Categories() {
   const isAdmin = role === "admin";
 
   const [cats, setCats] = useState<Category[]>([]);
-  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [counts, setCounts] = useState<Record<string, { products: number; stock: number }>>({});
   const [search, setSearch] = useState("");
   const [newCat, setNewCat] = useState("");
   const [editing, setEditing] = useState<Category | null>(null);
@@ -25,12 +25,15 @@ export default function Categories() {
   const load = async () => {
     const [{ data: c }, { data: p }] = await Promise.all([
       supabase.from("categories").select("id,name").order("name"),
-      supabase.from("products").select("category_id").eq("is_active", true),
+      supabase.from("products").select("category_id,stock").eq("is_active", true),
     ]);
     setCats(c ?? []);
-    const m: Record<string, number> = {};
+    const m: Record<string, { products: number; stock: number }> = {};
     (p ?? []).forEach((row: any) => {
-      if (row.category_id) m[row.category_id] = (m[row.category_id] ?? 0) + 1;
+      if (!row.category_id) return;
+      if (!m[row.category_id]) m[row.category_id] = { products: 0, stock: 0 };
+      m[row.category_id].products += 1;
+      m[row.category_id].stock += Number(row.stock || 0);
     });
     setCounts(m);
   };
