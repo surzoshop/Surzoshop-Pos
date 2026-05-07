@@ -243,7 +243,7 @@ export default function Products() {
                   <span className="flex items-center gap-2 text-sm font-bold text-foreground">
                     <Tag className="h-3.5 w-3.5 text-primary" /> {c.name}
                   </span>
-                  <span className="text-[10px] font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{catCounts[c.id] ?? 0} পণ্য</span>
+                  <span className="text-[10px] font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{catCounts[c.id]?.stock ?? 0} টি · {catCounts[c.id]?.products ?? 0} পণ্য</span>
                 </button>
               ))}
             </div>
