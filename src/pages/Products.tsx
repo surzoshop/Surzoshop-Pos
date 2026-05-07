@@ -125,7 +125,7 @@ export default function Products() {
   );
 
   const totalValue = filtered.reduce((a, p) => a + Number(p.price) * Number(p.stock), 0);
-  const lowCount = filtered.filter(p => p.stock <= 5).length;
+  const totalCostValue = filtered.reduce((a, p) => a + Number(p.cost) * Number(p.stock), 0);
   const catName = (id: string | null) => cats.find(c => c.id === id)?.name ?? "—";
 
   return (
