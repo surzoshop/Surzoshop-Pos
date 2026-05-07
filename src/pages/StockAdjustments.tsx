@@ -118,8 +118,8 @@ export default function StockAdjustments() {
                 <p className="font-bold text-foreground truncate text-sm">{p.name}</p>
                 <div className="mt-1">
                   {p.stock === 0 ? <StatusPill tone="destructive">শেষ</StatusPill>
-                    : p.stock <= 5 ? <StatusPill tone="warning">{p.stock} {p.unit}</StatusPill>
-                    : <span className="text-xs font-semibold text-foreground/80">স্টক: {p.stock} {p.unit}</span>}
+                    : p.stock === 1 ? <StatusPill tone="warning">⚠ {p.stock} {p.unit}</StatusPill>
+                    : <span className="text-xs font-extrabold text-success">স্টক: {p.stock} {p.unit}</span>}
                 </div>
               </div>
               <Button size="sm" onClick={() => startEdit(p)} className="gradient-primary gap-1 shrink-0">
