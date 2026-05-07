@@ -94,10 +94,11 @@ export default function Purchases() {
     unit_cost: Number(p.cost), sell_price: Number(p.price),
     unit: p.unit ?? "pcs", category_id: p.category_id ?? "",
     image_url: p.image_url ?? "",
+    has_warranty: !!p.has_warranty, warranty_months: p.warranty_months || 12,
   });
 
   const resetForm = () => {
-    setItems([{ product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "" }]);
+    setItems([{ product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "", has_warranty: false, warranty_months: 12, warranty_type: "ম্যানুফ্যাকচারার" }]);
     setPaid(0); setDiscount(0); setDelivery(0); setSupplierId(""); setSupplierSearch(""); setNotes("");
     setEditingId(null);
   };
