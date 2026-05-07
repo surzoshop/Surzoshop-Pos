@@ -129,14 +129,39 @@ export default function Products() {
     load();
   };
 
-  const filtered = items.filter(p =>
-    !search || p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.barcode?.includes(search) || p.sku?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = items.filter(p => {
+    if (selectedCat && p.category_id !== selectedCat) return false;
+    if (!search) return true;
+    const q = search.toLowerCase();
+    const cName = (cats.find(c => c.id === p.category_id)?.name ?? "").toLowerCase();
+    return p.name.toLowerCase().includes(q)
+      || p.barcode?.toLowerCase().includes(q)
+      || p.sku?.toLowerCase().includes(q)
+      || cName.includes(q);
+  });
+
+  // Category suggestions when typing in search
+  const catSuggestions = search
+    ? cats.filter(c => c.name.toLowerCase().startsWith(search.toLowerCase())).slice(0, 6)
+    : [];
+
+  // Per-category product counts
+  const catCounts = cats.reduce<Record<string, number>>((acc, c) => {
+    acc[c.id] = items.filter(p => p.category_id === c.id).length;
+    return acc;
+  }, {});
 
   const totalValue = filtered.reduce((a, p) => a + Number(p.price) * Number(p.stock), 0);
   const totalCostValue = filtered.reduce((a, p) => a + Number(p.cost) * Number(p.stock), 0);
   const catName = (id: string | null) => cats.find(c => c.id === id)?.name ?? "—";
+
+  // Stock status: alert ONLY when exactly 1 piece left (per user request)
+  const stockBadge = (p: any) => {
+    if (p.stock === 0) return <StatusPill tone="destructive">{t("outOfStock")}</StatusPill>;
+    if (p.stock === 1) return <StatusPill tone="warning">⚠ {p.stock} {p.unit}</StatusPill>;
+    return <span className="text-sm font-extrabold text-success">{p.stock} {p.unit}</span>;
+  };
+
 
   return (
     <div>
