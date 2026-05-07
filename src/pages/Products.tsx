@@ -97,8 +97,25 @@ export default function Products() {
 
   const del = async (id: string) => {
     if (!confirm(t("confirmDelete"))) return;
+    // Check if product is referenced by sales/purchases/etc.
+    const [{ count: saleCount }, { count: purCount }, { count: adjCount }, { count: retCount }] = await Promise.all([
+      supabase.from("sale_items").select("id", { count: "exact", head: true }).eq("product_id", id),
+      supabase.from("purchase_items").select("id", { count: "exact", head: true }).eq("product_id", id),
+      supabase.from("stock_adjustments").select("id", { count: "exact", head: true }).eq("product_id", id),
+      supabase.from("sales_return_items").select("id", { count: "exact", head: true }).eq("product_id", id),
+    ]);
+    const refs = (saleCount ?? 0) + (purCount ?? 0) + (adjCount ?? 0) + (retCount ?? 0);
+    if (refs > 0) {
+      const ok = confirm(`এই পণ্যটি ${refs} টি লেনদেনে ব্যবহৃত হয়েছে — সম্পূর্ণ মুছে ফেলা যাবে না। শুধু নিষ্ক্রিয় (archive) করে দেওয়া হবে। চালিয়ে যাবেন?`);
+      if (!ok) return;
+      const { error } = await supabase.from("products").update({ is_active: false, stock: 0 }).eq("id", id);
+      if (error) return toast({ title: error.message, variant: "destructive" });
+      toast({ title: "পণ্য আর্কাইভ করা হয়েছে (লেনদেন রক্ষা)" });
+      return load();
+    }
     const { error } = await supabase.from("products").delete().eq("id", id);
     if (error) return toast({ title: error.message, variant: "destructive" });
+    toast({ title: "পণ্য মুছে ফেলা হয়েছে" });
     load();
   };
 
