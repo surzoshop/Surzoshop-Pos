@@ -220,14 +220,14 @@ export default function Installments() {
 
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
-        <SummaryCard icon={<Calendar className="h-5 w-5 text-info" />} bg="bg-info/10"
-          label={lang === "bn" ? "চলমান" : "Active"} value={counts.active.toString()} />
-        <SummaryCard icon={<AlertTriangle className="h-5 w-5 text-destructive" />} bg="bg-destructive/10"
-          label={t("overdue")} value={counts.overdue.toString()} />
-        <SummaryCard icon={<CheckCircle2 className="h-5 w-5 text-primary" />} bg="bg-primary/10"
-          label={t("completed")} value={counts.completed.toString()} />
-        <SummaryCard icon={<Wallet className="h-5 w-5 text-[hsl(var(--secondary-foreground))]" />} bg="bg-secondary/30"
-          label={t("pendingDue")} value={fmt(counts.totalDue)} />
+        <SummaryCard icon={<Calendar className="h-5 w-5" />} accent="from-info to-info/70" iconText="text-info-foreground"
+          label={lang === "bn" ? "চলমান" : "Active"} value={counts.active.toString()} delay={0} />
+        <SummaryCard icon={<AlertTriangle className="h-5 w-5" />} accent="from-destructive to-destructive/70" iconText="text-destructive-foreground"
+          label={t("overdue")} value={counts.overdue.toString()} delay={60} />
+        <SummaryCard icon={<CheckCircle2 className="h-5 w-5" />} accent="from-primary to-primary-glow" iconText="text-primary-foreground"
+          label={t("completed")} value={counts.completed.toString()} delay={120} />
+        <SummaryCard icon={<Wallet className="h-5 w-5" />} accent="from-secondary to-secondary/60" iconText="text-[hsl(var(--secondary-foreground))]"
+          label={t("pendingDue")} value={fmt(counts.totalDue)} delay={180} />
       </div>
 
       <SurfaceCard className="p-4 md:p-6">
@@ -247,13 +247,16 @@ export default function Installments() {
           <div className="py-16 text-center text-muted-foreground">{t("noResults")}</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filteredPlans.map(p => {
+            {filteredPlans.map((p, idx) => {
               const hasOverdue = p.installments.some(i => i.derived_status === "overdue");
               const tone = p.due <= 0 ? "success" : hasOverdue ? "destructive" : "info";
               const label = p.due <= 0 ? t("completed") : hasOverdue ? t("overdue") : (lang === "bn" ? "চলমান" : "Active");
+              const accentBar = p.due <= 0 ? "from-primary to-primary-glow" : hasOverdue ? "from-destructive to-destructive/60" : "from-info to-info/60";
               const paidCount = p.installments.filter(i => i.derived_status === "paid").length;
               return (
-                <div key={p.sale_id} className="bg-[hsl(var(--surface-container-low))] rounded-2xl p-5 border border-[hsl(var(--surface-container-high))]/40 hover:border-primary/40 transition-all hover:-translate-y-0.5">
+                <div key={p.sale_id} style={{ animationDelay: `${Math.min(idx, 12) * 40}ms` }}
+                  className="relative overflow-hidden bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-5 shadow-sm hover:shadow-lg border border-[hsl(var(--surface-container-high))]/40 hover:border-primary/40 transition-all hover:-translate-y-1 animate-fade-in">
+                  <div className={`absolute top-0 left-0 h-1 w-full bg-gradient-to-r ${accentBar}`} />
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div className="min-w-0">
                       <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{p.invoice_no}</div>
@@ -265,24 +268,24 @@ export default function Installments() {
                     <div className="flex flex-col items-end gap-2">
                       <StatusPill tone={tone}>{label}</StatusPill>
                       <button onClick={() => setManaging(p)} title={t("managePlan")}
-                        className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all">
+                        className="p-2 rounded-lg gradient-primary text-primary-foreground hover:brightness-110 active:scale-95 transition-all shadow-sm">
                         <Settings2 className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 mb-4 text-xs">
-                    <Cell icon={<Banknote className="h-3.5 w-3.5" />} label={t("planTotal")} value={fmt(p.total)} />
-                    <Cell icon={<Wallet className="h-3.5 w-3.5" />} label={t("downPayment")} value={fmt(p.down_payment)} />
-                    <Cell icon={<CalendarDays className="h-3.5 w-3.5" />} label={t("noOfInstallments")} value={`${p.tenure_months} ${t("months")}`} />
-                    <Cell icon={<Percent className="h-3.5 w-3.5" />} label={t("lateFee")} value={`${p.late_fee_pct}%`} />
+                  <div className="grid grid-cols-2 gap-2.5 mb-4">
+                    <Cell icon={<Banknote className="h-4 w-4" />} label={t("planTotal")} value={fmt(p.total)} accent="from-primary/15 to-primary/5" iconColor="text-primary" border="border-primary/20" />
+                    <Cell icon={<Wallet className="h-4 w-4" />} label={t("downPayment")} value={fmt(p.down_payment)} accent="from-info/15 to-info/5" iconColor="text-info" border="border-info/20" />
+                    <Cell icon={<CalendarDays className="h-4 w-4" />} label={t("noOfInstallments")} value={`${p.tenure_months} ${t("months")}`} accent="from-secondary/30 to-secondary/10" iconColor="text-[hsl(var(--secondary-foreground))]" border="border-secondary/40" />
+                    <Cell icon={<Percent className="h-4 w-4" />} label={t("lateFee")} value={`${p.late_fee_pct}%`} accent="from-destructive/15 to-destructive/5" iconColor="text-destructive" border="border-destructive/20" />
                   </div>
 
                   <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2">
                     {t("startDate")}: {p.start_date ? new Date(p.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US") : "—"}
                   </div>
 
-                  <div className="flex items-center justify-between bg-[hsl(var(--surface-container-lowest))] rounded-xl p-3 text-sm">
+                  <div className="flex items-center justify-between bg-gradient-to-r from-[hsl(var(--surface-container-low))] to-[hsl(var(--surface-container))] rounded-xl p-3 text-sm border border-[hsl(var(--surface-container-high))]/40">
                     <div>
                       <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{t("paid")}</div>
                       <div className="font-bold text-primary">{fmt(p.paid)} <span className="text-[10px] text-muted-foreground">({paidCount}/{p.tenure_months})</span></div>
@@ -308,77 +311,88 @@ export default function Installments() {
           {managing && (
             <div className="mt-6 space-y-5">
               {/* Header summary */}
-              <div className="bg-[hsl(var(--surface-container-low))] rounded-2xl p-4">
-                <div className="font-bold text-lg flex items-center gap-2"><User className="h-4 w-4 text-primary" />{managing.customer_name}</div>
+              <div className="bg-gradient-to-br from-[hsl(var(--surface-container-low))] to-[hsl(var(--surface-container))] rounded-2xl p-5 animate-fade-in">
+                <div className="font-bold text-xl flex items-center gap-2"><User className="h-5 w-5 text-primary" />{managing.customer_name}</div>
                 {managing.customer_phone && <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1"><Phone className="h-3 w-3" />{managing.customer_phone}</div>}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-sm">
-                  <Stat label={t("planTotal")} value={fmt(managing.total)} />
-                  <Stat label={t("downPayment")} value={fmt(managing.down_payment)} />
-                  <Stat label={t("noOfInstallments")} value={`${managing.tenure_months}`} />
-                  <Stat label={t("lateFee")} value={`${managing.late_fee_pct}%`} />
-                  <Stat label={t("frequency")} value={t("monthly")} />
-                  <Stat label={t("startDate")} value={managing.start_date ? new Date(managing.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US") : "—"} />
-                  <Stat label={t("paid")} value={fmt(managing.paid)} tone="primary" />
-                  <Stat label={t("due")} value={fmt(managing.due)} tone="destructive" />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
+                  <Stat icon={<Banknote className="h-4 w-4" />} label={t("planTotal")} value={fmt(managing.total)} accent="from-primary/15 to-primary/5" iconColor="text-primary" border="border-primary/25" delay={0} />
+                  <Stat icon={<Wallet className="h-4 w-4" />} label={t("downPayment")} value={fmt(managing.down_payment)} accent="from-info/15 to-info/5" iconColor="text-info" border="border-info/25" delay={50} />
+                  <Stat icon={<CalendarDays className="h-4 w-4" />} label={t("noOfInstallments")} value={`${managing.tenure_months}`} accent="from-secondary/30 to-secondary/10" iconColor="text-[hsl(var(--secondary-foreground))]" border="border-secondary/40" delay={100} />
+                  <Stat icon={<Percent className="h-4 w-4" />} label={t("lateFee")} value={`${managing.late_fee_pct}%`} accent="from-destructive/15 to-destructive/5" iconColor="text-destructive" border="border-destructive/25" delay={150} />
+                  <Stat icon={<Clock className="h-4 w-4" />} label={t("frequency")} value={t("monthly")} accent="from-primary/10 to-primary/5" iconColor="text-primary" border="border-primary/20" delay={200} />
+                  <Stat icon={<CalendarDays className="h-4 w-4" />} label={t("startDate")} value={managing.start_date ? new Date(managing.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US") : "—"} accent="from-info/10 to-info/5" iconColor="text-info" border="border-info/20" delay={250} />
+                  <Stat icon={<CheckCircle2 className="h-4 w-4" />} label={t("paid")} value={fmt(managing.paid)} accent="from-primary/20 to-primary/5" iconColor="text-primary" valueColor="text-primary" border="border-primary/30" delay={300} />
+                  <Stat icon={<AlertTriangle className="h-4 w-4" />} label={t("due")} value={fmt(managing.due)} accent="from-destructive/20 to-destructive/5" iconColor="text-destructive" valueColor="text-destructive" border="border-destructive/30" delay={350} />
                 </div>
               </div>
 
               {/* Schedule */}
               <div>
-                <div className="text-[11px] uppercase tracking-widest text-muted-foreground font-bold mb-3">{t("schedule")}</div>
-                <div className="space-y-2">
+                <div className="text-sm uppercase tracking-widest text-muted-foreground font-bold mb-3">{t("schedule")}</div>
+                <div className="space-y-3">
                   {/* Down payment row */}
                   {managing.down_payment > 0 && (
-                    <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-xl px-4 py-3">
+                    <div className="flex items-center justify-between bg-gradient-to-r from-primary/15 to-primary/5 border-2 border-primary/30 rounded-2xl px-5 py-4 shadow-sm hover:shadow-md transition-all animate-fade-in">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">DP</div>
+                        <div className="w-12 h-12 rounded-xl gradient-primary text-primary-foreground flex items-center justify-center font-black text-sm shadow-md">DP</div>
                         <div>
-                          <div className="font-semibold text-sm">{t("downPayment")}</div>
-                          <div className="text-xs text-muted-foreground">{managing.start_date ? new Date(managing.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US") : "—"}</div>
+                          <div className="font-bold text-base">{t("downPayment")}</div>
+                          <div className="text-sm text-muted-foreground">{managing.start_date ? new Date(managing.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US") : "—"}</div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold">{fmt(managing.down_payment)}</div>
+                        <div className="font-black text-lg text-primary">{fmt(managing.down_payment)}</div>
                         <StatusPill tone="success">{t("paid")}</StatusPill>
                       </div>
                     </div>
                   )}
-                  {managing.installments.map(i => {
+                  {managing.installments.map((i, idx) => {
                     const status = i.derived_status as "paid" | "overdue" | "pending";
                     const tone = status === "paid" ? "success" : status === "overdue" ? "destructive" : "warning";
                     const fee = computeLateFee(i, managing.late_fee_pct);
                     const days = overdueDays(i);
                     const remaining = Math.max(0, Number(i.amount) - Number(i.paid_amount));
                     const payable = remaining + fee;
+                    const rowBg = status === "overdue"
+                      ? "bg-gradient-to-r from-destructive/15 to-destructive/5 border-destructive/30"
+                      : status === "paid"
+                        ? "bg-gradient-to-r from-primary/15 to-primary/5 border-primary/25"
+                        : "bg-gradient-to-r from-info/10 to-info/5 border-info/20";
+                    const badgeBg = status === "paid"
+                      ? "gradient-primary text-primary-foreground"
+                      : status === "overdue"
+                        ? "bg-gradient-to-br from-destructive to-destructive/70 text-destructive-foreground"
+                        : "bg-gradient-to-br from-info to-info/70 text-info-foreground";
                     return (
-                      <div key={i.id} className={`rounded-xl px-4 py-3 border ${status === "overdue" ? "bg-destructive/5 border-destructive/30" : status === "paid" ? "bg-primary/5 border-primary/20" : "bg-[hsl(var(--surface-container-low))] border-[hsl(var(--surface-container-high))]/40"}`}>
+                      <div key={i.id} style={{ animationDelay: `${Math.min(idx, 12) * 40}ms` }}
+                        className={`rounded-2xl px-5 py-4 border-2 shadow-sm hover:shadow-md transition-all animate-fade-in ${rowBg}`}>
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-xs ${status === "paid" ? "bg-primary/10 text-primary" : status === "overdue" ? "bg-destructive/10 text-destructive" : "bg-[hsl(var(--surface-container-high))] text-foreground"}`}>
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-base shadow-md ${badgeBg}`}>
                               {i.installment_no}
                             </div>
                             <div className="min-w-0">
-                              <div className="font-semibold text-sm">{lang === "bn" ? `কিস্তি ${i.installment_no}` : `Installment ${i.installment_no}`}</div>
-                              <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
+                              <div className="font-bold text-base">{lang === "bn" ? `কিস্তি ${i.installment_no}` : `Installment ${i.installment_no}`}</div>
+                              <div className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                                <Clock className="h-3.5 w-3.5" />
                                 {new Date(i.due_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US")}
-                                {days > 0 && <span className="text-destructive">• {days} {t("overdueDays")}</span>}
+                                {days > 0 && <span className="text-destructive font-semibold">• {days} {t("overdueDays")}</span>}
                               </div>
                             </div>
                           </div>
                           <div className="text-right shrink-0">
-                            <div className="font-bold">{fmt(Number(i.amount))}</div>
-                            {fee > 0 && <div className="text-[10px] text-destructive font-semibold">+{fmt(fee)} {t("lateFeeAccrued")}</div>}
+                            <div className="font-black text-lg">{fmt(Number(i.amount))}</div>
+                            {fee > 0 && <div className="text-xs text-destructive font-bold">+{fmt(fee)} {t("lateFeeAccrued")}</div>}
                             <StatusPill tone={tone}>{t(status as any)}</StatusPill>
                           </div>
                         </div>
                         {status !== "paid" && (
-                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-[hsl(var(--surface-container-high))]/40">
-                            <div className="text-xs">
+                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-[hsl(var(--surface-container-high))]/50">
+                            <div className="text-sm">
                               <span className="text-muted-foreground">{t("payable")}: </span>
-                              <span className="font-bold text-foreground">{fmt(payable)}</span>
+                              <span className="font-black text-foreground">{fmt(payable)}</span>
                             </div>
-                            <Button size="sm" className="gradient-primary text-primary-foreground"
+                            <Button size="sm" className="gradient-primary text-primary-foreground shadow-md hover:brightness-110"
                               onClick={() => { setPaying(i); setAmount(payable); }}>
                               <Wallet className="h-4 w-4 mr-1" />{t("pay")}
                             </Button>
@@ -521,31 +535,33 @@ export default function Installments() {
   );
 }
 
-function SummaryCard({ icon, bg, label, value }: any) {
+function SummaryCard({ icon, accent, iconText, label, value, delay = 0 }: any) {
   return (
-    <div className="bg-[hsl(var(--surface-container-lowest))] p-5 rounded-2xl transition-all hover:-translate-y-1">
-      <div className={`p-2.5 ${bg} rounded-xl w-fit mb-3`}>{icon}</div>
-      <p className="text-muted-foreground text-xs font-medium">{label}</p>
-      <h3 className="text-xl md:text-2xl font-bold text-foreground mt-1">{value}</h3>
+    <div style={{ animationDelay: `${delay}ms` }}
+      className="relative overflow-hidden bg-[hsl(var(--surface-container-lowest))] p-5 rounded-2xl shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 animate-fade-in border border-[hsl(var(--surface-container-high))]/40">
+      <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full bg-gradient-to-br ${accent} opacity-20 blur-2xl`} />
+      <div className={`p-2.5 bg-gradient-to-br ${accent} rounded-xl w-fit mb-3 shadow-md ${iconText}`}>{icon}</div>
+      <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">{label}</p>
+      <h3 className="text-xl md:text-2xl font-black text-foreground mt-1">{value}</h3>
     </div>
   );
 }
 
-function Cell({ icon, label, value }: { icon: any; label: string; value: string }) {
+function Cell({ icon, label, value, accent, iconColor, border }: { icon: any; label: string; value: string; accent: string; iconColor: string; border: string }) {
   return (
-    <div className="bg-[hsl(var(--surface-container-lowest))] rounded-lg px-3 py-2">
-      <div className="flex items-center gap-1 text-muted-foreground text-[10px] uppercase tracking-wider font-bold">{icon}{label}</div>
-      <div className="font-bold text-foreground text-sm mt-0.5">{value}</div>
+    <div className={`bg-gradient-to-br ${accent} rounded-xl px-3 py-2.5 border ${border} transition-all hover:-translate-y-0.5`}>
+      <div className={`flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold ${iconColor}`}>{icon}<span className="text-muted-foreground">{label}</span></div>
+      <div className="font-black text-foreground text-sm mt-1">{value}</div>
     </div>
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone?: "primary" | "destructive" }) {
-  const cls = tone === "primary" ? "text-primary" : tone === "destructive" ? "text-destructive" : "text-foreground";
+function Stat({ icon, label, value, accent, iconColor, border, valueColor, delay = 0 }: { icon?: any; label: string; value: string; accent: string; iconColor: string; border: string; valueColor?: string; delay?: number }) {
   return (
-    <div>
-      <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{label}</div>
-      <div className={`font-bold ${cls}`}>{value}</div>
+    <div style={{ animationDelay: `${delay}ms` }}
+      className={`bg-gradient-to-br ${accent} rounded-xl p-3 border ${border} animate-fade-in transition-all hover:-translate-y-0.5 hover:shadow-md`}>
+      <div className={`flex items-center gap-1.5 text-[11px] uppercase tracking-widest font-bold ${iconColor}`}>{icon}<span className="text-muted-foreground">{label}</span></div>
+      <div className={`font-black text-base mt-1 ${valueColor || "text-foreground"}`}>{value}</div>
     </div>
   );
 }
