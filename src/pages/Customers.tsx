@@ -55,7 +55,7 @@ export default function Customers() {
     setPreviewSales(data ?? []);
   };
 
-  const filtered = items.filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search));
+  const filtered = items.filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search) || c.alt_phone?.includes(search));
 
   const totals = useMemo(() => {
     const totalCustomers = items.length;
