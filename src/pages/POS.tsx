@@ -437,6 +437,31 @@ export default function POS() {
                 )}
               </div>
             )}
+            {paymentType === "due" && (
+              <div className="mb-3 space-y-2 p-3 rounded-xl bg-warning/10">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-warning">বাকিতে বিক্রয়</div>
+                <div>
+                  <Label className="text-xs">এখন নগদ পরিশোধ (৳)</Label>
+                  <Input type="number" min={0} value={duePaid || ""}
+                    onChange={e => setDuePaid(Math.max(0, +e.target.value || 0))}
+                    placeholder="0" className="h-9" />
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-xs pt-1">
+                  <div className="rounded-lg bg-[hsl(var(--surface-container-lowest))] p-2">
+                    <div className="text-muted-foreground">মোট</div>
+                    <div className="font-bold">{fmt(total)}</div>
+                  </div>
+                  <div className="rounded-lg bg-[hsl(var(--surface-container-lowest))] p-2">
+                    <div className="text-muted-foreground">নগদ</div>
+                    <div className="font-bold text-success">{fmt(Math.min(duePaid, total))}</div>
+                  </div>
+                  <div className="rounded-lg bg-[hsl(var(--surface-container-lowest))] p-2">
+                    <div className="text-muted-foreground">বকেয়া</div>
+                    <div className="font-bold text-destructive">{fmt(Math.max(total - duePaid, 0))}</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
 
