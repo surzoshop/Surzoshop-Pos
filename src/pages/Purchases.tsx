@@ -330,11 +330,14 @@ export default function Purchases() {
         </div>
       </SurfaceCard>
 
-      {/* === New Purchase — Bongo-style full-screen sectioned form === */}
-      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
-        <DialogContent className="bg-[hsl(var(--surface-container-lowest))] p-0 max-w-5xl w-[100vw] sm:w-[96vw] h-[100vh] sm:h-[94vh] sm:max-h-[94vh] sm:rounded-2xl rounded-none overflow-hidden flex flex-col gap-0">
+      {/* === New Purchase — Slide-in side sheet === */}
+      <Sheet open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
+        <SheetContent
+          side="right"
+          className="p-0 w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl sm:w-[92vw] bg-[hsl(var(--surface-container-lowest))] flex flex-col gap-0 [&>button]:hidden"
+        >
           {/* Header */}
-          <div className="flex items-center justify-between gap-2 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-[hsl(var(--surface-container-high))]/60 bg-[hsl(var(--surface-container-lowest))]">
+          <div className="flex items-center justify-between gap-2 px-3 sm:px-5 py-2.5 sm:py-3 border-b border-[hsl(var(--surface-container-high))]/60 bg-[hsl(var(--surface-container-lowest))] shrink-0">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <button onClick={() => { setOpen(false); resetForm(); }} className="h-9 w-9 grid place-items-center rounded-full hover:bg-muted shrink-0">
                 <ArrowLeft className="h-5 w-5" />
@@ -355,10 +358,10 @@ export default function Purchases() {
           </div>
 
           {/* Scroll body */}
-          <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-3 sm:py-5 space-y-4 sm:space-y-5">
-            {/* Supplier card */}
-            <section className="rounded-2xl bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/50 overflow-hidden">
-              <div className="h-1 bg-gradient-to-r from-primary via-primary/70 to-primary/30" />
+          <div className="flex-1 overflow-y-auto overflow-x-visible px-3 sm:px-5 py-3 sm:py-5 space-y-4 sm:space-y-5">
+            {/* Supplier card — overflow-visible so dropdown is not clipped */}
+            <section className="rounded-2xl bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/50 relative">
+              <div className="h-1 bg-gradient-to-r from-primary via-primary/70 to-primary/30 rounded-t-2xl" />
               <div className="p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="h-10 w-10 rounded-xl bg-primary/10 grid place-items-center">
@@ -374,13 +377,13 @@ export default function Purchases() {
                     placeholder="সাপ্লায়ারের নাম লিখুন বা ক্লিক করে তালিকা থেকে বাছুন"
                     value={supplierSearch}
                     onFocus={() => setSupplierFocus(true)}
-                    onBlur={() => setTimeout(() => setSupplierFocus(false), 150)}
+                    onBlur={() => setTimeout(() => setSupplierFocus(false), 200)}
                     onChange={e => { setSupplierSearch(e.target.value); setSupplierId(""); setSupplierFocus(true); }}
                     className="h-11 bg-[hsl(var(--surface-container-low))] border-none pr-28"
                   />
                   <span className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded-md bg-primary/10 text-primary text-xs font-bold pointer-events-none">তালিকা ▾</span>
                   {supplierFocus && (
-                    <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl max-h-60 overflow-y-auto shadow-xl">
+                    <div className="absolute z-[60] left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl max-h-60 overflow-y-auto shadow-2xl">
                       {supplierMatches.length === 0 && <div className="px-4 py-4 text-sm text-muted-foreground text-center">কোন সরবরাহকারী পাওয়া যায়নি — সরবরাহকারী পেইজ থেকে যোগ করুন</div>}
                       {supplierMatches.map(s => (
                         <button key={s.id} type="button"
@@ -398,8 +401,8 @@ export default function Purchases() {
             </section>
 
             {/* Product list card */}
-            <section className="rounded-2xl bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/50 overflow-hidden">
-              <div className="h-1 bg-gradient-to-r from-info via-primary to-primary/40" />
+            <section className="rounded-2xl bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/50 relative">
+              <div className="h-1 bg-gradient-to-r from-info via-primary to-primary/40 rounded-t-2xl" />
               <div className="p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="h-10 w-10 rounded-xl bg-info/10 grid place-items-center">
@@ -407,7 +410,7 @@ export default function Purchases() {
                   </div>
                   <div>
                     <h3 className="font-bold">পণ্য তালিকা</h3>
-                    <p className="text-xs text-muted-foreground">ক্রয়কৃত পণ্য যোগ করুন</p>
+                    <p className="text-xs text-muted-foreground">ক্রয়কৃত পণ্য যোগ করুন — নতুন পণ্য সেভ হলে সয়ংক্রিয়ভাবে POS-এ যুক্ত হবে</p>
                   </div>
                 </div>
 
@@ -426,24 +429,28 @@ export default function Purchases() {
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-[88px_1fr] gap-4">
-                        {/* Image placeholder */}
-                        <div className="hidden md:grid place-items-center h-[88px] w-[88px] rounded-xl border-2 border-dashed border-[hsl(var(--surface-container-high))] text-muted-foreground bg-background/40">
-                          <ImagePlus className="h-6 w-6" />
+                      <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] gap-4">
+                        {/* Product image upload */}
+                        <div>
+                          <Label className="text-xs mb-1 block md:hidden">পণ্যের ছবি</Label>
+                          <ImageUpload
+                            value={it.image_url || null}
+                            onChange={(url) => updateItem(idx, { image_url: url ?? "" })}
+                          />
                         </div>
                         <div className="space-y-3">
                           <div>
                             <Label className="text-xs flex items-center gap-1 mb-1"><Package className="h-3 w-3" />পণ্য</Label>
                             <div className="relative">
-                              <Input placeholder="পণ্যের নাম লিখুন বা ক্লিক করে তালিকা থেকে বাছুন"
+                              <Input placeholder="পণ্যের নাম লিখুন (নতুন হলে অটো যুক্ত হবে) বা ক্লিক করে বাছুন"
                                 value={it.search}
                                 onFocus={() => setProductFocusIdx(idx)}
-                                onBlur={() => setTimeout(() => setProductFocusIdx(p => p === idx ? null : p), 150)}
-                                onChange={e => { updateItem(idx, { search: e.target.value, product_id: "" }); setProductFocusIdx(idx); }}
+                                onBlur={() => setTimeout(() => setProductFocusIdx(p => p === idx ? null : p), 200)}
+                                onChange={e => { updateItem(idx, { search: e.target.value, product_name: e.target.value, product_id: "" }); setProductFocusIdx(idx); }}
                                 className="h-10 bg-background pr-28" />
-                              <span className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-bold pointer-events-none">পণ্য সিলেক্ট ▾</span>
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-bold pointer-events-none">পণ্য ▾</span>
                               {productFocusIdx === idx && (
-                                <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl max-h-60 overflow-y-auto shadow-xl">
+                                <div className="absolute z-[60] left-0 right-0 top-full mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl max-h-60 overflow-y-auto shadow-2xl">
                                   {(() => {
                                     const list = products.filter(p =>
                                       !it.search ||
@@ -451,26 +458,30 @@ export default function Purchases() {
                                       p.barcode?.toLowerCase().includes(it.search.toLowerCase()) ||
                                       p.sku?.toLowerCase().includes(it.search.toLowerCase())
                                     );
-                                    if (list.length === 0) return <div className="px-4 py-4 text-sm text-muted-foreground text-center">কোন পণ্য পাওয়া যায়নি</div>;
+                                    if (list.length === 0) return <div className="px-4 py-4 text-sm text-muted-foreground text-center">এই নামে কোন পণ্য নেই — সেভ করলে নতুন হিসেবে যুক্ত হবে</div>;
                                     return list.slice(0, 12).map(p => (
                                       <button key={p.id} type="button"
                                         onMouseDown={(e) => e.preventDefault()}
                                         onClick={() => { pickProduct(idx, p); setProductFocusIdx(null); }}
-                                        className="w-full text-left px-3 py-2 text-sm hover:bg-primary/10 flex justify-between items-center">
-                                        <span className="font-medium">{p.name}</span>
-                                        <span className="text-xs text-muted-foreground">স্টক: {p.stock ?? "—"} · ৳{fmt(Number(p.cost))}</span>
+                                        className="w-full text-left px-3 py-2 text-sm hover:bg-primary/10 flex justify-between items-center gap-2">
+                                        <span className="flex items-center gap-2 min-w-0">
+                                          {p.image_url && <img src={p.image_url} alt="" className="h-7 w-7 rounded object-cover" />}
+                                          <span className="font-medium truncate">{p.name}</span>
+                                        </span>
+                                        <span className="text-xs text-muted-foreground shrink-0">স্টক: {p.stock ?? "—"} · ৳{fmt(Number(p.cost))}</span>
                                       </button>
                                     ));
                                   })()}
                                 </div>
                               )}
                             </div>
+                            <p className="text-[10px] text-muted-foreground mt-1">তালিকায় না থাকলে নতুন পণ্যের নাম লিখুন — সেভ করলে অটোমেটিক পণ্য তালিকা ও POS-এ যুক্ত হবে।</p>
                           </div>
 
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <Label className="text-xs mb-1 block">ব্র্যান্ড</Label>
-                              <Input placeholder="ব্র্যান্ড নাম" className="h-10 bg-background" />
+                              <Input value={it.brand || ""} onChange={e => updateItem(idx, { brand: e.target.value })} placeholder="ব্র্যান্ড নাম" className="h-10 bg-background" />
                             </div>
                             <div>
                               <Label className="text-xs mb-1 block">ক্যাটাগরি</Label>
@@ -487,6 +498,7 @@ export default function Purchases() {
                             <div>
                               <Label className="text-xs mb-1 block">পরিমাণ</Label>
                               <Input type="number" value={it.qty} onChange={e => updateItem(idx, { qty: +e.target.value })} className="h-10 bg-background" />
+                              <p className="text-[10px] text-muted-foreground mt-1">যত পিস ক্রয় করেছেন — স্টকে যুক্ত হবে।</p>
                             </div>
                             <div>
                               <Label className="text-xs mb-1 block">ইউনিট</Label>
@@ -505,14 +517,17 @@ export default function Purchases() {
                             <div>
                               <Label className="text-xs mb-1 block">ক্রয়মূল্য (৳)</Label>
                               <Input type="number" value={it.unit_cost} onChange={e => updateItem(idx, { unit_cost: +e.target.value })} className="h-10 bg-background" />
+                              <p className="text-[10px] text-muted-foreground mt-1">প্রতি পিসের কেনা দাম।</p>
                             </div>
                             <div>
                               <Label className="text-xs mb-1 block">বিক্রয়মূল্য (৳)</Label>
                               <Input type="number" placeholder="ঐচ্ছিক" value={it.sell_price || ""} onChange={e => updateItem(idx, { sell_price: +e.target.value })} className="h-10 bg-background" />
+                              <p className="text-[10px] text-muted-foreground mt-1">POS-এ কত টাকায় বিক্রি হবে।</p>
                             </div>
                             <div>
                               <Label className="text-xs mb-1 block">মোট (৳)</Label>
                               <div className="h-10 rounded-md bg-primary/10 grid place-items-center text-primary font-bold">৳{fmt(it.subtotal)}</div>
+                              <p className="text-[10px] text-muted-foreground mt-1">পরিমাণ × ক্রয়মূল্য।</p>
                             </div>
                           </div>
                         </div>
@@ -529,8 +544,8 @@ export default function Purchases() {
             </section>
 
             {/* Bill summary card */}
-            <section className="rounded-2xl bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/50 overflow-hidden">
-              <div className="h-1 bg-gradient-to-r from-success via-primary to-info" />
+            <section className="rounded-2xl bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/50 relative">
+              <div className="h-1 bg-gradient-to-r from-success via-primary to-info rounded-t-2xl" />
               <div className="p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="h-10 w-10 rounded-xl bg-success/10 grid place-items-center">
@@ -547,14 +562,17 @@ export default function Purchases() {
                     <span className="font-medium">সাবটোটাল</span>
                     <span className="font-bold">৳{fmt(subtotal)}</span>
                   </div>
+                  <p className="text-[10px] text-muted-foreground -mt-2">সব পণ্যের মোট ক্রয়মূল্যের যোগফল।</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label className="text-xs mb-1 block">ডিসকাউন্ট (৳)</Label>
                       <Input type="number" value={discount} onChange={e => setDiscount(+e.target.value)} className="h-10 bg-background" />
+                      <p className="text-[10px] text-muted-foreground mt-1">সরবরাহকারী যত টাকা ছাড় দিয়েছেন — মোট থেকে বিয়োগ হবে।</p>
                     </div>
                     <div>
                       <Label className="text-xs mb-1 block">ডেলিভারি চার্জ (৳)</Label>
                       <Input type="number" value={delivery} onChange={e => setDelivery(+e.target.value)} className="h-10 bg-background" />
+                      <p className="text-[10px] text-muted-foreground mt-1">পণ্য আনার পরিবহন খরচ — মোটে যোগ হবে।</p>
                     </div>
                   </div>
                   <div className="border-t border-[hsl(var(--surface-container-high))]/60 pt-3 flex justify-between items-center">
@@ -571,10 +589,12 @@ export default function Purchases() {
                         <option value="nagad">নগদ (Mobile)</option>
                         <option value="bank">ব্যাংক</option>
                       </select>
+                      <p className="text-[10px] text-muted-foreground mt-1">কিভাবে পরিশোধ করেছেন — ক্যাশবুকে রেকর্ড হবে।</p>
                     </div>
                     <div>
-                      <Label className="text-xs mb-1 block">পেমেন্ট (৳)</Label>
+                      <Label className="text-xs mb-1 block">পরিশোধিত (৳)</Label>
                       <Input type="number" value={paid} onChange={e => setPaid(+e.target.value)} className="h-10 bg-background" />
+                      <p className="text-[10px] text-muted-foreground mt-1">এখন কত টাকা দিয়েছেন — বাকিটা বকেয়া থাকবে।</p>
                     </div>
                   </div>
                   <div className={`rounded-lg px-4 py-3 flex justify-between items-center font-bold ${fullyPaid ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}`}>
@@ -601,7 +621,7 @@ export default function Purchases() {
           </div>
 
           {/* Sticky footer — mobile responsive */}
-          <div className="border-t border-[hsl(var(--surface-container-high))]/60 px-3 sm:px-5 py-3 bg-[hsl(var(--surface-container-lowest))]">
+          <div className="border-t border-[hsl(var(--surface-container-high))]/60 px-3 sm:px-5 py-3 bg-[hsl(var(--surface-container-lowest))] shrink-0">
             <div className="hidden sm:flex items-center justify-between">
               <button onClick={() => { setOpen(false); resetForm(); }} className="text-sm text-muted-foreground hover:text-foreground px-3 py-2">বাতিল</button>
               <div className="flex items-center gap-2">
@@ -621,8 +641,8 @@ export default function Purchases() {
               </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       {/* View bill */}
       <Dialog open={!!viewBill} onOpenChange={(v) => !v && setViewBill(null)}>
