@@ -249,54 +249,60 @@ export default function Purchases() {
       </tr>`).join("");
 
     const numToWords = (n: number) => {
-      // simple english words for the amount-in-words section
-      const a = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
-      const b = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+      const a = ['','এক','দুই','তিন','চার','পাঁচ','ছয়','সাত','আট','নয়','দশ','এগারো','বারো','তেরো','চৌদ্দ','পনেরো','ষোলো','সতেরো','আঠারো','উনিশ'];
+      const b = ['','','বিশ','ত্রিশ','চল্লিশ','পঞ্চাশ','ষাট','সত্তর','আশি','নব্বই'];
       const inWords = (num: number): string => {
         if (num < 20) return a[num];
         if (num < 100) return b[Math.floor(num/10)] + (num%10 ? ' ' + a[num%10] : '');
-        if (num < 1000) return a[Math.floor(num/100)] + ' Hundred' + (num%100 ? ' ' + inWords(num%100) : '');
-        if (num < 100000) return inWords(Math.floor(num/1000)) + ' Thousand' + (num%1000 ? ' ' + inWords(num%1000) : '');
-        if (num < 10000000) return inWords(Math.floor(num/100000)) + ' Lakh' + (num%100000 ? ' ' + inWords(num%100000) : '');
-        return inWords(Math.floor(num/10000000)) + ' Crore' + (num%10000000 ? ' ' + inWords(num%10000000) : '');
+        if (num < 1000) return a[Math.floor(num/100)] + ' শত' + (num%100 ? ' ' + inWords(num%100) : '');
+        if (num < 100000) return inWords(Math.floor(num/1000)) + ' হাজার' + (num%1000 ? ' ' + inWords(num%1000) : '');
+        if (num < 10000000) return inWords(Math.floor(num/100000)) + ' লক্ষ' + (num%100000 ? ' ' + inWords(num%100000) : '');
+        return inWords(Math.floor(num/10000000)) + ' কোটি' + (num%10000000 ? ' ' + inWords(num%10000000) : '');
       };
       const r = Math.round(n);
-      return (inWords(r) || 'Zero') + ' Taka Only';
+      return (inWords(r) || 'শূন্য') + ' টাকা মাত্র';
     };
 
     const logoUrl = p.shop?.logo_url || "/brand-logo.png";
     const qrData = encodeURIComponent(`Invoice:${p.billNo}|Total:${grand}|Shop:${p.shop?.name ?? ""}|Date:${p.billDate}`);
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${qrData}`;
-    const timeStr = new Date().toLocaleTimeString("en-GB", { hour12: false }).slice(0,5);
-    const status = dueAmt === 0 ? "PAID" : dueAmt === grand ? "UNPAID" : "PARTIAL";
-    const orderStatus = "COMPLETED";
+    const timeStr = new Date().toLocaleTimeString("bn-BD", { hour12: true });
+    const dateBn = new Date(p.billDate).toLocaleDateString("bn-BD", { day: "2-digit", month: "long", year: "numeric" });
+    const payMethodBn = ((p.paymentMethod||'cash')+"").toLowerCase()==="cash" ? "নগদ" : ((p.paymentMethod||'')+"").toUpperCase();
+    const status = dueAmt === 0 ? "পরিশোধিত" : dueAmt === grand ? "অপরিশোধিত" : "আংশিক";
+    const orderStatus = "সম্পন্ন";
 
     const w = window.open("", "_blank", "width=950,height=750");
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>${p.billNo}</title>
       <style>
         @page{size:A4;margin:10mm}
-        @media print{body{margin:0}}
-        *{box-sizing:border-box;font-family:'Segoe UI',Tahoma,Arial,sans-serif}
+        *,*::before,*::after{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}
+        html,body{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+        @media print{
+          body{margin:0}
+          *,*::before,*::after{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important}
+        }
+        *{box-sizing:border-box;font-family:'Noto Sans Bengali','SolaimanLipi','Kalpurush','Segoe UI',Tahoma,Arial,sans-serif}
         body{margin:0;color:#1f2937;font-size:12px;background:#fff}
         .wrap{max-width:780px;margin:0 auto;padding:6px}
         .head{display:flex;gap:14px;align-items:flex-start;margin-bottom:14px}
         .logo-box{width:96px;height:96px;border-radius:10px;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #eef0f5}
         .logo-box img{max-width:100%;max-height:100%;object-fit:contain}
-        .shop-name{font-size:26px;font-weight:800;color:#5b5fc7;margin:0 0 4px;line-height:1.1}
+        .shop-name{font-size:26px;font-weight:800;color:#5b5fc7 !important;margin:0 0 4px;line-height:1.1}
         .shop-info{font-size:11.5px;line-height:1.55;color:#1f2937}
         .shop-info b{color:#0f172a}
-        .banner{background:#7c83ff;color:#fff;text-align:center;padding:8px;font-weight:700;letter-spacing:.5px;border-radius:4px;margin:10px 0}
+        .banner{background:#7c83ff !important;color:#fff !important;text-align:center;padding:8px;font-weight:700;letter-spacing:.5px;border-radius:4px;margin:10px 0}
         .meta{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 16px;padding:10px 4px;border-bottom:1px solid #eef0f5;margin-bottom:8px}
         .meta .lbl{font-weight:700;font-size:11px;color:#0f172a}
         .meta .val{font-size:12px;color:#1f2937;margin-top:2px}
-        h3.sec{color:#5b5fc7;font-size:13px;margin:12px 0 6px;font-weight:700}
+        h3.sec{color:#5b5fc7 !important;font-size:13px;margin:12px 0 6px;font-weight:700}
         .billto{font-size:12px;line-height:1.7}
         .billto b{color:#0f172a}
         table.items{width:100%;border-collapse:collapse;margin-top:6px;border-radius:4px;overflow:hidden}
-        table.items thead th{background:#7c83ff;color:#fff;text-align:left;padding:9px 10px;font-weight:600;font-size:12px}
-        .items-banner{background:#7c83ff;color:#fff;display:flex;justify-content:space-between;padding:7px 12px;font-weight:700;font-size:12px;border-radius:4px;margin-top:6px}
+        table.items thead th{background:#7c83ff !important;color:#fff !important;text-align:left;padding:9px 10px;font-weight:600;font-size:12px}
+        .items-banner{background:#7c83ff !important;color:#fff !important;display:flex;justify-content:space-between;padding:7px 12px;font-weight:700;font-size:12px;border-radius:4px;margin-top:6px}
         .twocol{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;margin-top:14px}
-        .terms b,.payopt b,.bank b{color:#5b5fc7;display:block;margin-bottom:4px;font-size:12.5px}
+        .terms b,.payopt b,.bank b{color:#5b5fc7 !important;display:block;margin-bottom:4px;font-size:12.5px}
         .terms ol{margin:0;padding-left:18px;font-size:11.5px;line-height:1.6}
         .totals{font-size:12px}
         .totals .row{display:flex;justify-content:space-between;padding:3px 0}
@@ -304,13 +310,14 @@ export default function Purchases() {
         .totals .grand{border-top:1px dashed #94a3b8;border-bottom:1px dashed #94a3b8;padding:5px 0;margin:4px 0;font-weight:800;color:#0f172a}
         .qr{display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:6px}
         .qr img{border:1px solid #eef0f5;border-radius:6px}
-        .qr .scan{background:#7c83ff;color:#fff;padding:4px 16px;border-radius:4px;font-size:11px;font-weight:700;margin-top:2px}
+        .qr .scan{background:#7c83ff !important;color:#fff !important;padding:4px 16px;border-radius:4px;font-size:11px;font-weight:700;margin-top:2px}
         .words{margin-top:10px}
-        .words b{color:#5b5fc7;display:block;margin-bottom:3px}
+        .words b{color:#5b5fc7 !important;display:block;margin-bottom:3px}
         .powered{text-align:right;font-size:11px;margin-top:14px;color:#0f172a}
         .powered .grow{display:block;font-weight:700;margin-top:3px}
-        .footer{background:#7c83ff;color:#fff;text-align:center;padding:10px;margin-top:16px;border-radius:4px;font-weight:700;line-height:1.5}
-        .remark{font-size:11px;color:#5b5fc7;margin-top:14px;font-weight:700}
+        .footer{background:#7c83ff !important;color:#fff !important;text-align:center;padding:10px;margin-top:16px;border-radius:4px;font-weight:700;line-height:1.5}
+        .remark{font-size:11px;color:#5b5fc7 !important;margin-top:14px;font-weight:700}
+        .due-row{color:#b91c1c !important}
       </style></head><body>
       <div class="wrap">
         <div class="head">
@@ -318,90 +325,90 @@ export default function Purchases() {
           <div style="flex:1">
             <h1 class="shop-name">${p.shop?.name ?? "Shop"}</h1>
             <div class="shop-info">
-              ${p.shop?.address ? `<div><b>Address:</b> ${p.shop.address}</div>` : ""}
-              ${p.shop?.phone ? `<div><b>Phone No.:</b> ${p.shop.phone}</div>` : ""}
-              ${p.shop?.email ? `<div><b>Email:</b> ${p.shop.email}</div>` : ""}
-              <div><b>Best From Best</b></div>
+              ${p.shop?.address ? `<div><b>ঠিকানা:</b> ${p.shop.address}</div>` : ""}
+              ${p.shop?.phone ? `<div><b>ফোন নং:</b> ${p.shop.phone}</div>` : ""}
+              ${p.shop?.email ? `<div><b>ইমেইল:</b> ${p.shop.email}</div>` : ""}
+              <div><b>সেরাদের মাঝে সেরা</b></div>
             </div>
           </div>
         </div>
 
-        <div class="banner">Purchase Invoice / ক্রয় চালান</div>
+        <div class="banner">ক্রয় চালান</div>
 
         <div class="meta">
-          <div><div class="lbl">Bill No #:</div><div class="val">${p.billNo}</div></div>
-          <div><div class="lbl">ITEM:</div><div class="val">${itemsCount} ITEM${itemsCount>1?'S':''}</div></div>
-          <div><div class="lbl">Date:</div><div class="val">${p.billDate}</div></div>
-          <div><div class="lbl">Time:</div><div class="val">${timeStr}</div></div>
-          <div><div class="lbl">Order Status:</div><div class="val">${orderStatus}</div></div>
-          <div><div class="lbl">Payment Method:</div><div class="val">${(p.paymentMethod||'CASH').toUpperCase()}</div></div>
-          <div><div class="lbl">Payment Status:</div><div class="val">${status}</div></div>
-          <div><div class="lbl">Created By:</div><div class="val">OWNER</div></div>
+          <div><div class="lbl">বিল নং #:</div><div class="val">${p.billNo}</div></div>
+          <div><div class="lbl">পণ্য:</div><div class="val">${itemsCount} টি</div></div>
+          <div><div class="lbl">তারিখ:</div><div class="val">${dateBn}</div></div>
+          <div><div class="lbl">সময়:</div><div class="val">${timeStr}</div></div>
+          <div><div class="lbl">অর্ডার অবস্থা:</div><div class="val">${orderStatus}</div></div>
+          <div><div class="lbl">পেমেন্ট পদ্ধতি:</div><div class="val">${payMethodBn}</div></div>
+          <div><div class="lbl">পেমেন্ট অবস্থা:</div><div class="val">${status}</div></div>
+          <div><div class="lbl">তৈরি করেছেন:</div><div class="val">মালিক</div></div>
         </div>
 
-        <h3 class="sec">Billing To / সরবরাহকারী</h3>
+        <h3 class="sec">সরবরাহকারী</h3>
         <div class="billto">
-          <div><b>Name:</b> ${p.supplierName}</div>
+          <div><b>নাম:</b> ${p.supplierName}</div>
         </div>
 
         <table class="items">
           <thead><tr>
-            <th>Name</th><th>Price/Unit</th><th>Quantity</th><th>GST</th><th>Amount</th>
+            <th>পণ্যের নাম</th><th>একক মূল্য</th><th>পরিমাণ</th><th>ভ্যাট</th><th>মোট</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
 
         <div class="items-banner">
-          <span>Total Items: ${itemsCount}</span>
-          <span>Item Total : ৳${fmt(itemTotal).replace("৳","")}</span>
+          <span>মোট পণ্য: ${itemsCount}</span>
+          <span>পণ্যের মোট : ৳${fmt(itemTotal).replace("৳","")}</span>
         </div>
 
         <div class="twocol">
           <div>
             <div class="terms">
-              <b>Terms &amp; Conditions</b>
+              <b>শর্তাবলী</b>
               <ol>
-                <li>Goods once sold will not be taken back or exchanged.</li>
-                <li>All disputes are subject to jurisdiction only.</li>
+                <li>বিক্রিত পণ্য ফেরত বা পরিবর্তনযোগ্য নয়।</li>
+                <li>সকল বিরোধ স্থানীয় আদালতের এখতিয়ারভুক্ত।</li>
               </ol>
             </div>
             <div class="payopt" style="margin-top:12px">
-              <b>Payment Option</b>
+              <b>পেমেন্ট অপশন</b>
             </div>
             <div class="bank" style="margin-top:6px;font-size:11.5px;line-height:1.6">
-              <b>Bank Details</b>
-              <div>Shop : ${p.shop?.name ?? ""}</div>
-              ${p.shop?.phone ? `<div>Contact : ${p.shop.phone}</div>` : ""}
+              <b>ব্যাংক বিবরণ</b>
+              <div>দোকান : ${p.shop?.name ?? ""}</div>
+              ${p.shop?.phone ? `<div>যোগাযোগ : ${p.shop.phone}</div>` : ""}
             </div>
             <div class="qr" style="align-items:flex-start;margin-top:10px">
               <img src="${qrUrl}" alt="QR" width="130" height="130"/>
-              <div class="scan">SCAN TO PAY</div>
+              <div class="scan">পেমেন্টের জন্য স্ক্যান করুন</div>
             </div>
           </div>
           <div>
             <div class="totals">
-              <div class="row"><span>Item Total:</span><b>৳${fmt(itemTotal).replace("৳","")}</b></div>
-              ${disc>0 ? `<div class="row"><span>Bill Discount:</span><b>- ৳${fmt(disc).replace("৳","")}</b></div>` : ""}
-              <div class="row b"><span>Subtotal:</span><b>৳${fmt(subAfterDisc).replace("৳","")}</b></div>
-              ${deliv>0 ? `<div class="row"><span>Delivery:</span><b>৳${fmt(deliv).replace("৳","")}</b></div>` : ""}
-              <div class="row grand"><span>Grand Total:</span><span>৳${fmt(grand).replace("৳","")}</span></div>
-              <div class="row"><span>Paid Amount:</span><b>৳${fmt(paidAmt).replace("৳","")}</b></div>
-              ${dueAmt>0 ? `<div class="row" style="color:#b91c1c"><span>Due:</span><b>৳${fmt(dueAmt).replace("৳","")}</b></div>` : ""}
+              <div class="row"><span>পণ্যের মোট:</span><b>৳${fmt(itemTotal).replace("৳","")}</b></div>
+              ${disc>0 ? `<div class="row"><span>বিল ছাড়:</span><b>- ৳${fmt(disc).replace("৳","")}</b></div>` : ""}
+              <div class="row b"><span>উপমোট:</span><b>৳${fmt(subAfterDisc).replace("৳","")}</b></div>
+              ${deliv>0 ? `<div class="row"><span>ডেলিভারি:</span><b>৳${fmt(deliv).replace("৳","")}</b></div>` : ""}
+              <div class="row grand"><span>সর্বমোট:</span><span>৳${fmt(grand).replace("৳","")}</span></div>
+              <div class="row"><span>পরিশোধিত:</span><b>৳${fmt(paidAmt).replace("৳","")}</b></div>
+              ${dueAmt>0 ? `<div class="row due-row"><span>বকেয়া:</span><b>৳${fmt(dueAmt).replace("৳","")}</b></div>` : ""}
             </div>
             <div class="words">
-              <b>Amount in Words</b>
+              <b>কথায় টাকার পরিমাণ</b>
               <div style="font-size:11.5px">${numToWords(grand)}</div>
             </div>
             <div class="powered">
-              Powered by <b style="color:#5b5fc7">${p.shop?.name ?? "সূর্য শপ"}</b>
-              <span class="grow">Grow with us!</span>
+              পরিচালনায় <b style="color:#5b5fc7">${p.shop?.name ?? "সূর্য শপ"}</b>
+              <span class="grow">আমাদের সাথে এগিয়ে চলুন!</span>
             </div>
           </div>
         </div>
 
-        ${p.notes ? `<div class="remark">Remark: <span style="color:#1f2937;font-weight:400">${p.notes}</span></div>` : `<div class="remark">Remark</div>`}
+        ${p.notes ? `<div class="remark">মন্তব্য: <span style="color:#1f2937;font-weight:400">${p.notes}</span></div>` : `<div class="remark">মন্তব্য</div>`}
 
-        <div class="footer">Thank You, Visit Again.<br/>Feels Best</div>
+        <div class="footer">ধন্যবাদ, আবার আসবেন।<br/>সেরা অনুভূতি</div>
       </div>
       <script>window.onload=()=>{setTimeout(()=>{try{window.focus();window.print();}catch(e){}}, 350)}</script>
       </body></html>`;
