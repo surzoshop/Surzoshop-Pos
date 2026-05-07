@@ -247,13 +247,16 @@ export default function Installments() {
           <div className="py-16 text-center text-muted-foreground">{t("noResults")}</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filteredPlans.map(p => {
+            {filteredPlans.map((p, idx) => {
               const hasOverdue = p.installments.some(i => i.derived_status === "overdue");
               const tone = p.due <= 0 ? "success" : hasOverdue ? "destructive" : "info";
               const label = p.due <= 0 ? t("completed") : hasOverdue ? t("overdue") : (lang === "bn" ? "চলমান" : "Active");
+              const accentBar = p.due <= 0 ? "from-primary to-primary-glow" : hasOverdue ? "from-destructive to-destructive/60" : "from-info to-info/60";
               const paidCount = p.installments.filter(i => i.derived_status === "paid").length;
               return (
-                <div key={p.sale_id} className="bg-[hsl(var(--surface-container-low))] rounded-2xl p-5 border border-[hsl(var(--surface-container-high))]/40 hover:border-primary/40 transition-all hover:-translate-y-0.5">
+                <div key={p.sale_id} style={{ animationDelay: `${Math.min(idx, 12) * 40}ms` }}
+                  className="relative overflow-hidden bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-5 shadow-sm hover:shadow-lg border border-[hsl(var(--surface-container-high))]/40 hover:border-primary/40 transition-all hover:-translate-y-1 animate-fade-in">
+                  <div className={`absolute top-0 left-0 h-1 w-full bg-gradient-to-r ${accentBar}`} />
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div className="min-w-0">
                       <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{p.invoice_no}</div>
@@ -265,24 +268,24 @@ export default function Installments() {
                     <div className="flex flex-col items-end gap-2">
                       <StatusPill tone={tone}>{label}</StatusPill>
                       <button onClick={() => setManaging(p)} title={t("managePlan")}
-                        className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground transition-all">
+                        className="p-2 rounded-lg gradient-primary text-primary-foreground hover:brightness-110 active:scale-95 transition-all shadow-sm">
                         <Settings2 className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 mb-4 text-xs">
-                    <Cell icon={<Banknote className="h-3.5 w-3.5" />} label={t("planTotal")} value={fmt(p.total)} />
-                    <Cell icon={<Wallet className="h-3.5 w-3.5" />} label={t("downPayment")} value={fmt(p.down_payment)} />
-                    <Cell icon={<CalendarDays className="h-3.5 w-3.5" />} label={t("noOfInstallments")} value={`${p.tenure_months} ${t("months")}`} />
-                    <Cell icon={<Percent className="h-3.5 w-3.5" />} label={t("lateFee")} value={`${p.late_fee_pct}%`} />
+                  <div className="grid grid-cols-2 gap-2.5 mb-4">
+                    <Cell icon={<Banknote className="h-4 w-4" />} label={t("planTotal")} value={fmt(p.total)} accent="from-primary/15 to-primary/5" iconColor="text-primary" border="border-primary/20" />
+                    <Cell icon={<Wallet className="h-4 w-4" />} label={t("downPayment")} value={fmt(p.down_payment)} accent="from-info/15 to-info/5" iconColor="text-info" border="border-info/20" />
+                    <Cell icon={<CalendarDays className="h-4 w-4" />} label={t("noOfInstallments")} value={`${p.tenure_months} ${t("months")}`} accent="from-secondary/30 to-secondary/10" iconColor="text-[hsl(var(--secondary-foreground))]" border="border-secondary/40" />
+                    <Cell icon={<Percent className="h-4 w-4" />} label={t("lateFee")} value={`${p.late_fee_pct}%`} accent="from-destructive/15 to-destructive/5" iconColor="text-destructive" border="border-destructive/20" />
                   </div>
 
                   <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2">
                     {t("startDate")}: {p.start_date ? new Date(p.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US") : "—"}
                   </div>
 
-                  <div className="flex items-center justify-between bg-[hsl(var(--surface-container-lowest))] rounded-xl p-3 text-sm">
+                  <div className="flex items-center justify-between bg-gradient-to-r from-[hsl(var(--surface-container-low))] to-[hsl(var(--surface-container))] rounded-xl p-3 text-sm border border-[hsl(var(--surface-container-high))]/40">
                     <div>
                       <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{t("paid")}</div>
                       <div className="font-bold text-primary">{fmt(p.paid)} <span className="text-[10px] text-muted-foreground">({paidCount}/{p.tenure_months})</span></div>
