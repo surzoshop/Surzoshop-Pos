@@ -26,6 +26,7 @@ export default function Purchases() {
   const [categories, setCategories] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [viewBill, setViewBill] = useState<any>(null);
   const [payOpen, setPayOpen] = useState(false);
   const [payTarget, setPayTarget] = useState<any>(null);
@@ -55,7 +56,17 @@ export default function Purchases() {
     ]);
     setPurchases(p.data ?? []); setSuppliers(s.data ?? []); setProducts(pr.data ?? []); setCategories(c.data ?? []);
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const ch = supabase
+      .channel("purchases-rt")
+      .on("postgres_changes", { event: "*", schema: "public", table: "purchases" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "purchase_items" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "purchase_payments" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
 
   const subtotal = items.reduce((a, b) => a + (Number(b.subtotal) || 0), 0);
   const total = Math.max(subtotal - discount + delivery, 0);
@@ -88,6 +99,29 @@ export default function Purchases() {
   const resetForm = () => {
     setItems([{ product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "" }]);
     setPaid(0); setDiscount(0); setDelivery(0); setSupplierId(""); setSupplierSearch(""); setNotes("");
+    setEditingId(null);
+  };
+
+  const openEdit = async (p: any) => {
+    const { data: its } = await supabase.from("purchase_items").select("*").eq("purchase_id", p.id);
+    setEditingId(p.id);
+    setSupplierId(p.supplier_id ?? "");
+    setSupplierSearch(p.suppliers?.name ?? "");
+    setBillDate((p.created_at ?? new Date().toISOString()).slice(0, 10));
+    setNotes(p.notes ?? "");
+    setDiscount(Number(p.discount) || 0);
+    setDelivery(0);
+    setPaid(Number(p.paid) || 0);
+    setItems((its ?? []).map((it: any) => {
+      const prod = products.find(pp => pp.id === it.product_id);
+      return {
+        product_id: it.product_id, product_name: it.product_name, search: it.product_name,
+        brand: "", category_id: prod?.category_id ?? "", qty: it.qty, unit: prod?.unit ?? "pcs",
+        unit_cost: Number(it.unit_cost), sell_price: prod?.price ?? 0,
+        subtotal: Number(it.subtotal), image_url: prod?.image_url ?? "",
+      };
+    }));
+    setOpen(true);
   };
 
   const validItems = () => items.filter(i => (i.product_id || (i.search && i.search.trim())) && i.qty > 0);
@@ -125,47 +159,74 @@ export default function Purchases() {
       prepared.push({ ...it, product_id: pid, product_name: pname });
     }
 
-    // Step 2: Create purchase
-    const { data, error } = await supabase.from("purchases").insert({
-      supplier_id: supplierId || null, subtotal, discount, total, paid, due,
-      notes: notes || null, created_by: user!.id, shop_id: currentShop?.id ?? null,
-    }).select().single();
-    if (error) return toast({ title: error.message, variant: "destructive" });
+    // Step 2: Create or update purchase
+    let purchaseRow: any;
+    if (editingId) {
+      const { data, error } = await supabase.from("purchases").update({
+        supplier_id: supplierId || null, subtotal, discount, total, paid, due,
+        notes: notes || null,
+      }).eq("id", editingId).select().single();
+      if (error) return toast({ title: error.message, variant: "destructive" });
+      purchaseRow = data;
+      // Remove old items (trigger only adds on insert; for simplicity we delete + re-insert)
+      await supabase.from("purchase_items").delete().eq("purchase_id", editingId);
+    } else {
+      const { data, error } = await supabase.from("purchases").insert({
+        supplier_id: supplierId || null, subtotal, discount, total, paid, due,
+        notes: notes || null, created_by: user!.id, shop_id: currentShop?.id ?? null,
+      }).select().single();
+      if (error) return toast({ title: error.message, variant: "destructive" });
+      purchaseRow = data;
+    }
 
     // Step 3: Insert items (DB trigger auto-increments product stock)
     const rows = prepared.map(i => ({
       product_id: i.product_id, product_name: i.product_name, qty: i.qty,
       unit_cost: i.unit_cost, subtotal: i.subtotal,
-      purchase_id: data.id, shop_id: currentShop?.id ?? null,
+      purchase_id: purchaseRow.id, shop_id: currentShop?.id ?? null,
     }));
     const { error: e2 } = await supabase.from("purchase_items").insert(rows);
     if (e2) return toast({ title: e2.message, variant: "destructive" });
 
-    // Step 4: Cash book entry for paid amount (so it shows up in Ledger)
-    if (paid > 0) {
+    // Step 4: Cash book entry for paid amount (so it shows up in Ledger) — only on new
+    if (!editingId && paid > 0) {
       await supabase.from("cash_book").insert({
         entry_type: "out",
         amount: paid,
         category: "ক্রয়",
         payment_method: paymentMethod,
         party_name: suppliers.find(s => s.id === supplierId)?.name ?? null,
-        reference_no: data.bill_no,
-        notes: `ক্রয় বিল ${data.bill_no}`,
+        reference_no: purchaseRow.bill_no,
+        notes: `ক্রয় বিল ${purchaseRow.bill_no}`,
         created_by: user!.id,
         shop_id: currentShop?.id ?? null,
       });
     }
 
-    toast({ title: "ক্রয় সংরক্ষিত ✓ স্টক ও পণ্য তালিকা আপডেট হয়েছে" });
+    toast({ title: editingId ? "ক্রয় আপডেট হয়েছে ✓" : "ক্রয় সংরক্ষিত ✓ স্টক ও পণ্য তালিকা আপডেট হয়েছে" });
     if (alsoPrint) {
       const supName = suppliers.find(s => s.id === supplierId)?.name ?? "—";
       printA4Invoice({
-        billNo: data.bill_no, billDate, supplierName: supName,
+        billNo: purchaseRow.bill_no, billDate, supplierName: supName,
         shop: currentShop, items: prepared, subtotal, discount, delivery, total, paid, due,
         paymentMethod, notes,
       });
     }
     setOpen(false); resetForm(); load();
+  };
+
+  const printExisting = async (p: any) => {
+    const { data: its } = await supabase.from("purchase_items").select("*").eq("purchase_id", p.id);
+    printA4Invoice({
+      billNo: p.bill_no,
+      billDate: (p.created_at ?? "").slice(0, 10),
+      supplierName: p.suppliers?.name ?? "—",
+      shop: currentShop,
+      items: (its ?? []).map((it: any) => ({ product_name: it.product_name, qty: it.qty, unit: "", unit_cost: Number(it.unit_cost), subtotal: Number(it.subtotal) })),
+      subtotal: Number(p.subtotal), discount: Number(p.discount), delivery: 0,
+      total: Number(p.total), paid: Number(p.paid), due: Number(p.due),
+      paymentMethod: "—", notes: p.notes ?? "",
+    });
   };
 
   const printA4Invoice = (p: any) => {
@@ -314,13 +375,15 @@ export default function Purchases() {
                   <td className="py-4">{fmt(Number(p.paid))}</td>
                   <td className="py-4"><StatusPill tone={Number(p.due) > 0 ? "warning" : "success"}>{fmt(Number(p.due))}</StatusPill></td>
                   <td className="py-4 text-right">
-                    <div className="inline-flex gap-1">
-                      <button onClick={() => viewItems(p)} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"><Eye className="h-4 w-4" /></button>
+                    <div className="inline-flex gap-1 items-center">
+                      <button onClick={() => viewItems(p)} title="দেখুন" className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"><Eye className="h-4 w-4" /></button>
+                      <button onClick={() => printExisting(p)} title="প্রিন্ট" className="p-1.5 rounded-md hover:bg-info/10 text-info"><Printer className="h-4 w-4" /></button>
+                      {isAdmin && <button onClick={() => openEdit(p)} title="এডিট" className="p-1.5 rounded-md hover:bg-primary/10 text-primary"><FileText className="h-4 w-4" /></button>}
                       {Number(p.due) > 0 && (
                         <button onClick={() => { setPayTarget(p); setPayAmt(Number(p.due)); setPayOpen(true); }}
                           className="px-2 py-1 rounded-md text-xs font-bold bg-primary/10 text-primary hover:bg-primary/20">পরিশোধ</button>
                       )}
-                      {isAdmin && <button onClick={() => del(p.id)} className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive"><Trash2 className="h-4 w-4" /></button>}
+                      {isAdmin && <button onClick={() => del(p.id)} title="ডিলিট" className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive"><Trash2 className="h-4 w-4" /></button>}
                     </div>
                   </td>
                 </tr>
@@ -346,8 +409,8 @@ export default function Purchases() {
                 <Receipt className="h-5 w-5 text-primary" />
               </div>
               <div className="min-w-0">
-                <h2 className="text-sm sm:text-base font-bold">নতুন ক্রয়</h2>
-                <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">নতুন পারচেজ এন্ট্রি তৈরি করুন</p>
+                <h2 className="text-sm sm:text-base font-bold">{editingId ? "ক্রয় এডিট" : "নতুন ক্রয়"}</h2>
+                <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">{editingId ? "বিদ্যমান পারচেজ আপডেট করুন" : "নতুন পারচেজ এন্ট্রি তৈরি করুন"}</p>
               </div>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -674,6 +737,10 @@ export default function Purchases() {
                 <div className="flex justify-between font-black"><span>{t("total")}</span><span>{fmt(Number(viewBill.total))}</span></div>
                 <div className="flex justify-between text-primary"><span>{t("paid")}</span><span>{fmt(Number(viewBill.paid))}</span></div>
                 <div className="flex justify-between text-destructive"><span>{t("due")}</span><span>{fmt(Number(viewBill.due))}</span></div>
+              </div>
+              <div className="flex flex-wrap gap-2 justify-end pt-2">
+                <Button variant="outline" onClick={() => printExisting(viewBill)} className="gap-2"><Printer className="h-4 w-4" />প্রিন্ট (A4)</Button>
+                {isAdmin && <Button onClick={() => { const b = viewBill; setViewBill(null); openEdit(b); }} className="gap-2"><FileText className="h-4 w-4" />এডিট</Button>}
               </div>
             </div>
           )}
