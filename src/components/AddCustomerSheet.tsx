@@ -74,7 +74,7 @@ export function AddCustomerSheet({ open, onOpenChange, onSaved, customer }: Prop
       : await supabase.from("customers").insert(payload);
     setSaving(false);
     if (error) return toast({ title: error.message, variant: "destructive" });
-    toast({ title: "ক্রেতা যোগ হয়েছে" });
+    toast({ title: isEdit ? "ক্রেতা আপডেট হয়েছে" : "ক্রেতা যোগ হয়েছে" });
     onOpenChange(false);
     onSaved?.();
   };
@@ -91,7 +91,7 @@ export function AddCustomerSheet({ open, onOpenChange, onSaved, customer }: Prop
               <UserPlus className="h-6 w-6 text-info" />
             </div>
             <div>
-              <SheetTitle className="text-xl font-black">নতুন ক্রেতা যুক্ত করুন</SheetTitle>
+              <SheetTitle className="text-xl font-black">{isEdit ? "ক্রেতা সম্পাদনা" : "নতুন ক্রেতা যুক্ত করুন"}</SheetTitle>
               <SheetDescription className="text-xs">ক্রেতার সম্পূর্ণ KYC তথ্য পূরণ করুন</SheetDescription>
             </div>
           </div>
