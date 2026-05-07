@@ -348,16 +348,36 @@ export default function Products() {
         <DialogContent className="bg-[hsl(var(--surface-container-lowest))] max-w-md w-[95vw]">
           <DialogHeader><DialogTitle>ক্যাটাগরি ব্যবস্থাপনা</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div className="flex gap-2">
-              <Input value={newCat} onChange={e => setNewCat(e.target.value)} placeholder="নতুন ক্যাটাগরির নাম" onKeyDown={e => e.key === "Enter" && saveCat()} />
-              <Button onClick={saveCat} className="gradient-primary shrink-0"><Plus className="h-4 w-4" /></Button>
-            </div>
+            {editCat ? (
+              <div className="flex gap-2">
+                <Input
+                  autoFocus
+                  value={editCat.name}
+                  onChange={e => setEditCat({ ...editCat, name: e.target.value })}
+                  placeholder="ক্যাটাগরির নতুন নাম"
+                  onKeyDown={e => e.key === "Enter" && saveCat()}
+                />
+                <Button onClick={saveCat} className="gradient-primary shrink-0">সংরক্ষণ</Button>
+                <Button variant="ghost" onClick={() => setEditCat(null)} className="shrink-0">বাতিল</Button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input value={newCat} onChange={e => setNewCat(e.target.value)} placeholder="নতুন ক্যাটাগরির নাম" onKeyDown={e => e.key === "Enter" && saveCat()} />
+                <Button onClick={saveCat} className="gradient-primary shrink-0"><Plus className="h-4 w-4" /></Button>
+              </div>
+            )}
             <div className="max-h-60 overflow-y-auto space-y-1">
               {cats.length === 0 && <p className="text-sm text-center text-muted-foreground py-4">এখনো কোনো ক্যাটাগরি নেই</p>}
               {cats.map(c => (
                 <div key={c.id} className="flex items-center justify-between bg-[hsl(var(--surface-container-low))] px-3 py-2 rounded-lg">
-                  <span className="text-sm font-medium">{c.name}</span>
-                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => delCat(c.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  <span className="text-sm font-bold flex items-center gap-2">
+                    <Tag className="h-3.5 w-3.5 text-primary" /> {c.name}
+                    <span className="text-[10px] font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{catCounts[c.id] ?? 0} পণ্য</span>
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-info" onClick={() => setEditCat({ id: c.id, name: c.name })}><Pencil className="h-3.5 w-3.5" /></Button>
+                    <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => delCat(c.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  </div>
                 </div>
               ))}
             </div>
