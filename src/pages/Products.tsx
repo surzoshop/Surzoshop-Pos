@@ -140,7 +140,7 @@ export default function Products() {
         <MiniStat icon={<Package className="h-5 w-5 md:h-6 md:w-6 text-primary" />} bg="bg-primary/10"
           label={t("totalProducts")} value={items.length.toString()} />
         <MiniStat icon={<Package className="h-5 w-5 md:h-6 md:w-6 text-info" />} bg="bg-info/10"
-          label={t("totalRevenue")} value={fmt(totalValue)} />
+          label="মোট স্টক বিক্রয় মূল্য" value={fmt(totalValue)} />
         <MiniStat icon={<Package className="h-5 w-5 md:h-6 md:w-6 text-[hsl(var(--secondary-foreground))]" />} bg="bg-secondary/30"
           label={t("lowStock")} value={`${lowCount} ${t("productsLow")}`} />
       </div>
