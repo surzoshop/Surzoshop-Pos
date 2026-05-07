@@ -99,7 +99,9 @@ export default function POS() {
 
   const subtotal = cart.reduce((a, i) => a + i.product.price * i.qty, 0);
   const vat = subtotal * VAT_RATE;
-  const baseTotal = Math.max(0, subtotal + vat - discount);
+  const computedBase = Math.max(0, subtotal + vat - discount);
+  // Allow user to override grand total (for negotiation / round-off). Override applies before installment interest.
+  const baseTotal = totalOverride !== null ? Math.max(0, totalOverride) : computedBase;
   // EMI calculation: simple interest over tenure (more transparent for retail)
   const principal = paymentType === "installment" ? Math.max(baseTotal - downPayment, 0) : 0;
   const interestAmount = paymentType === "installment"
@@ -107,8 +109,14 @@ export default function POS() {
     : 0;
   const total = baseTotal + interestAmount;
   const financed = principal + interestAmount;
-  const due = paymentType === "installment" ? financed : 0;
-  const paid = paymentType === "installment" ? downPayment : total;
+  const due =
+    paymentType === "installment" ? financed
+    : paymentType === "due" ? Math.max(total - duePaid, 0)
+    : 0;
+  const paid =
+    paymentType === "installment" ? downPayment
+    : paymentType === "due" ? Math.min(duePaid, total)
+    : total;
   const emi = paymentType === "installment" && installmentCount > 0 ? financed / installmentCount : 0;
 
   // EMI schedule preview
