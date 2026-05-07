@@ -106,6 +106,7 @@ export default function Ledger() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [salesAgg, setSalesAgg] = useState<{ date: string; total: number; party: string | null }[]>([]);
   const [purchasesAgg, setPurchasesAgg] = useState<{ date: string; total: number; party: string | null }[]>([]);
+  const [expensesAgg, setExpensesAgg] = useState<{ date: string; total: number; title: string; method: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Top section state
