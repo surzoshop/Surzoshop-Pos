@@ -209,6 +209,7 @@ export default function Customers() {
 
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {previewing.phone && <InfoItem icon={<Phone className="h-4 w-4" />} label="মোবাইল" value={previewing.phone} />}
+                {previewing.alt_phone && <InfoItem icon={<Phone className="h-4 w-4" />} label="বিকল্প মোবাইল" value={previewing.alt_phone} />}
                 {previewing.nid && <InfoItem icon={<IdCard className="h-4 w-4" />} label="NID" value={previewing.nid} />}
                 {previewing.occupation && <InfoItem icon={<Briefcase className="h-4 w-4" />} label="পেশা" value={previewing.occupation} />}
                 {previewing.monthly_income && <InfoItem icon={<Wallet className="h-4 w-4" />} label="মাসিক আয়" value={`৳${fmt(previewing.monthly_income)}`} />}
