@@ -48,6 +48,7 @@ export default function POS() {
   const [showGuarantorForm, setShowGuarantorForm] = useState(false);
   const [gForm, setGForm] = useState<any>({ name: "", phone: "", nid: "", address: "", relation: "" });
   const [lastSale, setLastSale] = useState<any>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -153,6 +154,7 @@ export default function POS() {
 
   const completeSale = async () => {
     if (cart.length === 0) return;
+    if (submitting) return; // guard against double-submit
     if (paymentType === "installment" && !customerId) {
       toast({ title: lang === "bn" ? "ক্রেতা নির্বাচন করুন" : "Select a customer", variant: "destructive" });
       return;
@@ -166,6 +168,8 @@ export default function POS() {
       return;
     }
 
+    setSubmitting(true);
+    try {
     const salePayload: any = {
       customer_id: customerId || null,
       subtotal, discount, total, paid, due,
@@ -223,6 +227,9 @@ export default function POS() {
     setDuePaid(0); setTotalOverride(null);
     load();
     toast({ title: lang === "bn" ? "বিক্রয় সম্পন্ন" : "Sale completed" });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -555,10 +562,10 @@ export default function POS() {
           </div>
 
           <div className="flex flex-col gap-3">
-            <button onClick={completeSale} disabled={cart.length === 0}
+            <button onClick={completeSale} disabled={cart.length === 0 || submitting}
               className="w-full h-14 gradient-primary text-primary-foreground rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.4)] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed">
               <ReceiptIcon className="h-5 w-5" />
-              {t("payNow")}
+              {submitting ? (lang === "bn" ? "প্রক্রিয়াধীন…" : "Processing…") : t("payNow")}
             </button>
           </div>
         </div>
