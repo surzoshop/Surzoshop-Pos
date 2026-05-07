@@ -13,8 +13,9 @@ export default function Dashboard() {
   const { t, fmt, lang } = useT();
   const [stats, setStats] = useState({
     todaySales: 0, todayCount: 0, monthSales: 0, monthProfit: 0,
-    orderCount: 0, deliveredToday: 0, lowStockCount: 0,
-    totalProducts: 0, stockValue: 0, totalCustomers: 0, totalDue: 0,
+    monthSalesCount: 0, deliveredToday: 0, lowStockCount: 0,
+    totalProducts: 0, stockUnits: 0, stockCostValue: 0, stockSaleValue: 0,
+    totalCustomers: 0, totalDue: 0,
   });
   const [weekly, setWeekly] = useState<{ day: string; total: number }[]>([]);
   const [topProducts, setTopProducts] = useState<{ name: string; qty: number; revenue: number }[]>([]);
@@ -41,7 +42,7 @@ export default function Dashboard() {
       supabase.from("sale_items").select("product_name,qty,subtotal,sales!inner(created_at)").gte("sales.created_at", weekStart.toISOString()),
       supabase.from("products").select("id", { count: "exact", head: true }).lte("stock", 5),
       supabase.from("sales").select("id,invoice_no,total,due,created_at,customers(name)").order("created_at", { ascending: false }).limit(4),
-      supabase.from("products").select("stock,cost", { count: "exact" }).eq("is_active", true),
+      supabase.from("products").select("stock,cost,price", { count: "exact" }).eq("is_active", true),
       supabase.from("customers").select("id", { count: "exact", head: true }),
       supabase.from("sales").select("due").gt("due", 0),
     ]);
@@ -75,16 +76,19 @@ export default function Dashboard() {
     });
     setTopProducts([...map.entries()].map(([name, v]) => ({ name, ...v })).sort((a, b) => b.qty - a.qty).slice(0, 3));
     setRecent(recentSales.data ?? []);
-    const stockValue = (productsAll.data ?? []).reduce((a: number, p: any) => a + Number(p.stock) * Number(p.cost), 0);
+    const productsArr = (productsAll.data ?? []) as any[];
+    const stockUnits = productsArr.reduce((a, p) => a + Number(p.stock), 0);
+    const stockCostValue = productsArr.reduce((a, p) => a + Number(p.stock) * Number(p.cost), 0);
+    const stockSaleValue = productsArr.reduce((a, p) => a + Number(p.stock) * Number(p.price), 0);
     const totalDue = (duesData.data ?? []).reduce((a: number, d: any) => a + Number(d.due), 0);
     setStats({
       todaySales: todayTotal, todayCount: salesToday.data?.length ?? 0,
       monthSales, monthProfit,
-      orderCount: salesMonth.data?.length ?? 0,
+      monthSalesCount: salesMonth.data?.length ?? 0,
       deliveredToday: salesToday.data?.length ?? 0,
       lowStockCount: lowStockData.count ?? 0,
       totalProducts: productsAll.count ?? 0,
-      stockValue,
+      stockUnits, stockCostValue, stockSaleValue,
       totalCustomers: customersCount.count ?? 0,
       totalDue,
     });
@@ -153,8 +157,8 @@ export default function Dashboard() {
         />
         <ColorStatCard
           to="/sales" theme="sky" icon={<ShoppingBag />}
-          chip={`${stats.todayCount} ${t("newOrders")}`}
-          label={t("orderCount")} value={`${stats.orderCount}`} sub={`${t("deliveredToday")}: ${stats.deliveredToday}`}
+          chip={`${stats.todayCount} আজ`}
+          label="মাসিক বিক্রয় সংখ্যা" value={`${stats.monthSalesCount}`} sub={`আজকের বিক্রয়: ${stats.deliveredToday}`}
         />
         <ColorStatCard
           to="/products" theme="amber" icon={<AlertTriangle />}
@@ -171,7 +175,7 @@ export default function Dashboard() {
         <ColorStatCard
           to="/products" theme="teal" icon={<Package />}
           chip={t("live")}
-          label={t("stockValue")} value={fmt(stats.stockValue)} sub={t("inventoryWorth")}
+          label="মোট স্টক" value={`${stats.stockUnits}`} sub="ইউনিট"
         />
         <ColorStatCard
           to="/customers" theme="pink" icon={<Users />}
@@ -183,6 +187,14 @@ export default function Dashboard() {
           chip={t("urgent")}
           label={t("pendingDue")} value={fmt(stats.totalDue)} sub={t("uncollected")}
         />
+      </div>
+
+      {/* Mini stat row — secondary metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
+        <MiniStat to="/products" theme="teal" icon={<Package className="h-4 w-4" />} label="স্টক ক্রয় মূল্য" value={fmt(stats.stockCostValue)} />
+        <MiniStat to="/products" theme="emerald" icon={<CircleDollarSign className="h-4 w-4" />} label="স্টক বিক্রয় মূল্য" value={fmt(stats.stockSaleValue)} />
+        <MiniStat to="/reports" theme="violet" icon={<TrendingUp className="h-4 w-4" />} label="মাসিক লাভ" value={fmt(stats.monthProfit)} />
+        <MiniStat to="/sales" theme="sky" icon={<ShoppingBag className="h-4 w-4" />} label="আজকের বিক্রয়" value={fmt(stats.todaySales)} />
       </div>
 
       {/* Main Layout */}
@@ -444,4 +456,22 @@ function QAButton({ to, onClick, icon, label, tone = "emerald" }: any) {
   );
   if (onClick) return <button onClick={onClick} className={cls}>{inner}</button>;
   return <Link to={to} className={cls}>{inner}</Link>;
+}
+
+function MiniStat({ to, theme, icon, label, value }: any) {
+  const T = THEMES[theme] ?? THEMES.violet;
+  return (
+    <Link
+      to={to ?? "#"}
+      className={`group flex items-center gap-2.5 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--border))] ${T.accent} rounded-xl px-3 py-2.5 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200`}
+    >
+      <div className={`h-8 w-8 shrink-0 ${T.iconGrad} text-white rounded-lg flex items-center justify-center shadow ${T.iconShadow}`}>
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider truncate font-bn">{label}</p>
+        <p className={`text-sm md:text-base font-extrabold text-foreground truncate font-bn ${T.valueText} transition-colors`}>{value}</p>
+      </div>
+    </Link>
+  );
 }
