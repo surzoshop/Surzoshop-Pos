@@ -227,6 +227,9 @@ export default function POS() {
     setDuePaid(0); setTotalOverride(null);
     load();
     toast({ title: lang === "bn" ? "বিক্রয় সম্পন্ন" : "Sale completed" });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
