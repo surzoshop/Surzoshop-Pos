@@ -220,14 +220,14 @@ export default function Installments() {
 
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
-        <SummaryCard icon={<Calendar className="h-5 w-5 text-info" />} bg="bg-info/10"
-          label={lang === "bn" ? "চলমান" : "Active"} value={counts.active.toString()} />
-        <SummaryCard icon={<AlertTriangle className="h-5 w-5 text-destructive" />} bg="bg-destructive/10"
-          label={t("overdue")} value={counts.overdue.toString()} />
-        <SummaryCard icon={<CheckCircle2 className="h-5 w-5 text-primary" />} bg="bg-primary/10"
-          label={t("completed")} value={counts.completed.toString()} />
-        <SummaryCard icon={<Wallet className="h-5 w-5 text-[hsl(var(--secondary-foreground))]" />} bg="bg-secondary/30"
-          label={t("pendingDue")} value={fmt(counts.totalDue)} />
+        <SummaryCard icon={<Calendar className="h-5 w-5" />} accent="from-info to-info/70" iconText="text-info-foreground"
+          label={lang === "bn" ? "চলমান" : "Active"} value={counts.active.toString()} delay={0} />
+        <SummaryCard icon={<AlertTriangle className="h-5 w-5" />} accent="from-destructive to-destructive/70" iconText="text-destructive-foreground"
+          label={t("overdue")} value={counts.overdue.toString()} delay={60} />
+        <SummaryCard icon={<CheckCircle2 className="h-5 w-5" />} accent="from-primary to-primary-glow" iconText="text-primary-foreground"
+          label={t("completed")} value={counts.completed.toString()} delay={120} />
+        <SummaryCard icon={<Wallet className="h-5 w-5" />} accent="from-secondary to-secondary/60" iconText="text-[hsl(var(--secondary-foreground))]"
+          label={t("pendingDue")} value={fmt(counts.totalDue)} delay={180} />
       </div>
 
       <SurfaceCard className="p-4 md:p-6">
