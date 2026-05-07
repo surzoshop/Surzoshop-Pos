@@ -48,15 +48,32 @@ export default function InstallApp() {
   }, []);
 
   const handleInstall = async () => {
-    if (!deferred) {
-      toast.info("ইনস্টল প্রম্পট এখনই উপলব্ধ নয়। ব্রাউজার মেনু থেকেও ইনস্টল করতে পারেন।");
+    if (isInIframe || isPreviewHost) {
+      window.open(publishedUrl, "_blank", "noopener,noreferrer");
+      toast.info("ইনস্টল করতে অ্যাপটি নতুন ট্যাবে খোলা হলো — সেখান থেকে ইনস্টল করুন।");
       return;
     }
-    await deferred.prompt();
-    const { outcome } = await deferred.userChoice;
-    if (outcome === "accepted") toast.success("ইনস্টল হচ্ছে...");
-    setDeferred(null);
+    if (!deferred) {
+      if (isAndroid) {
+        toast.info("ব্রাউজার মেনু (⋮) → 'Install app' / 'Add to Home screen' ব্যবহার করুন।");
+      } else {
+        toast.info("ইনস্টল প্রম্পট এখনই উপলব্ধ নয়। ব্রাউজার মেনু থেকে ইনস্টল করুন।");
+      }
+      return;
+    }
+    try {
+      await deferred.prompt();
+      const { outcome } = await deferred.userChoice;
+      if (outcome === "accepted") toast.success("ইনস্টল হচ্ছে...");
+      else toast.info("ইনস্টল বাতিল হয়েছে");
+    } catch (e: any) {
+      toast.error(e?.message || "ইনস্টল করা যায়নি");
+    } finally {
+      setDeferred(null);
+    }
   };
+
+  const openPublished = () => window.open(publishedUrl, "_blank", "noopener,noreferrer");
 
   const submitAnswer = async () => {
     try {
