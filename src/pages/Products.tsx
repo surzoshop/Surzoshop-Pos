@@ -313,7 +313,7 @@ export default function Products() {
         </DialogContent>
       </Dialog>
 
-      <AddProductSheet open={addSheet} onOpenChange={setAddSheet} onSaved={load} />
+      <AddProductSheet open={addSheet} onOpenChange={(v) => { setAddSheet(v); if (!v) setEditing(null); }} onSaved={load} editing={editing} />
     </div>
   );
 }
