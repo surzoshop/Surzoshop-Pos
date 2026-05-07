@@ -467,7 +467,7 @@ export default function Expenses() {
                 return (
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {sugg.map(s => (
-                      <button key={s} type="button" onClick={() => setForm({ ...form, title: s })}
+                      <button key={s} type="button" onClick={() => pickTitleSuggestion(s)}
                         className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-info/10 text-info hover:bg-info/20 transition">
                         {s}
                       </button>
