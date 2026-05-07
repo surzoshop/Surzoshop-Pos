@@ -394,7 +394,7 @@ export default function Products() {
                 <div key={c.id} className="flex items-center justify-between bg-[hsl(var(--surface-container-low))] px-3 py-2 rounded-lg">
                   <span className="text-sm font-bold flex items-center gap-2">
                     <Tag className="h-3.5 w-3.5 text-primary" /> {c.name}
-                    <span className="text-[10px] font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{catCounts[c.id] ?? 0} পণ্য</span>
+                    <span className="text-[10px] font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{catCounts[c.id]?.stock ?? 0} টি · {catCounts[c.id]?.products ?? 0} পণ্য</span>
                   </span>
                   <div className="flex items-center gap-1">
                     <Button size="icon" variant="ghost" className="h-7 w-7 text-info" onClick={() => setEditCat({ id: c.id, name: c.name })}><Pencil className="h-3.5 w-3.5" /></Button>
