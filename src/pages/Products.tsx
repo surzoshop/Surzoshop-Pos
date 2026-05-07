@@ -140,7 +140,7 @@ export default function Products() {
         <MiniStat icon={<Package className="h-5 w-5 md:h-6 md:w-6 text-primary" />} bg="bg-primary/10"
           label={t("totalProducts")} value={items.length.toString()} />
         <MiniStat icon={<Package className="h-5 w-5 md:h-6 md:w-6 text-info" />} bg="bg-info/10"
-          label={t("totalRevenue")} value={fmt(totalValue)} />
+          label="মোট স্টক বিক্রয় মূল্য" value={fmt(totalValue)} />
         <MiniStat icon={<Package className="h-5 w-5 md:h-6 md:w-6 text-[hsl(var(--secondary-foreground))]" />} bg="bg-secondary/30"
           label={t("lowStock")} value={`${lowCount} ${t("productsLow")}`} />
       </div>
@@ -244,52 +244,7 @@ export default function Products() {
         </div>
       </SurfaceCard>
 
-      {/* Add/Edit Product Dialog — mobile friendly */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="bg-[hsl(var(--surface-container-lowest))] max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editing ? t("editProduct") : t("addProduct")}</DialogTitle>
-            <DialogDescription className="text-xs">
-              বারকোড স্বয়ংক্রিয়ভাবে তৈরি হবে। পরে "বারকোড প্রিন্ট" থেকে print করতে পারবেন।
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="sm:col-span-2 flex justify-center">
-              <div className="text-center">
-                <Label className="block mb-2">পণ্যের ছবি</Label>
-                <ImageUpload value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} />
-              </div>
-            </div>
-            <div className="sm:col-span-2">
-              <Label>পণ্যের নাম *</Label>
-              <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="যেমন: Lux সাবান" />
-            </div>
-            <div className="sm:col-span-2">
-              <Label>{t("category")}</Label>
-              <Select value={form.category_id || "__none"} onValueChange={(v) => setForm({ ...form, category_id: v === "__none" ? "" : v })}>
-                <SelectTrigger><SelectValue placeholder="ক্যাটাগরি নির্বাচন করুন" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none">— কোনটি না —</SelectItem>
-                  {cats.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div><Label>{t("price")} (৳)</Label><Input type="number" inputMode="decimal" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} /></div>
-            <div><Label>{t("cost")} (৳)</Label><Input type="number" inputMode="decimal" value={form.cost} onChange={e => setForm({ ...form, cost: e.target.value })} /></div>
-            <div><Label>{t("stock")}</Label><Input type="number" inputMode="numeric" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} /></div>
-            <div><Label>{t("unit")}</Label><Input value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} placeholder="pcs / kg / ltr" /></div>
-            {editing?.barcode && (
-              <div className="sm:col-span-2 bg-secondary/30 rounded-lg p-2 text-[11px] font-mono text-center">
-                বারকোড: {editing.barcode}
-              </div>
-            )}
-          </div>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto">{t("cancel")}</Button>
-            <Button onClick={save} className="gradient-primary w-full sm:w-auto">{t("save")}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Add/Edit handled by AddProductSheet (same UX as Purchase entry) */}
 
       {/* Category Dialog */}
       <Dialog open={catOpen} onOpenChange={setCatOpen}>
