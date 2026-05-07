@@ -106,6 +106,7 @@ export default function Ledger() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [salesAgg, setSalesAgg] = useState<{ date: string; total: number; party: string | null }[]>([]);
   const [purchasesAgg, setPurchasesAgg] = useState<{ date: string; total: number; party: string | null }[]>([]);
+  const [expensesAgg, setExpensesAgg] = useState<{ date: string; total: number; title: string; method: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Top section state
@@ -130,11 +131,13 @@ export default function Ledger() {
 
   useEffect(() => {
     const r = rangeDates(topRange);
-    if (topRange !== "lifetime") { setTopFrom(r.from); setTopTo(r.to); }
+    setTopFrom(r.from === "2000-01-01" ? "" : r.from);
+    setTopTo(r.from === "2000-01-01" ? "" : r.to);
   }, [topRange]);
   useEffect(() => {
     const r = rangeDates(lowRange);
-    if (lowRange !== "lifetime") { setLowFrom(r.from); setLowTo(r.to); }
+    setLowFrom(r.from === "2000-01-01" ? "" : r.from);
+    setLowTo(r.from === "2000-01-01" ? "" : r.to);
   }, [lowRange]);
 
   const load = async () => {
@@ -149,7 +152,10 @@ export default function Ledger() {
     let pq = supabase.from("purchases").select("created_at,total,suppliers(name)").order("created_at", { ascending: false });
     if (currentShop) pq = pq.eq("shop_id", currentShop.id);
 
-    const [{ data, error }, { data: sd }, { data: pd }] = await Promise.all([q, sq, pq]);
+    let eq_ = supabase.from("expenses").select("expense_date,amount,title,payment_method").order("expense_date", { ascending: false });
+    if (currentShop) eq_ = eq_.eq("shop_id", currentShop.id);
+
+    const [{ data, error }, { data: sd }, { data: pd }, { data: ed }] = await Promise.all([q, sq, pq, eq_]);
     if (error) toast.error(error.message);
     setEntries((data ?? []) as any);
     setSalesAgg((sd ?? []).map((s: any) => ({
@@ -162,11 +168,17 @@ export default function Ledger() {
       total: Number(p.total || 0),
       party: p.suppliers?.name ?? null,
     })));
+    setExpensesAgg((ed ?? []).map((e: any) => ({
+      date: String(e.expense_date).slice(0, 10),
+      total: Number(e.amount || 0),
+      title: e.title ?? "খরচ",
+      method: e.payment_method ?? "cash",
+    })));
     setLoading(false);
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [currentShop?.id]);
 
-  // Convert sales/purchases into synthetic ledger entries so all tabs show real DB data
+  // Convert sales/purchases/expenses into synthetic ledger entries so all tabs show real DB data
   const synthEntries: Entry[] = useMemo(() => {
     const sales: Entry[] = salesAgg.map((s, i) => ({
       id: `sale-${i}-${s.date}`,
@@ -185,15 +197,27 @@ export default function Ledger() {
       entry_date: p.date,
       entry_type: "withdraw",
       amount: p.total,
-      category: "Purchase / ক্রয়",
+      category: "Purchase / স্টক ক্রয়",
       payment_method: "cash",
       reference_no: null,
       party_name: p.party,
       notes: null,
       created_at: p.date,
     }));
-    return [...entries, ...sales, ...purchases];
-  }, [entries, salesAgg, purchasesAgg]);
+    const expenseRows: Entry[] = expensesAgg.map((x, i) => ({
+      id: `exp-${i}-${x.date}`,
+      entry_date: x.date,
+      entry_type: "withdraw",
+      amount: x.total,
+      category: `Expense / ${x.title}`,
+      payment_method: x.method || "cash",
+      reference_no: null,
+      party_name: null,
+      notes: null,
+      created_at: x.date,
+    }));
+    return [...entries, ...sales, ...purchases, ...expenseRows];
+  }, [entries, salesAgg, purchasesAgg, expensesAgg]);
 
   // Apply top range to compute summary cards
   const topRangeFiltered = useMemo(() => synthEntries.filter(e => {
@@ -208,33 +232,61 @@ export default function Ledger() {
     return true;
   }), [synthEntries, topFrom, topTo, topSearch]);
 
+  const inRange = (d: string) => (!topFrom || d >= topFrom) && (!topTo || d <= topTo);
+
   // 6 mini stat cards (top row) — REAL DB data
   const miniStats = useMemo(() => {
-    const sumWhere = (fn: (e: Entry) => boolean) =>
-      topRangeFiltered.filter(fn).reduce((s, e) => s + Number(e.amount || 0), 0);
-    const cat = (e: Entry, k: string) => (e.category ?? "").toLowerCase().includes(k);
-    const income  = sumWhere(e => e.entry_type === "deposit");
-    const expense = sumWhere(e => e.entry_type === "withdraw");
+    // আয়: cash_book deposits (excluding sales synthetic) + sales
+    const cashbookIncome = entries.filter(e => e.entry_type === "deposit" && inRange(e.entry_date))
+      .reduce((s, e) => s + Number(e.amount || 0), 0);
+    const salesIncome = salesAgg.filter(s => inRange(s.date)).reduce((s, x) => s + x.total, 0);
+    const income = cashbookIncome + salesIncome;
+
+    // খরচ: ONLY from expenses table + cash_book withdrawals (NOT purchases)
+    const cashbookExpense = entries.filter(e => e.entry_type === "withdraw" && inRange(e.entry_date))
+      .reduce((s, e) => s + Number(e.amount || 0), 0);
+    const realExpense = expensesAgg.filter(x => inRange(x.date)).reduce((s, x) => s + x.total, 0);
+    const expense = cashbookExpense + realExpense;
+
+    // স্টক ক্রয় খরচ: purchases table only
+    const stockBuy = purchasesAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.total, 0);
+
+    // নগদ ব্যালেন্স: cash inflow - cash outflow (cash payment_method only) — excludes stock purchases
+    const cashIn = entries.filter(e => e.entry_type === "deposit" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
+      .reduce((s, e) => s + Number(e.amount || 0), 0) + salesIncome;
+    const cashOut = entries.filter(e => e.entry_type === "withdraw" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
+      .reduce((s, e) => s + Number(e.amount || 0), 0)
+      + expensesAgg.filter(x => inRange(x.date) && (x.method || "cash") === "cash").reduce((s, x) => s + x.total, 0);
+    const cashBalance = cashIn - cashOut;
+
+    // ক্যাশ লেনদেন (cash transactions count value): cash inflow + outflow total
+    const cashTxnTotal = cashIn + cashOut;
+
     return [
-      { key: "income"   as TabKey, label: "মোট আয়",       value: income,                                     icon: ArrowDownToLine, tone: "income" },
-      { key: "expense"  as TabKey, label: "মোট খরচ",      value: expense,                                    icon: ArrowUpFromLine, tone: "expense" },
-      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স", value: income - expense,                          icon: Coins,           tone: "balance" },
-      { key: "cash"     as TabKey, label: "ক্যাশ লেনদেন",  value: sumWhere(e => (e.payment_method ?? "cash") === "cash"), icon: Wallet, tone: "cash" },
-      { key: "sales"    as TabKey, label: "মোট বিক্রয়",    value: sumWhere(e => cat(e, "sales")    || cat(e, "বিক্রয়")), icon: Receipt,    tone: "sales" },
-      { key: "purchase" as TabKey, label: "মোট ক্রয়",      value: sumWhere(e => cat(e, "purchase") || cat(e, "ক্রয়")),    icon: ShoppingBag, tone: "purchase" },
+      { key: "income"   as TabKey, label: "মোট আয়",          value: income,       icon: ArrowDownToLine, tone: "income",   hint: "বিক্রয় + জমা এন্ট্রি" },
+      { key: "expense"  as TabKey, label: "মোট খরচ",         value: expense,      icon: ArrowUpFromLine, tone: "expense",  hint: "খরচ এন্ট্রি পেজ থেকে (পণ্য ক্রয় বাদ)" },
+      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",    value: cashBalance,  icon: Coins,           tone: "balance",  hint: "ক্যাশ-এ আয় − ক্যাশ-এ খরচ" },
+      { key: "cash"     as TabKey, label: "ক্যাশ লেনদেন",    value: cashTxnTotal, icon: Wallet,          tone: "cash",     hint: "শুধু নগদ পেমেন্টের যোগফল" },
+      { key: "purchase" as TabKey, label: "স্টক ক্রয় খরচ",    value: stockBuy,     icon: ShoppingBag,     tone: "purchase", hint: "সরবরাহকারী থেকে পণ্য ক্রয়" },
+      { key: "sales"    as TabKey, label: "মোট বিক্রয়",       value: salesIncome,  icon: Receipt,         tone: "sales",    hint: "বিক্রয় ইনভয়েস (POS)" },
     ];
-  }, [topRangeFiltered]);
+  }, [entries, salesAgg, purchasesAgg, expensesAgg, topFrom, topTo]);
 
   // 3 big totals (under account tabs) — based on lower range + tab + account filter
   const lowerFiltered = useMemo(() => synthEntries.filter(e => {
     if (lowFrom && e.entry_date < lowFrom) return false;
     if (lowTo   && e.entry_date > lowTo)   return false;
 
-    if (tab === "income"  && e.entry_type !== "deposit")  return false;
-    if (tab === "expense" && e.entry_type !== "withdraw") return false;
-    if (tab === "cash"    && (e.payment_method ?? "cash") !== "cash") return false;
-    if (tab === "sales"    && !((e.category ?? "").toLowerCase().includes("sales")    || (e.category ?? "").includes("বিক্রয়"))) return false;
-    if (tab === "purchase" && !((e.category ?? "").toLowerCase().includes("purchase") || (e.category ?? "").includes("ক্রয়")))    return false;
+    const catLow = (e.category ?? "").toLowerCase();
+    const isSales    = catLow.includes("sales")    || catLow.includes("বিক্রয়");
+    const isPurchase = catLow.includes("purchase") || catLow.includes("ক্রয়");
+    const isExpense  = catLow.startsWith("expense") || (e.entry_type === "withdraw" && !isPurchase);
+
+    if (tab === "income"   && e.entry_type !== "deposit") return false;
+    if (tab === "expense"  && (!isExpense || isPurchase)) return false;
+    if (tab === "cash"     && (e.payment_method ?? "cash") !== "cash") return false;
+    if (tab === "sales"    && !isSales) return false;
+    if (tab === "purchase" && !isPurchase) return false;
 
     if (tab === "ledger" && account !== "account") {
       const cat = (e.category ?? "").toLowerCase();
@@ -391,9 +443,9 @@ export default function Ledger() {
 
       {/* 3 totals */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-        <BigStat label="মোট জমা (Cr)" value={fmt(totals.cr)}      icon={<ArrowDownToLine className="h-5 w-5" />} accent="emerald" />
-        <BigStat label="মোট খরচ (Dr)" value={fmt(totals.dr)}      icon={<ArrowUpFromLine className="h-5 w-5" />} accent="rose" />
-        <BigStat label="নীট ব্যালেন্স"  value={fmt(totals.balance)} icon={<BookOpen className="h-5 w-5" />}        accent="indigo" />
+        <BigStat label="মোট জমা (Cr)" value={fmt(totals.cr)}      icon={<ArrowDownToLine className="h-5 w-5" />} accent="emerald" hint="নির্বাচিত ট্যাব ও তারিখে সকল আয়/জমার যোগফল" />
+        <BigStat label="মোট খরচ (Dr)" value={fmt(totals.dr)}      icon={<ArrowUpFromLine className="h-5 w-5" />} accent="rose"    hint="নির্বাচিত ট্যাব ও তারিখে সকল খরচ/উত্তোলনের যোগফল" />
+        <BigStat label="নীট ব্যালেন্স"  value={fmt(totals.balance)} icon={<BookOpen className="h-5 w-5" />}        accent="indigo"  hint="মোট জমা − মোট খরচ" />
       </div>
 
       {/* Lower filter row */}
@@ -599,7 +651,7 @@ export default function Ledger() {
   );
 }
 
-function MiniStat({ label, value, icon: Icon, tone, active, onClick }: any) {
+function MiniStat({ label, value, icon: Icon, tone, active, onClick, hint }: any) {
   const tones: Record<string, { border: string; bg: string; icon: string; text: string; activeBg: string }> = {
     income:   { border: "border-emerald-500/60", bg: "bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-950/40 dark:to-emerald-900/20", icon: "text-white bg-emerald-500", text: "text-emerald-700 dark:text-emerald-300", activeBg: "ring-2 ring-emerald-500" },
     expense:  { border: "border-rose-500/60",    bg: "bg-gradient-to-br from-rose-50 to-rose-100/50 dark:from-rose-950/40 dark:to-rose-900/20",          icon: "text-white bg-rose-500",    text: "text-rose-700 dark:text-rose-300",    activeBg: "ring-2 ring-rose-500" },
@@ -621,11 +673,12 @@ function MiniStat({ label, value, icon: Icon, tone, active, onClick }: any) {
         </div>
       </div>
       <div className="mt-2 text-xl font-black text-foreground truncate">{`৳${Number(value || 0).toLocaleString("bn-BD")}`}</div>
+      {hint && <div className="mt-1 text-[10px] sm:text-[11px] text-muted-foreground leading-tight line-clamp-2">{hint}</div>}
     </button>
   );
 }
 
-function BigStat({ label, value, icon, accent }: any) {
+function BigStat({ label, value, icon, accent, hint }: any) {
   const accents: Record<string, { ic: string; border: string }> = {
     emerald: { ic: "text-emerald-600 bg-emerald-500/10", border: "border-emerald-500/40" },
     rose:    { ic: "text-rose-600 bg-rose-500/10",       border: "border-rose-500/40" },
@@ -635,10 +688,11 @@ function BigStat({ label, value, icon, accent }: any) {
   return (
     <Card className={`border-2 ${a.border} hover:shadow-md transition-all`}>
       <CardContent className="p-3 sm:p-5 flex items-center gap-3">
-        <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl grid place-items-center ${a.ic}`}>{icon}</div>
+        <div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-xl grid place-items-center shrink-0 ${a.ic}`}>{icon}</div>
         <div className="min-w-0">
           <p className="text-[11px] sm:text-xs text-muted-foreground font-bold">{label}</p>
           <p className="text-lg sm:text-2xl font-black text-foreground truncate">{value}</p>
+          {hint && <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5 leading-tight">{hint}</p>}
         </div>
       </CardContent>
     </Card>
