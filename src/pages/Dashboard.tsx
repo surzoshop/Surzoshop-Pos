@@ -36,7 +36,7 @@ export default function Dashboard() {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const weekStart = new Date(today); weekStart.setDate(weekStart.getDate() - 6);
 
-    const [salesToday, salesYest, salesMonth, salesWeek, itemsMonth, items30, lowStockData, recentSales, productsAll, customersCount, duesData] = await Promise.all([
+    const [salesToday, salesYest, salesMonth, salesWeek, itemsMonth, items30, lowStockData, recentSales, productsAll, customersCount, duesData, soldTodayData, soldYestData, purchasedTodayData] = await Promise.all([
       supabase.from("sales").select("total,due").gte("created_at", today.toISOString()),
       supabase.from("sales").select("total").gte("created_at", yest.toISOString()).lt("created_at", today.toISOString()),
       supabase.from("sales").select("total").gte("created_at", monthStart.toISOString()),
@@ -48,6 +48,9 @@ export default function Dashboard() {
       supabase.from("products").select("stock,cost,price", { count: "exact" }).eq("is_active", true),
       supabase.from("customers").select("id", { count: "exact", head: true }),
       supabase.from("sales").select("due").gt("due", 0),
+      supabase.from("sale_items").select("qty,sales!inner(created_at)").gte("sales.created_at", today.toISOString()),
+      supabase.from("sale_items").select("qty,sales!inner(created_at)").gte("sales.created_at", yest.toISOString()).lt("sales.created_at", today.toISOString()),
+      supabase.from("purchase_items").select("qty,purchases!inner(created_at)").gte("purchases.created_at", today.toISOString()),
     ]);
 
     const todayTotal = (salesToday.data ?? []).reduce((a, b) => a + Number(b.total), 0);
