@@ -115,12 +115,12 @@ export default function InstallApp() {
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-10">
       <div className="text-center space-y-2">
-        <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl gradient-primary text-primary-foreground shadow-lg">
-          <Smartphone className="h-8 w-8" />
+        <div className="inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-white border border-border shadow-lg overflow-hidden mx-auto">
+          <img src="/brand-logo.png" alt="সূর্য শপ লোগো" className="h-full w-full object-contain" />
         </div>
-        <h1 className="text-2xl md:text-3xl font-bold">অ্যাপ ইনস্টল ও Scanner Pairing</h1>
+        <h1 className="text-2xl md:text-3xl font-bold">সূর্য শপ ইনস্টল ও Scanner Pairing</h1>
         <p className="text-muted-foreground text-sm md:text-base">
-          আপনার মূল POS অ্যাপ ইনস্টল করুন এবং মোবাইলকে wireless barcode scanner বানান
+          আপনার মূল <span className="font-bold text-foreground">সূর্য শপ</span> অ্যাপ ইনস্টল করুন এবং মোবাইলকে wireless barcode scanner বানান
         </p>
       </div>
 
@@ -129,8 +129,8 @@ export default function InstallApp() {
         <Card className="p-6 flex items-center gap-4 border-primary/30 bg-primary/5">
           <CheckCircle2 className="h-10 w-10 text-primary shrink-0" />
           <div>
-            <h3 className="font-bold">মূল অ্যাপ ইনস্টল করা আছে</h3>
-            <p className="text-sm text-muted-foreground">আপনি বর্তমানে ইনস্টল করা অ্যাপটি ব্যবহার করছেন।</p>
+            <h3 className="font-bold">সূর্য শপ ইনস্টল করা আছে</h3>
+            <p className="text-sm text-muted-foreground">আপনি বর্তমানে ইনস্টল করা সূর্য শপ অ্যাপটি ব্যবহার করছেন।</p>
           </div>
         </Card>
       ) : (
@@ -142,7 +142,7 @@ export default function InstallApp() {
             <div className="flex-1 text-center sm:text-left space-y-3">
               <div>
                 <h2 className="text-xl font-bold mb-1 flex items-center justify-center sm:justify-start gap-2">
-                  <Download className="h-5 w-5 text-primary" /> মূল POS অ্যাপ ইনস্টল করুন
+                  <Download className="h-5 w-5 text-primary" /> সূর্য শপ — মূল অ্যাপ ইনস্টল করুন
                 </h2>
                 <p className="text-sm text-muted-foreground">
                   {isInIframe || isPreviewHost
