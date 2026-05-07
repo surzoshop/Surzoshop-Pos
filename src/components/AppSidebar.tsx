@@ -158,10 +158,10 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
         })}
         {(() => {
           const T = ICON_THEMES.slate;
-          const active = pathname === "/scanner";
+          const active = pathname === "/install";
           return (
             <NavLink
-              to="/scanner"
+              to="/install"
               className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 text-[15px] ${
                 active
                   ? "bg-primary/10 text-primary font-extrabold ring-1 ring-primary/30"
@@ -171,7 +171,7 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
               <span className={`shrink-0 inline-flex items-center justify-center h-9 w-9 rounded-xl text-white shadow-lg transition-all duration-300 ${T.grad} ${T.shadow} group-hover:scale-110 group-hover:-rotate-6 group-active:rotate-0 group-active:scale-95`}>
                 <Smartphone className="h-[18px] w-[18px]" />
               </span>
-              <span className="truncate">Scanner App</span>
+              <span className="truncate">Apps</span>
             </NavLink>
           );
         })()}
