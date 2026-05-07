@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -40,22 +40,35 @@ export default function Products() {
   const [editing, setEditing] = useState<any>(null);
   const [newCat, setNewCat] = useState("");
   const [editCat, setEditCat] = useState<{ id: string; name: string } | null>(null);
-  const [selectedCat, setSelectedCat] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [selectedCat, setSelectedCat] = useState<string | null>(searchParams.get("category"));
   const [showCatSuggest, setShowCatSuggest] = useState(false);
   const isAdmin = role === "admin";
+
+  // sync URL param changes
+  useEffect(() => { setSelectedCat(searchParams.get("category")); }, [searchParams]);
+
 
   const empty = { name: "", category_id: "", price: 0, cost: 0, stock: 0, unit: "pcs", image_url: "" };
   const [form, setForm] = useState<any>(empty);
 
   const load = async () => {
     const [{ data: p }, { data: c }] = await Promise.all([
-      supabase.from("products").select("*").order("created_at", { ascending: false }),
+      supabase.from("products").select("*").eq("is_active", true).order("created_at", { ascending: false }),
       supabase.from("categories").select("*").order("name"),
     ]);
     setItems(p ?? []);
     setCats(c ?? []);
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const ch = supabase
+      .channel("products-categories-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "categories" }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
 
   const startEdit = (p: any) => { setEditing(p); setAddSheet(true); };
   const startNew = () => { setEditing(null); setAddSheet(true); };

@@ -139,25 +139,34 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
                 </span>
                 <span className="truncate">{item.label}</span>
               </NavLink>
-              {isProducts && productsActive && (() => {
-                const ST = ICON_THEMES.fuchsia;
-                const subActive = pathname === "/products/barcodes";
-                return (
-                  <NavLink
-                    to="/products/barcodes"
-                    className={`group flex items-center gap-3 ml-6 mt-1 px-3 py-2 rounded-xl transition-all duration-300 text-[13px] ${
-                      subActive
-                        ? "bg-primary/10 text-primary font-extrabold ring-1 ring-primary/30"
-                        : "text-foreground/85 font-bold hover:bg-muted/60 hover:-translate-y-0.5 hover:shadow-md"
-                    }`}
-                  >
-                    <span className={`shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-lg text-white shadow-md transition-all duration-300 ${ST.grad} ${ST.shadow} group-hover:scale-110 group-hover:-rotate-6 group-active:rotate-0 group-active:scale-95`}>
-                      <Printer className="h-[14px] w-[14px]" />
-                    </span>
-                    <span className="truncate">বারকোড প্রিন্ট</span>
-                  </NavLink>
-                );
-              })()}
+              {isProducts && productsActive && (
+                <div className="ml-6 mt-1 space-y-1">
+                  {[
+                    { to: "/products/categories", label: "ক্যাটাগরি", icon: Layers, tone: "teal" as const },
+                    { to: "/products/barcodes", label: "বারকোড প্রিন্ট", icon: Printer, tone: "fuchsia" as const },
+                  ].map(sub => {
+                    const ST = ICON_THEMES[sub.tone];
+                    const subActive = pathname === sub.to;
+                    const Icon = sub.icon;
+                    return (
+                      <NavLink
+                        key={sub.to}
+                        to={sub.to}
+                        className={`group flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300 text-[13px] ${
+                          subActive
+                            ? "bg-primary/10 text-primary font-extrabold ring-1 ring-primary/30"
+                            : "text-foreground/85 font-bold hover:bg-muted/60 hover:-translate-y-0.5 hover:shadow-md"
+                        }`}
+                      >
+                        <span className={`shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-lg text-white shadow-md transition-all duration-300 ${ST.grad} ${ST.shadow} group-hover:scale-110 group-hover:-rotate-6 group-active:rotate-0 group-active:scale-95`}>
+                          <Icon className="h-[14px] w-[14px]" />
+                        </span>
+                        <span className="truncate">{sub.label}</span>
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}
