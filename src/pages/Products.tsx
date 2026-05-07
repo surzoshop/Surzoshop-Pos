@@ -49,7 +49,7 @@ export default function Products() {
 
   const load = async () => {
     const [{ data: p }, { data: c }] = await Promise.all([
-      supabase.from("products").select("*").order("created_at", { ascending: false }),
+      supabase.from("products").select("*").eq("is_active", true).order("created_at", { ascending: false }),
       supabase.from("categories").select("*").order("name"),
     ]);
     setItems(p ?? []);
