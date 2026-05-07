@@ -115,12 +115,12 @@ export default function InstallApp() {
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-10">
       <div className="text-center space-y-2">
-        <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl gradient-primary text-primary-foreground shadow-lg">
-          <Smartphone className="h-8 w-8" />
+        <div className="inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-white border border-border shadow-lg overflow-hidden mx-auto">
+          <img src="/brand-logo.png" alt="সূর্য শপ লোগো" className="h-full w-full object-contain" />
         </div>
-        <h1 className="text-2xl md:text-3xl font-bold">অ্যাপ ইনস্টল ও Scanner Pairing</h1>
+        <h1 className="text-2xl md:text-3xl font-bold">সূর্য শপ ইনস্টল ও Scanner Pairing</h1>
         <p className="text-muted-foreground text-sm md:text-base">
-          আপনার মূল POS অ্যাপ ইনস্টল করুন এবং মোবাইলকে wireless barcode scanner বানান
+          আপনার মূল <span className="font-bold text-foreground">সূর্য শপ</span> অ্যাপ ইনস্টল করুন এবং মোবাইলকে wireless barcode scanner বানান
         </p>
       </div>
 
