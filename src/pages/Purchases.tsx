@@ -90,29 +90,78 @@ export default function Purchases() {
     setPaid(0); setDiscount(0); setDelivery(0); setSupplierId(""); setSupplierSearch(""); setNotes("");
   };
 
-  const validItems = () => items.filter(i => i.product_id && i.qty > 0);
+  const validItems = () => items.filter(i => (i.product_id || (i.search && i.search.trim())) && i.qty > 0);
 
   const save = async (alsoPrint = false) => {
     const rowsToSave = validItems();
-    if (rowsToSave.length === 0) return toast({ title: "কমপক্ষে একটি পণ্য নির্বাচন করুন", variant: "destructive" });
+    if (rowsToSave.length === 0) return toast({ title: "কমপক্ষে একটি পণ্য নির্বাচন বা লিখুন", variant: "destructive" });
+
+    // Step 1: Create new products on the fly (so POS / Products list automatically gets them)
+    const prepared: any[] = [];
+    for (const it of rowsToSave) {
+      let pid = it.product_id;
+      let pname = it.product_name || it.search;
+      if (!pid) {
+        const { data: created, error: pe } = await supabase.from("products").insert({
+          name: pname.trim(),
+          cost: Number(it.unit_cost) || 0,
+          price: Number(it.sell_price) || Number(it.unit_cost) || 0,
+          unit: it.unit ?? "pcs",
+          category_id: it.category_id || null,
+          image_url: it.image_url || null,
+          stock: 0, // trigger will increment
+          shop_id: currentShop?.id ?? null,
+        }).select().single();
+        if (pe) return toast({ title: "নতুন পণ্য তৈরিতে সমস্যা: " + pe.message, variant: "destructive" });
+        pid = created.id;
+      } else if (it.image_url) {
+        // Update existing product image / cost when changed
+        await supabase.from("products").update({
+          image_url: it.image_url || null,
+          cost: Number(it.unit_cost) || 0,
+          ...(it.sell_price ? { price: Number(it.sell_price) } : {}),
+        }).eq("id", pid);
+      }
+      prepared.push({ ...it, product_id: pid, product_name: pname });
+    }
+
+    // Step 2: Create purchase
     const { data, error } = await supabase.from("purchases").insert({
       supplier_id: supplierId || null, subtotal, discount, total, paid, due,
       notes: notes || null, created_by: user!.id, shop_id: currentShop?.id ?? null,
     }).select().single();
     if (error) return toast({ title: error.message, variant: "destructive" });
-    const rows = rowsToSave.map(i => ({
+
+    // Step 3: Insert items (DB trigger auto-increments product stock)
+    const rows = prepared.map(i => ({
       product_id: i.product_id, product_name: i.product_name, qty: i.qty,
       unit_cost: i.unit_cost, subtotal: i.subtotal,
       purchase_id: data.id, shop_id: currentShop?.id ?? null,
     }));
     const { error: e2 } = await supabase.from("purchase_items").insert(rows);
     if (e2) return toast({ title: e2.message, variant: "destructive" });
-    toast({ title: "ক্রয় সংরক্ষিত ✓" });
+
+    // Step 4: Cash book entry for paid amount (so it shows up in Ledger)
+    if (paid > 0) {
+      await supabase.from("cash_book").insert({
+        entry_type: "out",
+        amount: paid,
+        category: "ক্রয়",
+        payment_method: paymentMethod,
+        party_name: suppliers.find(s => s.id === supplierId)?.name ?? null,
+        reference_no: data.bill_no,
+        notes: `ক্রয় বিল ${data.bill_no}`,
+        created_by: user!.id,
+        shop_id: currentShop?.id ?? null,
+      });
+    }
+
+    toast({ title: "ক্রয় সংরক্ষিত ✓ স্টক ও পণ্য তালিকা আপডেট হয়েছে" });
     if (alsoPrint) {
       const supName = suppliers.find(s => s.id === supplierId)?.name ?? "—";
       printA4Invoice({
         billNo: data.bill_no, billDate, supplierName: supName,
-        shop: currentShop, items: rowsToSave, subtotal, discount, delivery, total, paid, due,
+        shop: currentShop, items: prepared, subtotal, discount, delivery, total, paid, due,
         paymentMethod, notes,
       });
     }
