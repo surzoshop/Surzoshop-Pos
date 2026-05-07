@@ -47,30 +47,35 @@ export default function InstallApp() {
     };
   }, []);
 
-  const handleInstall = async () => {
+  const triggerInstall = async (deferredEvt: BIPEvent | null, label: string) => {
     if (isInIframe || isPreviewHost) {
       window.open(publishedUrl, "_blank", "noopener,noreferrer");
-      toast.info("ইনস্টল করতে অ্যাপটি নতুন ট্যাবে খোলা হলো — সেখান থেকে ইনস্টল করুন।");
+      toast.info(`${label} ইনস্টলের জন্য নতুন ট্যাবে খোলা হলো`);
       return;
     }
-    if (!deferred) {
-      if (isAndroid) {
-        toast.info("ব্রাউজার মেনু (⋮) → 'Install app' / 'Add to Home screen' ব্যবহার করুন।");
-      } else {
-        toast.info("ইনস্টল প্রম্পট এখনই উপলব্ধ নয়। ব্রাউজার মেনু থেকে ইনস্টল করুন।");
+    if (deferredEvt) {
+      try {
+        await deferredEvt.prompt();
+        const { outcome } = await deferredEvt.userChoice;
+        if (outcome === "accepted") toast.success(`${label} ইনস্টল হচ্ছে...`);
+        else toast.info("ইনস্টল বাতিল হয়েছে");
+      } catch (e: any) {
+        toast.error(e?.message || "ইনস্টল করা যায়নি");
+      } finally {
+        setDeferred(null);
       }
       return;
     }
-    try {
-      await deferred.prompt();
-      const { outcome } = await deferred.userChoice;
-      if (outcome === "accepted") toast.success("ইনস্টল হচ্ছে...");
-      else toast.info("ইনস্টল বাতিল হয়েছে");
-    } catch (e: any) {
-      toast.error(e?.message || "ইনস্টল করা যায়নি");
-    } finally {
-      setDeferred(null);
-    }
+    // No deferred prompt — open in new tab so browser can offer install there
+    window.open(publishedUrl, "_blank", "noopener,noreferrer");
+    toast.info(`${label} নতুন ট্যাবে খোলা হলো — সেখান থেকে ইনস্টল হবে`);
+  };
+
+  const handleInstall = () => triggerInstall(deferred, "মূল অ্যাপ");
+  const handleInstallScanner = () => {
+    // Open scanner page so its own beforeinstallprompt can fire there
+    window.open(`${window.location.origin}/scanner.html`, "_blank", "noopener,noreferrer");
+    toast.info("Scanner App নতুন ট্যাবে খোলা হলো — সেখান থেকে ইনস্টল করুন");
   };
 
   const openPublished = () => window.open(publishedUrl, "_blank", "noopener,noreferrer");
