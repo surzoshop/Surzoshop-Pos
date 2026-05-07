@@ -311,18 +311,18 @@ export default function Installments() {
           {managing && (
             <div className="mt-6 space-y-5">
               {/* Header summary */}
-              <div className="bg-[hsl(var(--surface-container-low))] rounded-2xl p-4">
-                <div className="font-bold text-lg flex items-center gap-2"><User className="h-4 w-4 text-primary" />{managing.customer_name}</div>
+              <div className="bg-gradient-to-br from-[hsl(var(--surface-container-low))] to-[hsl(var(--surface-container))] rounded-2xl p-5 animate-fade-in">
+                <div className="font-bold text-xl flex items-center gap-2"><User className="h-5 w-5 text-primary" />{managing.customer_name}</div>
                 {managing.customer_phone && <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1"><Phone className="h-3 w-3" />{managing.customer_phone}</div>}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-sm">
-                  <Stat label={t("planTotal")} value={fmt(managing.total)} />
-                  <Stat label={t("downPayment")} value={fmt(managing.down_payment)} />
-                  <Stat label={t("noOfInstallments")} value={`${managing.tenure_months}`} />
-                  <Stat label={t("lateFee")} value={`${managing.late_fee_pct}%`} />
-                  <Stat label={t("frequency")} value={t("monthly")} />
-                  <Stat label={t("startDate")} value={managing.start_date ? new Date(managing.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US") : "—"} />
-                  <Stat label={t("paid")} value={fmt(managing.paid)} tone="primary" />
-                  <Stat label={t("due")} value={fmt(managing.due)} tone="destructive" />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
+                  <Stat icon={<Banknote className="h-4 w-4" />} label={t("planTotal")} value={fmt(managing.total)} accent="from-primary/15 to-primary/5" iconColor="text-primary" border="border-primary/25" delay={0} />
+                  <Stat icon={<Wallet className="h-4 w-4" />} label={t("downPayment")} value={fmt(managing.down_payment)} accent="from-info/15 to-info/5" iconColor="text-info" border="border-info/25" delay={50} />
+                  <Stat icon={<CalendarDays className="h-4 w-4" />} label={t("noOfInstallments")} value={`${managing.tenure_months}`} accent="from-secondary/30 to-secondary/10" iconColor="text-[hsl(var(--secondary-foreground))]" border="border-secondary/40" delay={100} />
+                  <Stat icon={<Percent className="h-4 w-4" />} label={t("lateFee")} value={`${managing.late_fee_pct}%`} accent="from-destructive/15 to-destructive/5" iconColor="text-destructive" border="border-destructive/25" delay={150} />
+                  <Stat icon={<Clock className="h-4 w-4" />} label={t("frequency")} value={t("monthly")} accent="from-primary/10 to-primary/5" iconColor="text-primary" border="border-primary/20" delay={200} />
+                  <Stat icon={<CalendarDays className="h-4 w-4" />} label={t("startDate")} value={managing.start_date ? new Date(managing.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US") : "—"} accent="from-info/10 to-info/5" iconColor="text-info" border="border-info/20" delay={250} />
+                  <Stat icon={<CheckCircle2 className="h-4 w-4" />} label={t("paid")} value={fmt(managing.paid)} accent="from-primary/20 to-primary/5" iconColor="text-primary" valueColor="text-primary" border="border-primary/30" delay={300} />
+                  <Stat icon={<AlertTriangle className="h-4 w-4" />} label={t("due")} value={fmt(managing.due)} accent="from-destructive/20 to-destructive/5" iconColor="text-destructive" valueColor="text-destructive" border="border-destructive/30" delay={350} />
                 </div>
               </div>
 
