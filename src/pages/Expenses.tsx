@@ -136,6 +136,40 @@ export default function Expenses() {
 
   const startNew = () => { setEditing(null); setForm(empty); setOpen(true); };
 
+  // Find last entry matching a title (case-insensitive) — used to auto-fill amount
+  const lastByTitle = (title: string) => {
+    const q = title.trim().toLowerCase();
+    if (!q) return null;
+    return items.find((i: any) => (i.title || "").toLowerCase() === q) || null;
+  };
+  // Find last entry by category id
+  const lastByCategory = (catId: string) => {
+    if (!catId) return null;
+    return items.find((i: any) => i.category_id === catId) || null;
+  };
+
+  // Click a category chip in the form: set category, set title to category name, autofill amount from history
+  const pickCategory = (c: { id: string; name: string }) => {
+    const prev = lastByCategory(c.id) || lastByTitle(c.name);
+    setForm((f: any) => ({
+      ...f,
+      category_id: c.id,
+      title: f.title.trim() ? f.title : c.name,
+      amount: (!f.amount || Number(f.amount) === 0) && prev ? Number(prev.amount) : f.amount,
+    }));
+  };
+
+  // Click a title suggestion: set title + autofill amount/category from history
+  const pickTitleSuggestion = (s: string) => {
+    const prev = lastByTitle(s);
+    setForm((f: any) => ({
+      ...f,
+      title: s,
+      amount: prev && (!f.amount || Number(f.amount) === 0) ? Number(prev.amount) : f.amount,
+      category_id: prev && !f.category_id ? (prev.category_id ?? "") : f.category_id,
+    }));
+  };
+
   const saveCat = async () => {
     if (editCat) {
       if (!editCat.name.trim()) return;
@@ -433,7 +467,7 @@ export default function Expenses() {
                 return (
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {sugg.map(s => (
-                      <button key={s} type="button" onClick={() => setForm({ ...form, title: s })}
+                      <button key={s} type="button" onClick={() => pickTitleSuggestion(s)}
                         className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-info/10 text-info hover:bg-info/20 transition">
                         {s}
                       </button>
@@ -472,7 +506,7 @@ export default function Expenses() {
                     const Icon = catIcon(c.name);
                     const active = form.category_id === c.id;
                     return (
-                      <button key={c.id} type="button" onClick={() => setForm({ ...form, category_id: c.id })}
+                      <button key={c.id} type="button" onClick={() => pickCategory(c)}
                         className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all inline-flex items-center gap-1.5 ${
                           active
                             ? "bg-destructive text-destructive-foreground shadow"
