@@ -17,6 +17,8 @@ export default function Dashboard() {
     monthSalesCount: 0, deliveredToday: 0, lowStockCount: 0,
     totalProducts: 0, stockUnits: 0, stockCostValue: 0, stockSaleValue: 0,
     totalCustomers: 0, totalDue: 0,
+    todayStockUnits: 0, yestStockUnits: 0,
+    todaySoldQty: 0, yestSoldQty: 0,
   });
   const [weekly, setWeekly] = useState<{ day: string; total: number }[]>([]);
   const [topProducts, setTopProducts] = useState<{ name: string; qty: number; revenue: number }[]>([]);
