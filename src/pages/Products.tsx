@@ -198,16 +198,67 @@ export default function Products() {
       </div>
 
       <SurfaceCard className="p-3 md:p-6">
-        <div className="relative mb-4 md:mb-6">
+        <div className="relative mb-3">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <input
             type="text"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => { setSearch(e.target.value); setShowCatSuggest(true); }}
+            onFocus={() => setShowCatSuggest(true)}
+            onBlur={() => setTimeout(() => setShowCatSuggest(false), 150)}
             placeholder={t("productSearch")}
             className="w-full h-12 pl-12 pr-4 rounded-xl bg-[hsl(var(--surface-container-low))] border-none focus:outline-none focus:ring-2 focus:ring-primary/30 text-sm"
           />
+          {showCatSuggest && catSuggestions.length > 0 && (
+            <div className="absolute z-20 left-0 right-0 mt-1 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))] rounded-xl shadow-lg overflow-hidden animate-fade-in">
+              <div className="px-3 pt-2 pb-1 text-[10px] font-extrabold uppercase tracking-widest text-muted-foreground">ক্যাটাগরি সাজেশন</div>
+              {catSuggestions.map(c => (
+                <button
+                  key={c.id}
+                  onMouseDown={() => { setSelectedCat(c.id); setSearch(""); setShowCatSuggest(false); }}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2 hover:bg-primary/10 text-left transition-colors"
+                >
+                  <span className="flex items-center gap-2 text-sm font-bold text-foreground">
+                    <Tag className="h-3.5 w-3.5 text-primary" /> {c.name}
+                  </span>
+                  <span className="text-[10px] font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-full">{catCounts[c.id] ?? 0} পণ্য</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* Category chip filters */}
+        {cats.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-4 md:mb-5">
+            <button
+              onClick={() => setSelectedCat(null)}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                selectedCat === null
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "bg-[hsl(var(--surface-container-low))] text-foreground hover:bg-primary/10"
+              }`}
+            >
+              সব ({items.length})
+            </button>
+            {cats.map(c => (
+              <button
+                key={c.id}
+                onClick={() => setSelectedCat(selectedCat === c.id ? null : c.id)}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all inline-flex items-center gap-1.5 ${
+                  selectedCat === c.id
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "bg-[hsl(var(--surface-container-low))] text-foreground hover:bg-primary/10"
+                }`}
+              >
+                <Tag className="h-3 w-3" /> {c.name}
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${
+                  selectedCat === c.id ? "bg-primary-foreground/20" : "bg-primary/15 text-primary"
+                }`}>{catCounts[c.id] ?? 0}</span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Mobile: cards */}
         <div className="md:hidden space-y-2">
@@ -236,9 +287,7 @@ export default function Products() {
                 </div>
                 <div className="flex items-center justify-between mt-1.5">
                   <span className="font-bold text-primary text-sm">{fmt(p.price)}</span>
-                  {p.stock === 0 ? <StatusPill tone="destructive">{t("outOfStock")}</StatusPill>
-                    : p.stock <= 5 ? <StatusPill tone="warning">{p.stock} {p.unit}</StatusPill>
-                    : <span className="text-xs text-foreground/70 font-medium">{p.stock} {p.unit}</span>}
+                  {stockBadge(p)}
                 </div>
               </div>
             </div>
