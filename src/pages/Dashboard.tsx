@@ -497,3 +497,59 @@ function MiniStat({ to, theme, icon, label, value }: any) {
     </Link>
   );
 }
+
+function DailyComparison({ todayStock, yestStock, todaySold, yestSold, lang }: any) {
+  const fmtN = (n: number) => new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-US").format(Math.max(0, Math.round(n)));
+  const stockDiff = todayStock - yestStock;
+  const soldDiff = todaySold - yestSold;
+  const cells = [
+    { label: "গতকালের স্টক", value: fmtN(yestStock), tone: "indigo", icon: <Archive className="h-4 w-4" /> },
+    { label: "আজকের স্টক",   value: fmtN(todayStock), tone: "teal",  icon: <Boxes className="h-4 w-4" />, diff: stockDiff },
+    { label: "গতকাল বিক্রি", value: fmtN(yestSold),   tone: "amber", icon: <PackageCheck className="h-4 w-4" /> },
+    { label: "আজ বিক্রি",     value: fmtN(todaySold),  tone: "emerald", icon: <ShoppingBag className="h-4 w-4" />, diff: soldDiff },
+  ];
+  const toneMap: Record<string, { grad: string; shadow: string; ring: string; bg: string }> = {
+    indigo:  { grad: "from-indigo-400 to-indigo-600",  shadow: "shadow-indigo-500/30",  ring: "border-indigo-500/20",  bg: "bg-indigo-500/5" },
+    teal:    { grad: "from-teal-400 to-teal-600",      shadow: "shadow-teal-500/30",    ring: "border-teal-500/20",    bg: "bg-teal-500/5" },
+    amber:   { grad: "from-amber-400 to-orange-500",   shadow: "shadow-amber-500/30",   ring: "border-amber-500/20",   bg: "bg-amber-500/5" },
+    emerald: { grad: "from-emerald-400 to-emerald-600",shadow: "shadow-emerald-500/30", ring: "border-emerald-500/20", bg: "bg-emerald-500/5" },
+  };
+  return (
+    <div className="bg-[hsl(var(--surface-container-lowest))] p-5 md:p-6 rounded-2xl border border-[hsl(var(--surface-container-high))]/40">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
+          <TrendingUp className="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h3 className="text-base md:text-lg font-bold text-foreground">আজ বনাম গতকাল</h3>
+          <p className="text-[11px] text-muted-foreground">স্টক ও বিক্রয় তুলনা</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2.5">
+        {cells.map((c, i) => {
+          const T = toneMap[c.tone];
+          const diff = c.diff;
+          const up = diff !== undefined && diff > 0;
+          const down = diff !== undefined && diff < 0;
+          return (
+            <div key={i} className={`relative ${T.bg} border ${T.ring} rounded-xl p-3 flex flex-col gap-1.5 hover:-translate-y-0.5 transition-all`}>
+              <div className="flex items-center justify-between gap-2">
+                <div className={`h-8 w-8 bg-gradient-to-br ${T.grad} text-white rounded-lg flex items-center justify-center shadow ${T.shadow}`}>
+                  {c.icon}
+                </div>
+                {diff !== undefined && diff !== 0 && (
+                  <span className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${up ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-rose-500/15 text-rose-600 dark:text-rose-400"}`}>
+                    {up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                    {fmtN(Math.abs(diff))}
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider truncate font-bn">{c.label}</p>
+              <p className="text-lg md:text-xl font-black text-foreground truncate font-bn">{c.value}</p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
