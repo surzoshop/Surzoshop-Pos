@@ -154,8 +154,8 @@ export default function StockAdjustments() {
                   <td className="py-2 text-muted-foreground font-mono text-xs">{p.barcode || "—"}</td>
                   <td className="py-2">
                     {p.stock === 0 ? <StatusPill tone="destructive">শেষ</StatusPill>
-                      : p.stock <= 5 ? <StatusPill tone="warning">{p.stock} {p.unit}</StatusPill>
-                      : <span className="font-bold text-foreground">{p.stock} {p.unit}</span>}
+                      : p.stock === 1 ? <StatusPill tone="warning">⚠ {p.stock} {p.unit}</StatusPill>
+                      : <span className="font-extrabold text-success">{p.stock} {p.unit}</span>}
                   </td>
                   <td className="py-2 text-right">
                     <Button size="sm" onClick={() => startEdit(p)} className="gradient-primary gap-1">
