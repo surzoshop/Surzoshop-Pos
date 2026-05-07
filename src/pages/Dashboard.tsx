@@ -87,6 +87,11 @@ export default function Dashboard() {
     const stockCostValue = productsArr.reduce((a, p) => a + Number(p.stock) * Number(p.cost), 0);
     const stockSaleValue = productsArr.reduce((a, p) => a + Number(p.stock) * Number(p.price), 0);
     const totalDue = (duesData.data ?? []).reduce((a: number, d: any) => a + Number(d.due), 0);
+    const todaySoldQty = (soldTodayData.data ?? []).reduce((a: number, b: any) => a + Number(b.qty), 0);
+    const yestSoldQty = (soldYestData.data ?? []).reduce((a: number, b: any) => a + Number(b.qty), 0);
+    const purchasedTodayQty = (purchasedTodayData.data ?? []).reduce((a: number, b: any) => a + Number(b.qty), 0);
+    // আজকের সকাল = বর্তমান stock + আজ বিক্রি − আজ ক্রয়
+    const yestStockUnits = stockUnits + todaySoldQty - purchasedTodayQty;
     setStats({
       todaySales: todayTotal, todayCount: salesToday.data?.length ?? 0,
       monthSales, monthProfit,
@@ -97,6 +102,8 @@ export default function Dashboard() {
       stockUnits, stockCostValue, stockSaleValue,
       totalCustomers: customersCount.count ?? 0,
       totalDue,
+      todayStockUnits: stockUnits, yestStockUnits,
+      todaySoldQty, yestSoldQty,
     });
   };
 
