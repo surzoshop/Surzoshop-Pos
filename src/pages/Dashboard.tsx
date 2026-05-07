@@ -42,7 +42,7 @@ export default function Dashboard() {
       supabase.from("sale_items").select("product_name,qty,subtotal,sales!inner(created_at)").gte("sales.created_at", weekStart.toISOString()),
       supabase.from("products").select("id", { count: "exact", head: true }).lte("stock", 5),
       supabase.from("sales").select("id,invoice_no,total,due,created_at,customers(name)").order("created_at", { ascending: false }).limit(4),
-      supabase.from("products").select("stock,cost", { count: "exact" }).eq("is_active", true),
+      supabase.from("products").select("stock,cost,price", { count: "exact" }).eq("is_active", true),
       supabase.from("customers").select("id", { count: "exact", head: true }),
       supabase.from("sales").select("due").gt("due", 0),
     ]);
