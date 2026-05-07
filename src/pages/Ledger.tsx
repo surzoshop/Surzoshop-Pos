@@ -131,11 +131,13 @@ export default function Ledger() {
 
   useEffect(() => {
     const r = rangeDates(topRange);
-    if (topRange !== "lifetime") { setTopFrom(r.from); setTopTo(r.to); }
+    setTopFrom(r.from === "2000-01-01" ? "" : r.from);
+    setTopTo(r.from === "2000-01-01" ? "" : r.to);
   }, [topRange]);
   useEffect(() => {
     const r = rangeDates(lowRange);
-    if (lowRange !== "lifetime") { setLowFrom(r.from); setLowTo(r.to); }
+    setLowFrom(r.from === "2000-01-01" ? "" : r.from);
+    setLowTo(r.from === "2000-01-01" ? "" : r.to);
   }, [lowRange]);
 
   const load = async () => {
@@ -150,7 +152,10 @@ export default function Ledger() {
     let pq = supabase.from("purchases").select("created_at,total,suppliers(name)").order("created_at", { ascending: false });
     if (currentShop) pq = pq.eq("shop_id", currentShop.id);
 
-    const [{ data, error }, { data: sd }, { data: pd }] = await Promise.all([q, sq, pq]);
+    let eq_ = supabase.from("expenses").select("expense_date,amount,title,payment_method").order("expense_date", { ascending: false });
+    if (currentShop) eq_ = eq_.eq("shop_id", currentShop.id);
+
+    const [{ data, error }, { data: sd }, { data: pd }, { data: ed }] = await Promise.all([q, sq, pq, eq_]);
     if (error) toast.error(error.message);
     setEntries((data ?? []) as any);
     setSalesAgg((sd ?? []).map((s: any) => ({
@@ -162,6 +167,12 @@ export default function Ledger() {
       date: String(p.created_at).slice(0, 10),
       total: Number(p.total || 0),
       party: p.suppliers?.name ?? null,
+    })));
+    setExpensesAgg((ed ?? []).map((e: any) => ({
+      date: String(e.expense_date).slice(0, 10),
+      total: Number(e.amount || 0),
+      title: e.title ?? "খরচ",
+      method: e.payment_method ?? "cash",
     })));
     setLoading(false);
   };
