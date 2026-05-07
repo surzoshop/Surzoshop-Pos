@@ -258,8 +258,11 @@ const base = {
     guarantor: "Guarantor", guarantorName: "Guarantor Name", relation: "Relation",
     loanTerms: "Loan Terms", interestRate: "Interest Rate (%)",
     tenureMonths: "Tenure (months)", emi: "Monthly EMI",
-    lateFee: "Late Fee/day", agreement: "Agreement",
+    lateFee: "Late Fee (%)", agreement: "Agreement",
     upload: "Upload", remaining: "Remaining",
+    managePlan: "Manage Plan", startDate: "Start Date",
+    frequency: "Frequency", monthly: "Monthly", planTotal: "Plan Total", noOfInstallments: "No. of Installments",
+    lateFeeAccrued: "Late Fee", payable: "Payable", overdueDays: "Days Overdue",
     // ===== Reports =====
     reportPeriod: "Report Period", customRange: "Custom Range", from: "From", to: "To",
     thisYear: "This Year", lastMonth: "Last Month", today: "Today",
