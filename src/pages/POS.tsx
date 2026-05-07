@@ -481,9 +481,41 @@ export default function POS() {
 
           <div className="space-y-2 text-sm">
             <div className="flex justify-between text-muted-foreground"><span>{t("subtotal")}:</span><span>{fmt(subtotal)}</span></div>
-            <div className="flex justify-between text-muted-foreground"><span>{t("vat")}:</span><span>{fmt(vat)}</span></div>
+            <div className="flex justify-between text-muted-foreground"><span>{t("vat")} (0%):</span><span>{fmt(0)}</span></div>
             <div className="flex justify-between text-muted-foreground"><span>{t("discount")}:</span><span className="text-destructive">-{fmt(discount)}</span></div>
-            <div className="flex justify-between text-xl font-black pt-2 border-t border-dashed border-[hsl(var(--surface-container-highest))]"><span>{t("grandTotal")}:</span><span className="text-primary">{fmt(total)}</span></div>
+            <div className="flex justify-between items-center text-xl font-black pt-2 border-t border-dashed border-[hsl(var(--surface-container-highest))]">
+              <span>{t("grandTotal")}:</span>
+              {editingTotal ? (
+                <input
+                  autoFocus
+                  type="number"
+                  min={0}
+                  defaultValue={total}
+                  onBlur={(e) => {
+                    const v = +e.target.value;
+                    setTotalOverride(Number.isFinite(v) ? v : null);
+                    setEditingTotal(false);
+                  }}
+                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                  className="w-32 text-right bg-[hsl(var(--surface-container-low))] rounded-lg px-2 py-1 text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setEditingTotal(true)}
+                  title="মোট টাকা পরিবর্তন করতে ক্লিক করুন"
+                  className="text-primary hover:underline decoration-dashed underline-offset-4 flex items-center gap-1"
+                >
+                  {fmt(total)}
+                  {totalOverride !== null && <span className="text-[10px] font-normal text-muted-foreground">(edited)</span>}
+                </button>
+              )}
+            </div>
+            {totalOverride !== null && (
+              <button onClick={() => setTotalOverride(null)} className="text-[11px] text-muted-foreground hover:text-primary underline">
+                মূল মোট ({fmt(computedBase)}) এ ফিরে যান
+              </button>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
