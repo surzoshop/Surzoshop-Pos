@@ -197,7 +197,7 @@ export function AddCustomerSheet({ open, onOpenChange, onSaved, customer }: Prop
         <div className="border-t border-[hsl(var(--surface-container))] px-6 py-4 flex gap-3 bg-[hsl(var(--surface-container-lowest))]">
           <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>ক্যানসেল</Button>
           <Button onClick={save} disabled={saving} className="flex-1 gradient-primary text-primary-foreground font-bold">
-            {saving ? "যোগ হচ্ছে..." : "ক্রেতা যুক্ত করুন"}
+            {saving ? "সংরক্ষণ হচ্ছে..." : isEdit ? "আপডেট করুন" : "ক্রেতা যুক্ত করুন"}
           </Button>
         </div>
       </SheetContent>
