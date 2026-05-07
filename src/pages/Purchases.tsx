@@ -346,7 +346,7 @@ export default function Purchases() {
                 <Receipt className="h-5 w-5 text-primary" />
               </div>
               <div className="min-w-0">
-                <DialogTitle className="text-sm sm:text-base font-bold">নতুন ক্রয়</DialogTitle>
+                <h2 className="text-sm sm:text-base font-bold">নতুন ক্রয়</h2>
                 <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">নতুন পারচেজ এন্ট্রি তৈরি করুন</p>
               </div>
             </div>
