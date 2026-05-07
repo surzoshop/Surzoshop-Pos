@@ -26,6 +26,7 @@ export default function Purchases() {
   const [categories, setCategories] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [viewBill, setViewBill] = useState<any>(null);
   const [payOpen, setPayOpen] = useState(false);
   const [payTarget, setPayTarget] = useState<any>(null);
