@@ -483,39 +483,54 @@ export default function POS() {
             <div className="flex justify-between text-muted-foreground"><span>{t("subtotal")}:</span><span>{fmt(subtotal)}</span></div>
             <div className="flex justify-between text-muted-foreground"><span>{t("vat")} (0%):</span><span>{fmt(0)}</span></div>
             <div className="flex justify-between text-muted-foreground"><span>{t("discount")}:</span><span className="text-destructive">-{fmt(discount)}</span></div>
-            <div className="flex justify-between items-center text-xl font-black pt-2 border-t border-dashed border-[hsl(var(--surface-container-highest))]">
-              <span>{t("grandTotal")}:</span>
-              {editingTotal ? (
-                <input
-                  autoFocus
-                  type="number"
-                  min={0}
-                  defaultValue={total}
-                  onBlur={(e) => {
-                    const v = +e.target.value;
-                    setTotalOverride(Number.isFinite(v) ? v : null);
-                    setEditingTotal(false);
-                  }}
-                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-                  className="w-32 text-right bg-[hsl(var(--surface-container-low))] rounded-lg px-2 py-1 text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
-                />
-              ) : (
+
+            {/* Editable Grand Total — always-visible editor with -/+ buttons */}
+            <div className="pt-3 border-t border-dashed border-[hsl(var(--surface-container-highest))]">
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <span className="text-base font-extrabold">{t("grandTotal")}:</span>
+                {totalOverride !== null && (
+                  <button onClick={() => setTotalOverride(null)} className="text-[11px] text-muted-foreground hover:text-primary underline">
+                    মূল ({fmt(computedBase)}) এ ফিরুন
+                  </button>
+                )}
+              </div>
+              <div className={`flex items-stretch rounded-xl border-2 ${totalOverride !== null ? "border-primary/60 bg-primary/5" : "border-primary/30 bg-[hsl(var(--surface-container-low))]"} shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-primary/40 transition-all`}>
                 <button
                   type="button"
-                  onClick={() => setEditingTotal(true)}
-                  title="মোট টাকা পরিবর্তন করতে ক্লিক করুন"
-                  className="text-primary hover:underline decoration-dashed underline-offset-4 flex items-center gap-1"
+                  onClick={() => setTotalOverride(Math.max(0, Math.round((total - 10) * 100) / 100))}
+                  className="px-3 sm:px-4 bg-[hsl(var(--surface-container))] hover:bg-[hsl(var(--surface-container-high))] text-primary font-bold flex items-center justify-center active:scale-95 transition-all border-r border-primary/20"
+                  aria-label="কমান"
+                  title="১০ টাকা কমান"
                 >
-                  {fmt(total)}
-                  {totalOverride !== null && <span className="text-[10px] font-normal text-muted-foreground">(edited)</span>}
+                  <Minus className="h-5 w-5" />
                 </button>
-              )}
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={Number.isFinite(total) ? total : 0}
+                  onChange={(e) => {
+                    const v = +e.target.value;
+                    setTotalOverride(Number.isFinite(v) ? v : 0);
+                  }}
+                  className="flex-1 min-w-0 text-center bg-transparent text-xl sm:text-2xl font-black text-primary px-2 py-2.5 focus:outline-none tabular-nums"
+                  title="সরাসরি লিখে edit করুন"
+                />
+                <button
+                  type="button"
+                  onClick={() => setTotalOverride(Math.round((total + 10) * 100) / 100)}
+                  className="px-3 sm:px-4 bg-[hsl(var(--surface-container))] hover:bg-[hsl(var(--surface-container-high))] text-primary font-bold flex items-center justify-center active:scale-95 transition-all border-l border-primary/20"
+                  aria-label="বাড়ান"
+                  title="১০ টাকা বাড়ান"
+                >
+                  <Plus className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex justify-between items-center mt-1.5 text-[10px] text-muted-foreground">
+                <span>{totalOverride !== null ? "✎ custom মোট সেট করা" : "ক্লিক বা +/- চাপুন — custom মোট দিতে পারেন"}</span>
+                <span>−/+ = ৳১০</span>
+              </div>
             </div>
-            {totalOverride !== null && (
-              <button onClick={() => setTotalOverride(null)} className="text-[11px] text-muted-foreground hover:text-primary underline">
-                মূল মোট ({fmt(computedBase)}) এ ফিরে যান
-              </button>
-            )}
           </div>
 
           <div className="flex flex-col gap-2">
