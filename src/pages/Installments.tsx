@@ -328,60 +328,71 @@ export default function Installments() {
 
               {/* Schedule */}
               <div>
-                <div className="text-[11px] uppercase tracking-widest text-muted-foreground font-bold mb-3">{t("schedule")}</div>
-                <div className="space-y-2">
+                <div className="text-sm uppercase tracking-widest text-muted-foreground font-bold mb-3">{t("schedule")}</div>
+                <div className="space-y-3">
                   {/* Down payment row */}
                   {managing.down_payment > 0 && (
-                    <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-xl px-4 py-3">
+                    <div className="flex items-center justify-between bg-gradient-to-r from-primary/15 to-primary/5 border-2 border-primary/30 rounded-2xl px-5 py-4 shadow-sm hover:shadow-md transition-all animate-fade-in">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">DP</div>
+                        <div className="w-12 h-12 rounded-xl gradient-primary text-primary-foreground flex items-center justify-center font-black text-sm shadow-md">DP</div>
                         <div>
-                          <div className="font-semibold text-sm">{t("downPayment")}</div>
-                          <div className="text-xs text-muted-foreground">{managing.start_date ? new Date(managing.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US") : "—"}</div>
+                          <div className="font-bold text-base">{t("downPayment")}</div>
+                          <div className="text-sm text-muted-foreground">{managing.start_date ? new Date(managing.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US") : "—"}</div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold">{fmt(managing.down_payment)}</div>
+                        <div className="font-black text-lg text-primary">{fmt(managing.down_payment)}</div>
                         <StatusPill tone="success">{t("paid")}</StatusPill>
                       </div>
                     </div>
                   )}
-                  {managing.installments.map(i => {
+                  {managing.installments.map((i, idx) => {
                     const status = i.derived_status as "paid" | "overdue" | "pending";
                     const tone = status === "paid" ? "success" : status === "overdue" ? "destructive" : "warning";
                     const fee = computeLateFee(i, managing.late_fee_pct);
                     const days = overdueDays(i);
                     const remaining = Math.max(0, Number(i.amount) - Number(i.paid_amount));
                     const payable = remaining + fee;
+                    const rowBg = status === "overdue"
+                      ? "bg-gradient-to-r from-destructive/15 to-destructive/5 border-destructive/30"
+                      : status === "paid"
+                        ? "bg-gradient-to-r from-primary/15 to-primary/5 border-primary/25"
+                        : "bg-gradient-to-r from-info/10 to-info/5 border-info/20";
+                    const badgeBg = status === "paid"
+                      ? "gradient-primary text-primary-foreground"
+                      : status === "overdue"
+                        ? "bg-gradient-to-br from-destructive to-destructive/70 text-destructive-foreground"
+                        : "bg-gradient-to-br from-info to-info/70 text-info-foreground";
                     return (
-                      <div key={i.id} className={`rounded-xl px-4 py-3 border ${status === "overdue" ? "bg-destructive/5 border-destructive/30" : status === "paid" ? "bg-primary/5 border-primary/20" : "bg-[hsl(var(--surface-container-low))] border-[hsl(var(--surface-container-high))]/40"}`}>
+                      <div key={i.id} style={{ animationDelay: `${Math.min(idx, 12) * 40}ms` }}
+                        className={`rounded-2xl px-5 py-4 border-2 shadow-sm hover:shadow-md transition-all animate-fade-in ${rowBg}`}>
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-xs ${status === "paid" ? "bg-primary/10 text-primary" : status === "overdue" ? "bg-destructive/10 text-destructive" : "bg-[hsl(var(--surface-container-high))] text-foreground"}`}>
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-base shadow-md ${badgeBg}`}>
                               {i.installment_no}
                             </div>
                             <div className="min-w-0">
-                              <div className="font-semibold text-sm">{lang === "bn" ? `কিস্তি ${i.installment_no}` : `Installment ${i.installment_no}`}</div>
-                              <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
+                              <div className="font-bold text-base">{lang === "bn" ? `কিস্তি ${i.installment_no}` : `Installment ${i.installment_no}`}</div>
+                              <div className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                                <Clock className="h-3.5 w-3.5" />
                                 {new Date(i.due_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US")}
-                                {days > 0 && <span className="text-destructive">• {days} {t("overdueDays")}</span>}
+                                {days > 0 && <span className="text-destructive font-semibold">• {days} {t("overdueDays")}</span>}
                               </div>
                             </div>
                           </div>
                           <div className="text-right shrink-0">
-                            <div className="font-bold">{fmt(Number(i.amount))}</div>
-                            {fee > 0 && <div className="text-[10px] text-destructive font-semibold">+{fmt(fee)} {t("lateFeeAccrued")}</div>}
+                            <div className="font-black text-lg">{fmt(Number(i.amount))}</div>
+                            {fee > 0 && <div className="text-xs text-destructive font-bold">+{fmt(fee)} {t("lateFeeAccrued")}</div>}
                             <StatusPill tone={tone}>{t(status as any)}</StatusPill>
                           </div>
                         </div>
                         {status !== "paid" && (
-                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-[hsl(var(--surface-container-high))]/40">
-                            <div className="text-xs">
+                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-[hsl(var(--surface-container-high))]/50">
+                            <div className="text-sm">
                               <span className="text-muted-foreground">{t("payable")}: </span>
-                              <span className="font-bold text-foreground">{fmt(payable)}</span>
+                              <span className="font-black text-foreground">{fmt(payable)}</span>
                             </div>
-                            <Button size="sm" className="gradient-primary text-primary-foreground"
+                            <Button size="sm" className="gradient-primary text-primary-foreground shadow-md hover:brightness-110"
                               onClick={() => { setPaying(i); setAmount(payable); }}>
                               <Wallet className="h-4 w-4 mr-1" />{t("pay")}
                             </Button>
@@ -392,6 +403,7 @@ export default function Installments() {
                   })}
                 </div>
               </div>
+            </div>
             </div>
           )}
         </SheetContent>
