@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ImageUpload } from "@/components/ImageUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Package, Tag, DollarSign, Layers, ShieldCheck } from "lucide-react";
+import { Package, Tag, DollarSign, Layers, ShieldCheck, TrendingUp } from "lucide-react";
 
 function namePrefix(name: string): string {
   const ascii = (name || "").replace(/[^A-Za-z]/g, "");
@@ -26,6 +26,7 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onSaved?: () => void;
+  editing?: any | null;
 }
 
 const WARRANTY_PRESETS = [
@@ -36,24 +37,48 @@ const WARRANTY_PRESETS = [
   { label: "৫ বছর", months: 60 },
 ];
 
-export function AddProductSheet({ open, onOpenChange, onSaved }: Props) {
+const WARRANTY_TYPES = [
+  "ম্যানুফ্যাকচারার",
+  "সেলার / দোকান",
+  "ব্র্যান্ড অফিসিয়াল",
+  "ইন্টারন্যাশনাল",
+];
+
+export function AddProductSheet({ open, onOpenChange, onSaved, editing }: Props) {
   const { toast } = useToast();
   const [cats, setCats] = useState<any[]>([]);
   const empty = {
     name: "", category_id: "", price: "", cost: "", stock: "", unit: "pcs",
     image_url: "", sku: "",
-    has_warranty: false, warranty_months: "" as string | number,
+    has_warranty: false, warranty_months: "" as string | number, warranty_type: "ম্যানুফ্যাকচারার",
   };
   const [form, setForm] = useState<any>(empty);
   const [saving, setSaving] = useState(false);
+  const isEdit = !!editing?.id;
 
   useEffect(() => {
     if (open) {
-      setForm(empty);
+      if (editing?.id) {
+        setForm({
+          ...empty,
+          ...editing,
+          category_id: editing.category_id ?? "",
+          image_url: editing.image_url ?? "",
+          warranty_months: editing.warranty_months ?? "",
+          warranty_type: editing.warranty_type ?? "ম্যানুফ্যাকচারার",
+        });
+      } else {
+        setForm(empty);
+      }
       supabase.from("categories").select("*").order("name").then(({ data }) => setCats(data ?? []));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, editing]);
+
+  const cost = Number(form.cost) || 0;
+  const price = Number(form.price) || 0;
+  const profit = price - cost;
+  const profitPct = cost > 0 ? (profit / cost) * 100 : 0;
 
   const save = async () => {
     if (!form.name?.trim()) return toast({ title: "পণ্যের নাম দিন", variant: "destructive" });
@@ -62,23 +87,28 @@ export function AddProductSheet({ open, onOpenChange, onSaved }: Props) {
     }
     setSaving(true);
     const productName = form.name.trim();
-    const barcode = await generateBarcode(productName);
-    const { error } = await supabase.from("products").insert({
+    const payload: any = {
       name: productName,
       sku: form.sku?.trim() || null,
-      price: Number(form.price) || 0,
-      cost: Number(form.cost) || 0,
+      price,
+      cost,
       stock: Number(form.stock) || 0,
       unit: form.unit || "pcs",
       category_id: form.category_id || null,
       image_url: form.image_url || null,
-      barcode,
       has_warranty: !!form.has_warranty,
       warranty_months: form.has_warranty ? Number(form.warranty_months) : null,
-    });
+    };
+    let error;
+    if (isEdit) {
+      ({ error } = await supabase.from("products").update(payload).eq("id", editing.id));
+    } else {
+      payload.barcode = await generateBarcode(productName);
+      ({ error } = await supabase.from("products").insert(payload));
+    }
     setSaving(false);
     if (error) return toast({ title: error.message, variant: "destructive" });
-    toast({ title: "পণ্য যোগ হয়েছে" });
+    toast({ title: isEdit ? "পণ্য আপডেট হয়েছে" : "পণ্য যোগ হয়েছে" });
     onOpenChange(false);
     onSaved?.();
   };
@@ -95,7 +125,9 @@ export function AddProductSheet({ open, onOpenChange, onSaved }: Props) {
               <Package className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <SheetTitle className="text-xl font-black">নতুন পণ্য যুক্ত করুন</SheetTitle>
+              <SheetTitle className="text-xl font-black">
+                {isEdit ? "পণ্য সম্পাদনা" : "নতুন পণ্য যুক্ত করুন"}
+              </SheetTitle>
               <SheetDescription className="text-xs">পণ্যের সকল তথ্য পূরণ করুন</SheetDescription>
             </div>
           </div>
@@ -134,14 +166,23 @@ export function AddProductSheet({ open, onOpenChange, onSaved }: Props) {
             </div>
           </section>
 
-          {/* Pricing */}
+          {/* Pricing + Profit */}
           <section className="space-y-3">
             <h3 className="text-sm font-bold flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-primary" /> মূল্য
+              <DollarSign className="h-4 w-4 text-primary" /> মূল্য ও প্রফিট
             </h3>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>ক্রয় মূল্য (৳)</Label><Input type="number" inputMode="decimal" value={form.cost} onChange={e => setForm({ ...form, cost: e.target.value })} /></div>
               <div><Label>বিক্রয় মূল্য (৳) *</Label><Input type="number" inputMode="decimal" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} /></div>
+            </div>
+            <div className={`rounded-xl p-3 flex items-center justify-between ${profit >= 0 ? "bg-success/10" : "bg-destructive/10"}`}>
+              <span className="flex items-center gap-2 text-xs font-bold">
+                <TrendingUp className={`h-4 w-4 ${profit >= 0 ? "text-success" : "text-destructive"}`} />
+                প্রফিট প্রতি ইউনিট
+              </span>
+              <span className={`text-sm font-black ${profit >= 0 ? "text-success" : "text-destructive"}`}>
+                ৳{profit.toFixed(2)} ({profitPct.toFixed(1)}%)
+              </span>
             </div>
           </section>
 
@@ -154,7 +195,10 @@ export function AddProductSheet({ open, onOpenChange, onSaved }: Props) {
               <div><Label>বর্তমান মজুদ</Label><Input type="number" inputMode="numeric" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} /></div>
               <div><Label>একক</Label><Input value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })} placeholder="pcs / kg / ltr" /></div>
             </div>
-            <p className="text-[11px] text-muted-foreground">বারকোড স্বয়ংক্রিয়ভাবে তৈরি হবে।</p>
+            {!isEdit && <p className="text-[11px] text-muted-foreground">বারকোড স্বয়ংক্রিয়ভাবে তৈরি হবে।</p>}
+            {isEdit && editing?.barcode && (
+              <p className="text-[11px] text-muted-foreground font-mono">বারকোড: {editing.barcode}</p>
+            )}
           </section>
 
           {/* Warranty */}
@@ -169,7 +213,7 @@ export function AddProductSheet({ open, onOpenChange, onSaved }: Props) {
               />
             </div>
             <p className="text-[11px] text-muted-foreground">
-              মোবাইল, ফ্রিজ, TV, ইলেকট্রনিক্স পণ্যের জন্য ওয়ারেন্টি চালু করুন। বিক্রির তারিখ থেকে স্বয়ংক্রিয়ভাবে গণনা শুরু হবে।
+              মোবাইল, ফ্রিজ, TV, ইলেকট্রনিক্স পণ্যের জন্য ওয়ারেন্টি চালু করুন।
             </p>
             {form.has_warranty && (
               <div className="space-y-3 pt-2 border-t border-info/20">
@@ -189,16 +233,27 @@ export function AddProductSheet({ open, onOpenChange, onSaved }: Props) {
                     </button>
                   ))}
                 </div>
-                <div>
-                  <Label>ওয়ারেন্টি সময় (মাস) *</Label>
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    value={form.warranty_months}
-                    onChange={e => setForm({ ...form, warranty_months: e.target.value })}
-                    placeholder="যেমন: 12"
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>সময় (মাস) *</Label>
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      value={form.warranty_months}
+                      onChange={e => setForm({ ...form, warranty_months: e.target.value })}
+                      placeholder="যেমন: 12"
+                    />
+                  </div>
+                  <div>
+                    <Label>ওয়ারেন্টির ধরন</Label>
+                    <Select value={form.warranty_type} onValueChange={(v) => setForm({ ...form, warranty_type: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {WARRANTY_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
             )}
@@ -208,7 +263,7 @@ export function AddProductSheet({ open, onOpenChange, onSaved }: Props) {
         <div className="border-t border-[hsl(var(--surface-container))] px-6 py-4 flex gap-3 bg-[hsl(var(--surface-container-lowest))]">
           <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>ক্যানসেল</Button>
           <Button onClick={save} disabled={saving} className="flex-1 gradient-primary text-primary-foreground font-bold">
-            {saving ? "যোগ হচ্ছে..." : "প্রোডাক্ট যুক্ত করুন"}
+            {saving ? "সংরক্ষণ হচ্ছে..." : isEdit ? "আপডেট করুন" : "প্রোডাক্ট যুক্ত করুন"}
           </Button>
         </div>
       </SheetContent>
