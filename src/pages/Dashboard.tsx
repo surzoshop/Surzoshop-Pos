@@ -5,6 +5,7 @@ import { useT } from "@/i18n/LanguageContext";
 import {
   Calendar, Wallet, ShoppingBag, AlertTriangle, PlusCircle, ScanLine,
   UserPlus, TrendingUp, Headset, Package, Users, Boxes, CircleDollarSign,
+  ArrowUpRight, ArrowDownRight, Archive, PackageCheck,
 } from "lucide-react";
 import { AddProductSheet } from "@/components/AddProductSheet";
 import { AddCustomerSheet } from "@/components/AddCustomerSheet";
