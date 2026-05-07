@@ -148,25 +148,25 @@ export default function Expenses() {
     return items.find((i: any) => i.category_id === catId) || null;
   };
 
-  // Click a category chip in the form: set category, set title to category name, autofill amount from history
+  // Click a category chip: set category, set title to category name, ALWAYS autofill amount from last saved entry of that category
   const pickCategory = (c: { id: string; name: string }) => {
-    const prev = lastByCategory(c.id) || lastByTitle(c.name);
+    const prev = lastByCategory(c.id);
     setForm((f: any) => ({
       ...f,
       category_id: c.id,
-      title: f.title.trim() ? f.title : c.name,
-      amount: (!f.amount || Number(f.amount) === 0) && prev ? Number(prev.amount) : f.amount,
+      title: c.name,
+      amount: prev ? Number(prev.amount) : 0,
     }));
   };
 
-  // Click a title suggestion: set title + autofill amount/category from history
+  // Click a title suggestion: set title + ALWAYS autofill amount/category from last saved matching entry
   const pickTitleSuggestion = (s: string) => {
     const prev = lastByTitle(s);
     setForm((f: any) => ({
       ...f,
       title: s,
-      amount: prev && (!f.amount || Number(f.amount) === 0) ? Number(prev.amount) : f.amount,
-      category_id: prev && !f.category_id ? (prev.category_id ?? "") : f.category_id,
+      amount: prev ? Number(prev.amount) : f.amount,
+      category_id: prev ? (prev.category_id ?? "") : f.category_id,
     }));
   };
 
