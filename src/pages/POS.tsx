@@ -154,6 +154,7 @@ export default function POS() {
 
   const completeSale = async () => {
     if (cart.length === 0) return;
+    if (submitting) return; // guard against double-submit
     if (paymentType === "installment" && !customerId) {
       toast({ title: lang === "bn" ? "ক্রেতা নির্বাচন করুন" : "Select a customer", variant: "destructive" });
       return;
