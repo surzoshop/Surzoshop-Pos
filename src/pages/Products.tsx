@@ -261,7 +261,7 @@ export default function Products() {
                   : "bg-[hsl(var(--surface-container-low))] text-foreground hover:bg-primary/10"
               }`}
             >
-              সব ({items.length})
+              সব ({totalStockUnits} টি)
             </button>
             {cats.map(c => (
               <button
