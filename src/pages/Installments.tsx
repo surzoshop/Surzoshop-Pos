@@ -404,7 +404,6 @@ export default function Installments() {
                 </div>
               </div>
             </div>
-            </div>
           )}
         </SheetContent>
       </Sheet>
