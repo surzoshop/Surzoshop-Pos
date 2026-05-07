@@ -48,8 +48,8 @@ export function AppMobileHeader() {
               <ChevronLeft className="h-6 w-6" />
             </button>
           ) : (
-            <Link to="/" className="h-9 w-9 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground font-bold">
-              সূ
+            <Link to="/" className="h-9 w-9 rounded-xl bg-white border border-border flex items-center justify-center overflow-hidden">
+              <img src="/brand-logo.png" alt="Logo" className="h-full w-full object-contain" />
             </Link>
           )}
           <div className="min-w-0">

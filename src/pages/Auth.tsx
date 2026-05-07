@@ -61,8 +61,8 @@ export default function Auth() {
              style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "22px 22px" }} />
 
         <div className="relative z-10 flex items-center gap-3">
-          <div className="h-12 w-12 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center ring-1 ring-white/30">
-            <Sun className="h-6 w-6" />
+          <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center ring-1 ring-white/30 overflow-hidden">
+            <img src="/brand-logo.png" alt="Logo" className="h-full w-full object-contain p-1" />
           </div>
           <div>
             <p className="text-lg font-black leading-tight">{t("appName")}</p>
@@ -112,8 +112,8 @@ export default function Auth() {
         <div className="w-full max-w-md relative z-10">
           {/* Mobile brand */}
           <div className="lg:hidden flex flex-col items-center mb-5 text-primary-foreground">
-            <div className="h-14 w-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center ring-1 ring-white/30">
-              <Sun className="h-7 w-7" />
+            <div className="h-14 w-14 rounded-2xl bg-white flex items-center justify-center ring-1 ring-white/30 overflow-hidden">
+              <img src="/brand-logo.png" alt="Logo" className="h-full w-full object-contain p-1" />
             </div>
             <h1 className="mt-2 text-xl font-black">{t("appName")}</h1>
             <p className="text-[11px] uppercase tracking-[0.2em] opacity-90">{t("appTagline")}</p>

@@ -71,12 +71,17 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
   const content = (
     <>
       {/* Brand — height matches top app bar (h-16) so the bottom border lines up with search bar's border */}
-      <div className="h-16 px-6 border-b border-[hsl(var(--surface-container-high))] flex items-center justify-between shrink-0">
-        <div className="min-w-0">
-          <h1 className="text-lg font-black text-foreground leading-tight truncate">{t("appName")}</h1>
-          <p className="text-[9px] text-muted-foreground tracking-[0.2em] uppercase leading-tight">
-            {isSuperAdmin ? "Super Admin" : "Staff Terminal"}
-          </p>
+      <div className="h-16 px-4 border-b border-[hsl(var(--surface-container-high))] flex items-center justify-between gap-3 shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="h-10 w-10 rounded-xl bg-white border border-border flex items-center justify-center overflow-hidden shrink-0">
+            <img src="/brand-logo.png" alt="Logo" className="h-full w-full object-contain" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-lg font-black text-foreground leading-tight truncate">{t("appName")}</h1>
+            <p className="text-[9px] text-muted-foreground tracking-[0.2em] uppercase leading-tight">
+              {isSuperAdmin ? "Super Admin" : "Staff Terminal"}
+            </p>
+          </div>
         </div>
         <button onClick={onCloseMobile} className="md:hidden p-2 -mr-2 rounded-lg hover:bg-muted text-muted-foreground" aria-label="Close menu">
           <X className="h-5 w-5" />
@@ -158,10 +163,10 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
         })}
         {(() => {
           const T = ICON_THEMES.slate;
-          const active = pathname === "/scanner";
+          const active = pathname === "/install";
           return (
             <NavLink
-              to="/scanner"
+              to="/install"
               className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 text-[15px] ${
                 active
                   ? "bg-primary/10 text-primary font-extrabold ring-1 ring-primary/30"
@@ -171,7 +176,7 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
               <span className={`shrink-0 inline-flex items-center justify-center h-9 w-9 rounded-xl text-white shadow-lg transition-all duration-300 ${T.grad} ${T.shadow} group-hover:scale-110 group-hover:-rotate-6 group-active:rotate-0 group-active:scale-95`}>
                 <Smartphone className="h-[18px] w-[18px]" />
               </span>
-              <span className="truncate">Scanner App</span>
+              <span className="truncate">Apps</span>
             </NavLink>
           );
         })()}
