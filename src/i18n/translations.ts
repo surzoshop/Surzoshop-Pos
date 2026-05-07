@@ -110,8 +110,11 @@ const base = {
     guarantor: "জামিনদার", guarantorName: "জামিনদারের নাম", relation: "সম্পর্ক",
     loanTerms: "লোন শর্তাবলী", interestRate: "সুদের হার (%)",
     tenureMonths: "মেয়াদ (মাস)", emi: "মাসিক কিস্তি (EMI)",
-    lateFee: "দৈনিক বিলম্ব ফি", agreement: "চুক্তিপত্র",
+    lateFee: "বিলম্ব ফি (%)", agreement: "চুক্তিপত্র",
     upload: "আপলোড", remaining: "অবশিষ্ট",
+    managePlan: "কিস্তি পরিচালনা", schedule: "কিস্তির তালিকা", startDate: "শুরুর তারিখ",
+    frequency: "ধরন", monthly: "মাসিক", planTotal: "মোট মূল্য", noOfInstallments: "কিস্তি সংখ্যা",
+    lateFeeAccrued: "বিলম্ব ফি", payable: "পরিশোধ্য", overdueDays: "দিন বিলম্ব",
     // ===== Reports =====
     reportPeriod: "রিপোর্টের সময়কাল", customRange: "নির্দিষ্ট সময়", from: "থেকে", to: "পর্যন্ত",
     thisYear: "এই বছর", lastMonth: "গত মাস", today: "আজ",
