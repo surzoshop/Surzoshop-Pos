@@ -738,6 +738,10 @@ export default function Purchases() {
                 <div className="flex justify-between text-primary"><span>{t("paid")}</span><span>{fmt(Number(viewBill.paid))}</span></div>
                 <div className="flex justify-between text-destructive"><span>{t("due")}</span><span>{fmt(Number(viewBill.due))}</span></div>
               </div>
+              <div className="flex flex-wrap gap-2 justify-end pt-2">
+                <Button variant="outline" onClick={() => printExisting(viewBill)} className="gap-2"><Printer className="h-4 w-4" />প্রিন্ট (A4)</Button>
+                {isAdmin && <Button onClick={() => { const b = viewBill; setViewBill(null); openEdit(b); }} className="gap-2"><FileText className="h-4 w-4" />এডিট</Button>}
+              </div>
             </div>
           )}
         </DialogContent>
