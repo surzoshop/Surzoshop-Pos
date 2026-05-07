@@ -297,7 +297,7 @@ export default function POS() {
                 ) : (
                   <Package className="h-12 w-12 text-muted-foreground/40 group-hover:scale-110 transition-transform duration-500" />
                 )}
-                {p.stock <= 5 && p.stock > 0 && (
+                {p.stock === 1 && (
                   <span className="absolute top-2 right-2 bg-secondary text-[hsl(var(--secondary-foreground))] text-[10px] font-bold px-2 py-1 rounded-md">
                     {t("lowStock")}
                   </span>
