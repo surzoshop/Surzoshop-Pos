@@ -533,9 +533,9 @@ export default function POS() {
             {paymentType === "installment" && (
               <div className="mb-3 space-y-2 p-3 rounded-xl bg-secondary/15">
                 <div className="text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--secondary-foreground))]">{t("loanTerms")}</div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <Label className="text-xs">{t("downPayment")}</Label>
+                    <Label className="text-xs">Down Payment</Label>
                     <Input type="number" value={downPayment} onChange={e => setDownPayment(+e.target.value || 0)} className="h-9" />
                   </div>
                   <div>
@@ -544,11 +544,7 @@ export default function POS() {
                       onChange={e => setInstallmentCount(Math.max(1, +e.target.value))} className="h-9" />
                   </div>
                   <div>
-                    <Label className="text-xs">{t("interestRate")}</Label>
-                    <Input type="number" value={interestRate} onChange={e => setInterestRate(+e.target.value || 0)} className="h-9" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">{t("lateFee")}</Label>
+                    <Label className="text-xs">{t("lateFee")} (%)</Label>
                     <Input type="number" value={lateFeePerDay} onChange={e => setLateFeePerDay(+e.target.value || 0)} className="h-9" />
                   </div>
                 </div>
@@ -566,17 +562,26 @@ export default function POS() {
                   </div>
                 </div>
                 <div className="space-y-1 pt-2 border-t border-secondary/30 text-xs">
-                  <div className="flex justify-between"><span className="text-muted-foreground">মোট সুদ</span><span className="font-bold">{fmt(interestAmount)}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">EMI / {t("months")}</span><span className="font-bold text-primary">{fmt(emi)}</span></div>
                 </div>
                 {schedulePreview.length > 0 && (
-                  <details className="text-xs rounded-lg bg-[hsl(var(--surface-container-lowest))] p-2">
+                  <details open className="text-xs rounded-lg bg-[hsl(var(--surface-container-lowest))] p-2">
                     <summary className="cursor-pointer font-bold flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> {t("schedule")} preview ({schedulePreview.length})</summary>
-                    <div className="max-h-32 overflow-y-auto mt-2 space-y-1">
-                      {schedulePreview.map(s => (
-                        <div key={s.no} className="flex justify-between border-b border-dashed border-muted/50 py-0.5">
-                          <span>#{s.no} · {s.date}</span>
-                          <span className="font-mono font-bold">{fmt(s.amount)}</span>
+                    <div className="max-h-48 overflow-y-auto mt-2 space-y-1">
+                      {schedulePreview.map((s, idx) => (
+                        <div key={s.no} className="flex items-center gap-2 border-b border-dashed border-muted/50 py-1">
+                          <span className="w-8 shrink-0 font-bold">#{s.no}</span>
+                          <Input
+                            type="date"
+                            value={s.date}
+                            onChange={e => {
+                              const next = [...(scheduleDates.length === installmentCount ? scheduleDates : defaultScheduleDates(installmentCount))];
+                              next[idx] = e.target.value;
+                              setScheduleDates(next);
+                            }}
+                            className="h-7 text-xs flex-1 px-1"
+                          />
+                          <span className="font-mono font-bold w-20 text-right">{fmt(s.amount)}</span>
                         </div>
                       ))}
                     </div>
