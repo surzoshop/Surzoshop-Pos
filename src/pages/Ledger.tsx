@@ -161,7 +161,11 @@ export default function Ledger() {
     let siq = supabase.from("sale_items").select("qty,unit_price,subtotal,sales!inner(created_at,discount,total,id),products(cost)");
     if (currentShop) siq = siq.eq("shop_id", currentShop.id);
 
-    const [{ data, error }, { data: sd }, { data: pd }, { data: ed }, { data: ipd }, { data: sid }] = await Promise.all([q, sq, pq, eq_, ipq, siq]);
+    // Purchase cost (live): purchase_items joined with products(cost) — uses CURRENT product cost
+    let piq = supabase.from("purchase_items").select("qty,created_at,purchases!inner(created_at),products(cost)");
+    if (currentShop) piq = piq.eq("shop_id", currentShop.id);
+
+    const [{ data, error }, { data: sd }, { data: pd }, { data: ed }, { data: ipd }, { data: sid }, { data: pid }] = await Promise.all([q, sq, pq, eq_, ipq, siq, piq]);
     if (error) toast.error(error.message);
     setEntries((data ?? []) as any);
     setSalesAgg((sd ?? []).map((s: any) => ({
