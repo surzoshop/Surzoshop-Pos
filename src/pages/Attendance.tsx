@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { todayBD } from "@/lib/datetime";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
