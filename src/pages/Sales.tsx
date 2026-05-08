@@ -242,8 +242,12 @@ export default function Sales() {
           {filtered.length === 0 && <div className="py-12 text-center text-muted-foreground text-sm">{t("noResults")}</div>}
           {filtered.map((s, i) => {
             const due = Number(s.due);
-            const tone = due === 0 ? "success" : due === Number(s.total) ? "warning" : "destructive";
-            const accent = due === 0 ? "from-primary to-primary-glow" : due === Number(s.total) ? "from-secondary to-secondary/60" : "from-destructive to-destructive/70";
+            const total = Number(s.total);
+            const isFullDue = due > 0 && due >= total;
+            const tone = due === 0 ? "success" : isFullDue ? "destructive" : "warning";
+            const accent = due === 0 ? "from-primary to-primary-glow" : isFullDue ? "from-destructive to-destructive/70" : "from-secondary to-secondary/60";
+            const payLabel = s.payment_type === "installment" ? t("installmentSale") : (due > 0 ? (lang === "bn" ? "বাকি" : "Credit") : t("cash"));
+            const statusLabel = isFullDue ? (lang === "bn" ? "বকেয়া" : "Due") : t(s.status as any);
             return (
               <div key={s.id} className="relative overflow-hidden bg-[hsl(var(--surface-container-low))] rounded-xl p-3 animate-fade-in shadow-sm hover:shadow-md transition-all" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
                 <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${accent}`} />
