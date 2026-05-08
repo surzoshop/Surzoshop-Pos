@@ -1074,6 +1074,10 @@ export type Database = {
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
       next_barcode_serial: { Args: never; Returns: number }
+      recompute_purchase_totals: {
+        Args: { _purchase_id: string }
+        Returns: undefined
+      }
       user_can_access_shop: {
         Args: { _shop_id: string; _user_id: string }
         Returns: boolean
