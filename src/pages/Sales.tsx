@@ -184,9 +184,8 @@ export default function Sales() {
   };
 
   const openEdit = (sale: any) => {
-    setEditing(sale);
-    setEditPaid(Number(sale.paid));
-    setEditNotes(sale.notes ?? "");
+    // Redirect to POS in edit mode — full editing of products, discount, payment type, installment etc.
+    navigate(`/pos?edit=${sale.id}`);
   };
 
   const saveEdit = async () => {
