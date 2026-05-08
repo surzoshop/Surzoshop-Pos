@@ -120,7 +120,7 @@ export default function Ledger() {
   const [account, setAccount] = useState<AccountKey>("account");
 
   // Lower table section state
-  const [lowRange, setLowRange] = useState<RangeKey>("today");
+  const [lowRange, setLowRange] = useState<RangeKey>("thisMonth");
   const [lowFrom, setLowFrom] = useState("");
   const [lowTo, setLowTo] = useState("");
   const [lowSearch, setLowSearch] = useState("");
