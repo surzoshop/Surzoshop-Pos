@@ -12,7 +12,7 @@ import { Trash2, Plus, Minus, Search, ScanLine, ShoppingCart, Trash, Receipt as 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { useMobileScanner } from "@/hooks/useMobileScanner";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { CustomerCombobox } from "@/components/CustomerCombobox";
 import { ThermalReceipt } from "@/components/ThermalReceipt";
 
@@ -53,8 +53,53 @@ export default function POS() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const mobileScanner = useMobileScanner();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const editId = searchParams.get("edit");
+  const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
+  const [originalQty, setOriginalQty] = useState<Record<string, number>>({});
+  const [editLoaded, setEditLoaded] = useState(false);
 
   useEffect(() => { inputRef.current?.focus(); load(); }, []);
+
+  // Load existing sale into POS for editing
+  useEffect(() => {
+    if (!editId || editLoaded || products.length === 0) return;
+    (async () => {
+      const { data: sale } = await supabase.from("sales").select("*").eq("id", editId).maybeSingle();
+      if (!sale) { toast({ title: "Sale পাওয়া যায়নি", variant: "destructive" }); return; }
+      const { data: items } = await supabase.from("sale_items").select("*").eq("sale_id", editId);
+      const orig: Record<string, number> = {};
+      const newCart: CartItem[] = [];
+      (items ?? []).forEach((it: any) => {
+        const p = products.find(pp => pp.id === it.product_id);
+        if (p) {
+          orig[p.id] = (orig[p.id] || 0) + Number(it.qty);
+          newCart.push({ product: { ...p, price: Number(it.unit_price) }, qty: Number(it.qty) });
+        }
+      });
+      setEditingSaleId(editId);
+      setOriginalQty(orig);
+      setCart(newCart);
+      setCustomerId(sale.customer_id || "");
+      setDiscount(Number(sale.discount) || 0);
+      if (sale.payment_type === "installment") {
+        setPaymentType("installment");
+        setDownPayment(Number(sale.down_payment) || 0);
+        setInterestRate(Number(sale.interest_rate) || 0);
+        setInstallmentCount(Number(sale.tenure_months) || 3);
+        setLateFeePerDay(Number(sale.late_fee_per_day) || 0);
+        setGuarantorId(sale.guarantor_id || "");
+      } else if (Number(sale.due) > 0) {
+        setPaymentType("due");
+        setDuePaid(Number(sale.paid) || 0);
+      } else {
+        setPaymentType("cash");
+      }
+      setEditLoaded(true);
+      toast({ title: `এডিট মোড — ${sale.invoice_no}` });
+    })();
+  }, [editId, products, editLoaded]);
 
   const load = async () => {
     const [{ data: p }, { data: c }, { data: g }] = await Promise.all([
@@ -83,18 +128,19 @@ export default function POS() {
   });
 
   const addToCart = (p: Product) => {
-    if (p.stock <= 0) {
+    const extra = originalQty[p.id] || 0;
+    if (p.stock + extra <= 0) {
       toast({ title: t("outOfStock"), variant: "destructive" });
       return;
     }
     setCart(c => {
       const ex = c.find(i => i.product.id === p.id);
-      if (ex) return c.map(i => i.product.id === p.id ? { ...i, qty: Math.min(i.qty + 1, p.stock) } : i);
+      if (ex) return c.map(i => i.product.id === p.id ? { ...i, qty: Math.min(i.qty + 1, p.stock + extra) } : i);
       return [...c, { product: p, qty: 1 }];
     });
   };
   const updateQty = (id: string, delta: number) => {
-    setCart(c => c.map(i => i.product.id === id ? { ...i, qty: Math.max(1, Math.min(i.qty + delta, i.product.stock)) } : i));
+    setCart(c => c.map(i => i.product.id === id ? { ...i, qty: Math.max(1, Math.min(i.qty + delta, i.product.stock + (originalQty[i.product.id] || 0))) } : i));
   };
   const removeItem = (id: string) => setCart(c => c.filter(i => i.product.id !== id));
 
@@ -170,6 +216,72 @@ export default function POS() {
 
     setSubmitting(true);
     try {
+    // ============ EDIT MODE: update existing sale ============
+    if (editingSaleId) {
+      // 1) Restock previous items
+      for (const [pid, qty] of Object.entries(originalQty)) {
+        const { data: prod } = await supabase.from("products").select("stock").eq("id", pid).maybeSingle();
+        if (prod) await supabase.from("products").update({ stock: Number(prod.stock) + Number(qty) }).eq("id", pid);
+      }
+      // 2) Delete existing installments + payments + items
+      const { data: insts } = await supabase.from("installments").select("id").eq("sale_id", editingSaleId);
+      const instIds = (insts ?? []).map((i: any) => i.id);
+      if (instIds.length) {
+        await supabase.from("installment_payments").delete().in("installment_id", instIds);
+        await supabase.from("installments").delete().in("id", instIds);
+      }
+      await supabase.from("sale_items").delete().eq("sale_id", editingSaleId);
+
+      // 3) Update sales row
+      const updatePayload: any = {
+        customer_id: customerId || null,
+        subtotal, discount, total, paid, due,
+        payment_type: paymentType === "due" ? "cash" : paymentType,
+        status: due > 0 ? "partial" : "completed",
+        down_payment: paymentType === "installment" ? downPayment : 0,
+        interest_rate: paymentType === "installment" ? interestRate : 0,
+        tenure_months: paymentType === "installment" ? installmentCount : null,
+        emi_amount: paymentType === "installment" ? emi : null,
+        late_fee_per_day: paymentType === "installment" ? lateFeePerDay : 0,
+        guarantor_id: paymentType === "installment" ? guarantorId : null,
+      };
+      const { error: uerr } = await supabase.from("sales").update(updatePayload).eq("id", editingSaleId);
+      if (uerr) { toast({ title: uerr.message, variant: "destructive" }); return; }
+
+      // 4) Insert new sale_items (trigger will decrement stock)
+      const newItems = cart.map(i => {
+        const p: any = i.product;
+        const months = p.has_warranty ? Number(p.warranty_months) || null : null;
+        let warranty_until: string | null = null;
+        if (months) { const d = new Date(); d.setMonth(d.getMonth() + months); warranty_until = d.toISOString().slice(0, 10); }
+        return {
+          sale_id: editingSaleId, product_id: i.product.id, product_name: i.product.name,
+          qty: i.qty, unit_price: i.product.price, subtotal: i.product.price * i.qty,
+          warranty_months: months, warranty_until,
+        };
+      });
+      await supabase.from("sale_items").insert(newItems);
+
+      // 5) Recreate installments if installment type
+      if (paymentType === "installment" && due > 0) {
+        const per = Math.round((due / installmentCount) * 100) / 100;
+        const schedule = Array.from({ length: installmentCount }).map((_, idx) => {
+          const d = new Date(); d.setMonth(d.getMonth() + idx + 1);
+          return {
+            sale_id: editingSaleId, installment_no: idx + 1,
+            due_date: d.toISOString().slice(0, 10),
+            amount: idx === installmentCount - 1 ? due - per * (installmentCount - 1) : per,
+          };
+        });
+        await supabase.from("installments").insert(schedule);
+      }
+
+      toast({ title: lang === "bn" ? "ইনভয়েস আপডেট হয়েছে ✓" : "Sale updated" });
+      navigate("/sales");
+      return;
+    }
+
+    // ============ NEW SALE ============
     const salePayload: any = {
       customer_id: customerId || null,
       subtotal, discount, total, paid, due,
@@ -323,6 +435,12 @@ export default function POS() {
       </section>
 
       <section className="lg:col-span-2 flex flex-col bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-4 sm:p-6 lg:min-h-0 shadow-sm">
+        {editingSaleId && (
+          <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs sm:text-sm font-semibold text-primary">
+            <span>✎ এডিট মোড — ইনভয়েস আপডেট হবে</span>
+            <button onClick={() => navigate("/sales")} className="underline hover:text-primary/80">বাতিল</button>
+          </div>
+        )}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-extrabold flex items-center gap-2 text-foreground">
             <ShoppingCart className="h-6 w-6 text-primary" />
@@ -565,7 +683,7 @@ export default function POS() {
             <button onClick={completeSale} disabled={cart.length === 0 || submitting}
               className="w-full h-14 gradient-primary text-primary-foreground rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.4)] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed">
               <ReceiptIcon className="h-5 w-5" />
-              {submitting ? (lang === "bn" ? "প্রক্রিয়াধীন…" : "Processing…") : t("payNow")}
+              {submitting ? (lang === "bn" ? "প্রক্রিয়াধীন…" : "Processing…") : (editingSaleId ? (lang === "bn" ? "আপডেট সংরক্ষণ" : "Save changes") : t("payNow"))}
             </button>
           </div>
         </div>

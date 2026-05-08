@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useShop } from "@/hooks/useShop";
 import { useT } from "@/i18n/LanguageContext";
@@ -16,6 +17,7 @@ export default function Sales() {
   const { currentShop } = useShop();
   const { role } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const isAdmin = role === "admin";
 
   const [items, setItems] = useState<any[]>([]);
@@ -182,9 +184,8 @@ export default function Sales() {
   };
 
   const openEdit = (sale: any) => {
-    setEditing(sale);
-    setEditPaid(Number(sale.paid));
-    setEditNotes(sale.notes ?? "");
+    // Redirect to POS in edit mode — full editing of products, discount, payment type, installment etc.
+    navigate(`/pos?edit=${sale.id}`);
   };
 
   const saveEdit = async () => {
