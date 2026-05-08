@@ -246,13 +246,19 @@ export default function Ledger() {
 
   // 6 mini stat cards (top row) — REAL DB data
   const miniStats = useMemo(() => {
-    // আয়: cash_book deposits (excluding sales synthetic) + sales
+    // মোট বিক্রয় (invoice amount — সম্পূর্ণ বিক্রয়মূল্য, বাকি সহ)
+    const salesTotal = salesAgg.filter(s => inRange(s.date)).reduce((s, x) => s + x.total, 0);
+    // আসলে যত টাকা পেয়েছেন বিক্রয় থেকে: ডাউন পেমেন্ট/অগ্রিম (sales.paid)
+    const salesPaid  = salesAgg.filter(s => inRange(s.date)).reduce((s, x) => s + x.paid, 0);
+    // কিস্তি/বাকি আদায় হিসেবে পরে যত পেয়েছেন
+    const instPaid   = instPayAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.amount, 0);
+
+    // আয়: cash_book deposits + আসলে প্রাপ্ত বিক্রয় টাকা (paid) + কিস্তি আদায়
     const cashbookIncome = entries.filter(e => e.entry_type === "deposit" && inRange(e.entry_date))
       .reduce((s, e) => s + Number(e.amount || 0), 0);
-    const salesIncome = salesAgg.filter(s => inRange(s.date)).reduce((s, x) => s + x.total, 0);
-    const income = cashbookIncome + salesIncome;
+    const income = cashbookIncome + salesPaid + instPaid;
 
-    // খরচ: ONLY from expenses table + cash_book withdrawals (NOT purchases)
+    // খরচ: শুধু expenses table + cash_book withdrawals (পণ্য ক্রয় বাদ)
     const cashbookExpense = entries.filter(e => e.entry_type === "withdraw" && inRange(e.entry_date))
       .reduce((s, e) => s + Number(e.amount || 0), 0);
     const realExpense = expensesAgg.filter(x => inRange(x.date)).reduce((s, x) => s + x.total, 0);
@@ -261,26 +267,26 @@ export default function Ledger() {
     // স্টক ক্রয় খরচ: purchases table only
     const stockBuy = purchasesAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.total, 0);
 
-    // নগদ ব্যালেন্স: cash inflow - cash outflow (cash payment_method only) — excludes stock purchases
+    // নগদ ব্যালেন্স: শুধু আসলে যে টাকা হাতে এসেছে (cash inflow) − cash outflow
+    // sales-এর ক্ষেত্রে total নয়, paid (অগ্রিম) ধরা হচ্ছে; এর সাথে কিস্তি আদায় যোগ
     const cashIn = entries.filter(e => e.entry_type === "deposit" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
-      .reduce((s, e) => s + Number(e.amount || 0), 0) + salesIncome;
+      .reduce((s, e) => s + Number(e.amount || 0), 0) + salesPaid + instPaid;
     const cashOut = entries.filter(e => e.entry_type === "withdraw" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
       .reduce((s, e) => s + Number(e.amount || 0), 0)
       + expensesAgg.filter(x => inRange(x.date) && (x.method || "cash") === "cash").reduce((s, x) => s + x.total, 0);
     const cashBalance = cashIn - cashOut;
 
-    // ক্যাশ লেনদেন (cash transactions count value): cash inflow + outflow total
     const cashTxnTotal = cashIn + cashOut;
 
     return [
-      { key: "income"   as TabKey, label: "মোট আয়",          value: income,       icon: ArrowDownToLine, tone: "income",   hint: "বিক্রয় + জমা এন্ট্রি" },
-      { key: "expense"  as TabKey, label: "মোট খরচ",         value: expense,      icon: ArrowUpFromLine, tone: "expense",  hint: "খরচ এন্ট্রি পেজ থেকে (পণ্য ক্রয় বাদ)" },
-      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",    value: cashBalance,  icon: Coins,           tone: "balance",  hint: "ক্যাশ-এ আয় − ক্যাশ-এ খরচ" },
-      { key: "cash"     as TabKey, label: "ক্যাশ লেনদেন",    value: cashTxnTotal, icon: Wallet,          tone: "cash",     hint: "শুধু নগদ পেমেন্টের যোগফল" },
-      { key: "purchase" as TabKey, label: "স্টক ক্রয় খরচ",    value: stockBuy,     icon: ShoppingBag,     tone: "purchase", hint: "সরবরাহকারী থেকে পণ্য ক্রয়" },
-      { key: "sales"    as TabKey, label: "মোট বিক্রয়",       value: salesIncome,  icon: Receipt,         tone: "sales",    hint: "বিক্রয় ইনভয়েস (POS)" },
+      { key: "income"   as TabKey, label: "মোট আয়",          value: income,       icon: ArrowDownToLine, tone: "income",   hint: "আসলে প্রাপ্ত: বিক্রয় paid + কিস্তি আদায় + জমা" },
+      { key: "expense"  as TabKey, label: "মোট খরচ",         value: expense,      icon: ArrowUpFromLine, tone: "expense",  hint: "খরচ এন্ট্রি + উত্তোলন (পণ্য ক্রয় বাদ)" },
+      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",    value: cashBalance,  icon: Coins,           tone: "balance",  hint: "অগ্রিম + কিস্তি আদায় + ক্যাশ জমা − ক্যাশ খরচ" },
+      { key: "cash"     as TabKey, label: "ক্যাশ লেনদেন",    value: cashTxnTotal, icon: Wallet,          tone: "cash",     hint: "শুধু নগদ পেমেন্টের যোগফল (in+out)" },
+      { key: "purchase" as TabKey, label: "স্টক ক্রয় খরচ",    value: stockBuy,     icon: ShoppingBag,     tone: "purchase", hint: "সরবরাহকারী থেকে পণ্য ক্রয় (invoice total)" },
+      { key: "sales"    as TabKey, label: "মোট বিক্রয়",       value: salesTotal,   icon: Receipt,         tone: "sales",    hint: "বিক্রয় ইনভয়েস (বাকি সহ মোট)" },
     ];
-  }, [entries, salesAgg, purchasesAgg, expensesAgg, topFrom, topTo]);
+  }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg, topFrom, topTo]);
 
   // 3 big totals (under account tabs) — based on lower range + tab + account filter
   const lowerFiltered = useMemo(() => synthEntries.filter(e => {
