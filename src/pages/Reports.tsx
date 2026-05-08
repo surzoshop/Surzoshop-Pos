@@ -279,7 +279,7 @@ export default function Reports() {
     doc.setFontSize(11); doc.setFont("helvetica", "normal");
     doc.text("Business Report", W / 2, 48, { align: "center" });
     doc.setFontSize(9);
-    doc.text(`Period: ${periodLabel}  |  Generated: ${new Date().toLocaleString("en-US")}`, W / 2, 62, { align: "center" });
+    doc.text(`Period: ${periodLabel}  |  Generated: ${new Date().toLocaleString("en-GB", { timeZone: "Asia/Dhaka" })}`, W / 2, 62, { align: "center" });
     doc.setTextColor(...TEXT);
 
     autoTable(doc, {
@@ -406,7 +406,7 @@ export default function Reports() {
       ws.getRow(1).height = 26;
       ws.mergeCells(2, 1, 2, colCount);
       const sub = ws.getCell(2, 1);
-      sub.value = `Period: ${fmtDate(start,"en")} — ${fmtDate(end,"en")}    |    Generated: ${new Date().toLocaleString("en-US")}`;
+      sub.value = `Period: ${fmtDate(start,"en")} — ${fmtDate(end,"en")}    |    Generated: ${new Date().toLocaleString("en-GB", { timeZone: "Asia/Dhaka" })}`;
       sub.font = { italic: true, color: { argb: "FF64748B" }, size: 10 };
       sub.alignment = { horizontal: "center" };
       const headerRow = ws.getRow(4);
@@ -497,7 +497,7 @@ export default function Reports() {
     downloadCSV(`Sales_${periodTag}.csv`,
       ["Invoice", "Date", "Customer", "Phone", "Subtotal", "Discount", "Total", "Paid", "Due", "Status"],
       data.sales.map((s: any) => [
-        s.invoice_no, new Date(s.created_at).toLocaleString(),
+        s.invoice_no, new Date(s.created_at).toLocaleString("en-GB", { timeZone: "Asia/Dhaka" }),
         s.customers?.name ?? "Walk-in", s.customers?.phone ?? "",
         Number(s.subtotal), Number(s.discount), Number(s.total),
         Number(s.paid), Number(s.due), s.status,
@@ -609,7 +609,7 @@ export default function Reports() {
           onCsv={() => downloadCSV(
             `Sales_${start.toISOString().slice(0,10)}.csv`,
             ["Invoice", "Date", "Customer", "Total", "Paid", "Due", "Status"],
-            data.sales.map((s: any) => [s.invoice_no, new Date(s.created_at).toLocaleString(),
+            data.sales.map((s: any) => [s.invoice_no, new Date(s.created_at).toLocaleString("en-GB", { timeZone: "Asia/Dhaka" }),
               s.customers?.name ?? "Walk-in", Number(s.total), Number(s.paid), Number(s.due), s.status]))}
         >
           {/* Daily breakdown */}
@@ -669,7 +669,7 @@ export default function Reports() {
           onCsv={() => downloadCSV(
             `Purchases_${start.toISOString().slice(0,10)}.csv`,
             ["Bill No", "Date", "Supplier", "Total", "Paid", "Due"],
-            data.purchases.map((p: any) => [p.bill_no, new Date(p.created_at).toLocaleString(),
+            data.purchases.map((p: any) => [p.bill_no, new Date(p.created_at).toLocaleString("en-GB", { timeZone: "Asia/Dhaka" }),
               p.suppliers?.name ?? "—", Number(p.total), Number(p.paid), Number(p.due)]))}
         >
           <ExcelTable
