@@ -274,7 +274,7 @@ export default function POS() {
         const p: any = i.product;
         const months = p.has_warranty ? Number(p.warranty_months) || null : null;
         let warranty_until: string | null = null;
-        if (months) { const d = new Date(); d.setMonth(d.getMonth() + months); warranty_until = d.toISOString().slice(0, 10); }
+        if (months) { warranty_until = bdDateAddMonths(months); }
         return {
           sale_id: editingSaleId, product_id: i.product.id, product_name: i.product.name,
           qty: i.qty, unit_price: i.product.price, subtotal: i.product.price * i.qty,
@@ -324,8 +324,7 @@ export default function POS() {
       const months = p.has_warranty ? Number(p.warranty_months) || null : null;
       let warranty_until: string | null = null;
       if (months) {
-        const d = new Date(); d.setMonth(d.getMonth() + months);
-        warranty_until = d.toISOString().slice(0, 10);
+        warranty_until = bdDateAddMonths(months);
       }
       return {
         sale_id: sale.id, product_id: i.product.id, product_name: i.product.name,
