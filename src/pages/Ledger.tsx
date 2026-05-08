@@ -330,10 +330,10 @@ export default function Ledger() {
       { key: "expense"  as TabKey, label: "মোট খরচ",         value: expense,      icon: ArrowUpFromLine, tone: "expense",  hint: "খরচ এন্ট্রি + উত্তোলন (পণ্য ক্রয় বাদ)" },
       { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",    value: cashBalance,  icon: Coins,           tone: "balance",  hint: "ডাউন পেমেন্ট + কিস্তি আদায় + পূর্ণ নগদ অর্ডার" },
       { key: "cash"     as TabKey, label: "ক্যাশ লেনদেন",    value: cashTxnTotal, icon: Wallet,          tone: "cash",     hint: "শুধু নগদ পেমেন্টের যোগফল (in+out)" },
-      { key: "purchase" as TabKey, label: "স্টক ক্রয় খরচ",    value: stockBuy,     icon: ShoppingBag,     tone: "purchase", hint: "সরবরাহকারী থেকে পণ্য ক্রয় (invoice total)" },
+      { key: "purchase" as TabKey, label: "স্টক ক্রয় খরচ",    value: stockBuy,     icon: ShoppingBag,     tone: "purchase", hint: "Σ(পরিমাণ × পণ্যের বর্তমান ক্রয়মূল্য) — পণ্য তালিকায় cost edit করলেই auto আপডেট" },
       { key: "sales"    as TabKey, label: "মোট বিক্রয়",       value: salesTotal,   icon: Receipt,         tone: "sales",    hint: "বিক্রয় ইনভয়েস (বাকি সহ মোট)" },
     ];
-  }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg, profitAgg, topFrom, topTo]);
+  }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg, profitAgg, purchaseCostAgg, topFrom, topTo]);
 
   // 3 big totals (under account tabs) — based on lower range + tab + account filter
   const lowerFiltered = useMemo(() => synthEntries.filter(e => {
