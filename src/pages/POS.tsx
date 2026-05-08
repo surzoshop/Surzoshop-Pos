@@ -677,7 +677,7 @@ export default function POS() {
             <button onClick={completeSale} disabled={cart.length === 0 || submitting}
               className="w-full h-14 gradient-primary text-primary-foreground rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.4)] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed">
               <ReceiptIcon className="h-5 w-5" />
-              {submitting ? (lang === "bn" ? "প্রক্রিয়াধীন…" : "Processing…") : t("payNow")}
+              {submitting ? (lang === "bn" ? "প্রক্রিয়াধীন…" : "Processing…") : (editingSaleId ? (lang === "bn" ? "আপডেট সংরক্ষণ" : "Save changes") : t("payNow"))}
             </button>
           </div>
         </div>
