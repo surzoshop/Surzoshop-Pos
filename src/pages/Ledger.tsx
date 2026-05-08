@@ -104,6 +104,7 @@ export default function Ledger() {
   const [purchasesAgg, setPurchasesAgg] = useState<{ date: string; total: number; paid: number; party: string | null }[]>([]);
   const [expensesAgg, setExpensesAgg] = useState<{ date: string; total: number; title: string; method: string }[]>([]);
   const [instPayAgg, setInstPayAgg] = useState<{ date: string; amount: number }[]>([]);
+  const [profitAgg, setProfitAgg] = useState<{ date: string; profit: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Top section state
@@ -155,7 +156,11 @@ export default function Ledger() {
     let ipq = supabase.from("installment_payments").select("paid_at,amount").order("paid_at", { ascending: false });
     if (currentShop) ipq = ipq.eq("shop_id", currentShop.id);
 
-    const [{ data, error }, { data: sd }, { data: pd }, { data: ed }, { data: ipd }] = await Promise.all([q, sq, pq, eq_, ipq]);
+    // Profit calculation: sale_items joined with sales (date) and products (cost)
+    let siq = supabase.from("sale_items").select("qty,unit_price,subtotal,sales!inner(created_at,discount,total,id),products(cost)");
+    if (currentShop) siq = siq.eq("shop_id", currentShop.id);
+
+    const [{ data, error }, { data: sd }, { data: pd }, { data: ed }, { data: ipd }, { data: sid }] = await Promise.all([q, sq, pq, eq_, ipq, siq]);
     if (error) toast.error(error.message);
     setEntries((data ?? []) as any);
     setSalesAgg((sd ?? []).map((s: any) => ({
@@ -180,6 +185,32 @@ export default function Ledger() {
       date: String(p.paid_at).slice(0, 10),
       amount: Number(p.amount || 0),
     })));
+
+    // Aggregate profit per sale, then bucket by date
+    const perSale = new Map<string, { date: string; revenue: number; cost: number; discount: number; total: number }>();
+    (sid ?? []).forEach((row: any) => {
+      const sale = row.sales;
+      if (!sale) return;
+      const key = sale.id;
+      const cur = perSale.get(key) ?? {
+        date: String(sale.created_at).slice(0, 10),
+        revenue: 0,
+        cost: 0,
+        discount: Number(sale.discount || 0),
+        total: Number(sale.total || 0),
+      };
+      cur.revenue += Number(row.subtotal || 0);
+      cur.cost    += Number(row.products?.cost || 0) * Number(row.qty || 0);
+      perSale.set(key, cur);
+    });
+    const profitByDate = new Map<string, number>();
+    perSale.forEach(s => {
+      // Profit = sale total (after discount) − cost of goods sold
+      const profit = s.total - s.cost;
+      profitByDate.set(s.date, (profitByDate.get(s.date) ?? 0) + profit);
+    });
+    setProfitAgg(Array.from(profitByDate.entries()).map(([date, profit]) => ({ date, profit })));
+
     setLoading(false);
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [currentShop?.id]);
@@ -250,15 +281,14 @@ export default function Ledger() {
   const miniStats = useMemo(() => {
     // মোট বিক্রয় (invoice amount — সম্পূর্ণ বিক্রয়মূল্য, বাকি সহ)
     const salesTotal = salesAgg.filter(s => inRange(s.date)).reduce((s, x) => s + x.total, 0);
-    // আসলে যত টাকা পেয়েছেন বিক্রয় থেকে: ডাউন পেমেন্ট/অগ্রিম (sales.paid)
+    // আসলে যত টাকা পেয়েছেন বিক্রয় থেকে: ডাউন পেমেন্ট/অগ্রিম/পূর্ণ নগদ (sales.paid)
     const salesPaid  = salesAgg.filter(s => inRange(s.date)).reduce((s, x) => s + x.paid, 0);
     // কিস্তি/বাকি আদায় হিসেবে পরে যত পেয়েছেন
     const instPaid   = instPayAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.amount, 0);
 
-    // আয়: cash_book deposits + আসলে প্রাপ্ত বিক্রয় টাকা (paid) + কিস্তি আদায়
-    const cashbookIncome = entries.filter(e => e.entry_type === "deposit" && inRange(e.entry_date))
-      .reduce((s, e) => s + Number(e.amount || 0), 0);
-    const income = cashbookIncome + salesPaid + instPaid;
+    // মোট আয় = প্রকৃত লাভ (বিক্রয়মূল্য − পণ্যের ক্রয়মূল্য)
+    const profit = profitAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.profit, 0);
+    const income = profit;
 
     // খরচ: শুধু expenses table + cash_book withdrawals (পণ্য ক্রয় বাদ)
     const cashbookExpense = entries.filter(e => e.entry_type === "withdraw" && inRange(e.entry_date))
@@ -269,26 +299,27 @@ export default function Ledger() {
     // স্টক ক্রয় খরচ: purchases table only
     const stockBuy = purchasesAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.total, 0);
 
-    // নগদ ব্যালেন্স: শুধু আসলে যে টাকা হাতে এসেছে (cash inflow) − cash outflow
-    // sales-এর ক্ষেত্রে total নয়, paid (অগ্রিম) ধরা হচ্ছে; এর সাথে কিস্তি আদায় যোগ
-    const cashIn = entries.filter(e => e.entry_type === "deposit" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
-      .reduce((s, e) => s + Number(e.amount || 0), 0) + salesPaid + instPaid;
+    // নগদ ব্যালেন্স: ডাউন পেমেন্ট + কিস্তি আদায় + পূর্ণ নগদ অর্ডার (অর্থাৎ sales.paid সব মিলিয়ে + কিস্তি আদায়)
+    const cashBalance = salesPaid + instPaid;
+
+    // ক্যাশ লেনদেন (in+out) তথ্যমূলক
+    const cashIn = salesPaid + instPaid
+      + entries.filter(e => e.entry_type === "deposit" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
+        .reduce((s, e) => s + Number(e.amount || 0), 0);
     const cashOut = entries.filter(e => e.entry_type === "withdraw" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
       .reduce((s, e) => s + Number(e.amount || 0), 0)
       + expensesAgg.filter(x => inRange(x.date) && (x.method || "cash") === "cash").reduce((s, x) => s + x.total, 0);
-    const cashBalance = cashIn - cashOut;
-
     const cashTxnTotal = cashIn + cashOut;
 
     return [
-      { key: "income"   as TabKey, label: "মোট আয়",          value: income,       icon: ArrowDownToLine, tone: "income",   hint: "নগদ বিক্রয় + কিস্তি বিক্রয়ের ডাউন পেমেন্ট + কিস্তি আদায় + ক্যাশ জমা (বাকি অংশ বাদে)" },
+      { key: "income"   as TabKey, label: "মোট আয় (লাভ)",     value: income,       icon: ArrowDownToLine, tone: "income",   hint: "প্রকৃত লাভ = বিক্রয়মূল্য − পণ্যের ক্রয়মূল্য (ছাড় সহ)" },
       { key: "expense"  as TabKey, label: "মোট খরচ",         value: expense,      icon: ArrowUpFromLine, tone: "expense",  hint: "খরচ এন্ট্রি + উত্তোলন (পণ্য ক্রয় বাদ)" },
-      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",    value: cashBalance,  icon: Coins,           tone: "balance",  hint: "অগ্রিম + কিস্তি আদায় + ক্যাশ জমা − ক্যাশ খরচ" },
+      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",    value: cashBalance,  icon: Coins,           tone: "balance",  hint: "ডাউন পেমেন্ট + কিস্তি আদায় + পূর্ণ নগদ অর্ডার" },
       { key: "cash"     as TabKey, label: "ক্যাশ লেনদেন",    value: cashTxnTotal, icon: Wallet,          tone: "cash",     hint: "শুধু নগদ পেমেন্টের যোগফল (in+out)" },
       { key: "purchase" as TabKey, label: "স্টক ক্রয় খরচ",    value: stockBuy,     icon: ShoppingBag,     tone: "purchase", hint: "সরবরাহকারী থেকে পণ্য ক্রয় (invoice total)" },
       { key: "sales"    as TabKey, label: "মোট বিক্রয়",       value: salesTotal,   icon: Receipt,         tone: "sales",    hint: "বিক্রয় ইনভয়েস (বাকি সহ মোট)" },
     ];
-  }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg, topFrom, topTo]);
+  }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg, profitAgg, topFrom, topTo]);
 
   // 3 big totals (under account tabs) — based on lower range + tab + account filter
   const lowerFiltered = useMemo(() => synthEntries.filter(e => {
