@@ -174,17 +174,9 @@ export default function POS() {
     : total;
   const emi = paymentType === "installment" && installmentCount > 0 ? financed / installmentCount : 0;
 
-  // Default schedule dates: 5th of each upcoming month (local time, no UTC shift)
-  const defaultScheduleDates = (count: number): string[] => {
-    const today = new Date();
-    return Array.from({ length: count }).map((_, idx) => {
-      const d = new Date(today.getFullYear(), today.getMonth() + idx + 1, 5);
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${y}-${m}-${day}`;
-    });
-  };
+  // Default schedule dates: 5th of each upcoming month, in Asia/Dhaka tz
+  const defaultScheduleDates = (count: number): string[] =>
+    Array.from({ length: count }).map((_, idx) => bdDateAddMonths(idx + 1, 5));
 
   // Keep scheduleDates length in sync with installmentCount (preserve user-edited dates)
   useEffect(() => {
