@@ -12,7 +12,7 @@ import { Trash2, Plus, Minus, Search, ScanLine, ShoppingCart, Trash, Receipt as 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { useMobileScanner } from "@/hooks/useMobileScanner";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { CustomerCombobox } from "@/components/CustomerCombobox";
 import { ThermalReceipt } from "@/components/ThermalReceipt";
 
