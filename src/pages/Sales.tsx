@@ -268,7 +268,7 @@ export default function Sales() {
                   </div>
                 </div>
                 <div className="mt-2 pt-2 border-t border-[hsl(var(--surface-container))] flex items-center justify-between pl-2">
-                  <span className="text-[11px] text-muted-foreground">{t(s.payment_type === "cash" ? "cash" : "installmentSale")}</span>
+                  <span className="text-[11px] text-muted-foreground">{payLabel}</span>
                   <div className="flex items-center gap-1">
                     <button onClick={() => printReceipt(s)} className="p-2 rounded-lg bg-info/10 text-info active:scale-95 hover:bg-info/20 transition-all">
                       <Printer className="h-4 w-4" />
