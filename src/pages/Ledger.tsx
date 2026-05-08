@@ -310,8 +310,8 @@ export default function Ledger() {
     const realExpense = expensesAgg.filter(x => inRange(x.date)).reduce((s, x) => s + x.total, 0);
     const expense = cashbookExpense + realExpense;
 
-    // স্টক ক্রয় খরচ: purchases table only
-    const stockBuy = purchasesAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.total, 0);
+    // স্টক ক্রয় খরচ: live = Σ(qty × পণ্যের বর্তমান ক্রয়মূল্য) — পণ্য তালিকায় cost edit করলেই auto আপডেট
+    const stockBuy = purchaseCostAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.total, 0);
 
     // নগদ ব্যালেন্স: ডাউন পেমেন্ট + কিস্তি আদায় + পূর্ণ নগদ অর্ডার (অর্থাৎ sales.paid সব মিলিয়ে + কিস্তি আদায়)
     const cashBalance = salesPaid + instPaid;
