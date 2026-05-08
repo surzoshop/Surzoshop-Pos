@@ -311,16 +311,20 @@ export default function Sales() {
               )}
               {filtered.map(s => {
                 const due = Number(s.due);
-                const tone = due === 0 ? "success" : due === Number(s.total) ? "warning" : "destructive";
+                const total = Number(s.total);
+                const isFullDue = due > 0 && due >= total;
+                const tone = due === 0 ? "success" : isFullDue ? "destructive" : "warning";
+                const payLabel = s.payment_type === "installment" ? t("installmentSale") : (due > 0 ? (lang === "bn" ? "বাকি" : "Credit") : t("cash"));
+                const statusLabel = isFullDue ? (lang === "bn" ? "বকেয়া" : "Due") : t(s.status as any);
                 return (
                   <tr key={s.id} className="hover:bg-[hsl(var(--surface-container-low))] transition-colors">
                     <td className="py-4 font-bold text-foreground">{s.invoice_no}</td>
                     <td className="py-4 text-muted-foreground">{new Date(s.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}</td>
                     <td className="py-4 font-medium">{s.customers?.name ?? "—"}</td>
-                    <td className="py-4">{t(s.payment_type === "cash" ? "cash" : "installmentSale")}</td>
+                    <td className="py-4">{payLabel}</td>
                     <td className="py-4 font-bold text-primary">{fmt(Number(s.total))}</td>
                     <td className="py-4">{due > 0 ? <span className="text-destructive font-semibold">{fmt(due)}</span> : <span className="text-muted-foreground">—</span>}</td>
-                    <td className="py-4"><StatusPill tone={tone}>{t(s.status as any)}</StatusPill></td>
+                    <td className="py-4"><StatusPill tone={tone}>{statusLabel}</StatusPill></td>
                     <td className="py-4 text-right">
                       <div className="inline-flex items-center gap-1">
                         <button onClick={() => printReceipt(s)} title="প্রিন্ট" className="p-1.5 rounded-md hover:bg-info/10 text-info">
