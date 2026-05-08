@@ -57,6 +57,33 @@ export const bdDateAddMonths = (monthsToAdd: number, dayOfMonth?: number): strin
   return `${year}-${pad(month + 1)}-${pad(day)}`;
 };
 
+/** Add (or subtract) days to a "YYYY-MM-DD" BD date string and return a "YYYY-MM-DD". */
+export const addDaysBDStr = (dateStr: string, days: number): string => {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d));
+  t.setUTCDate(t.getUTCDate() + days);
+  return `${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`;
+};
+
+/** First day of the current month in BD tz, as "YYYY-MM-DD". */
+export const firstOfMonthBD = (): string => {
+  const t = partsBD(new Date());
+  return `${t.year}-${pad(t.month)}-01`;
+};
+
+/** First and last day of the previous month in BD tz. */
+export const prevMonthRangeBD = (): { from: string; to: string } => {
+  const t = partsBD(new Date());
+  const prevMonthIndex = t.month - 2; // 0-based of previous month
+  const year = prevMonthIndex < 0 ? t.year - 1 : t.year;
+  const month = ((prevMonthIndex % 12) + 12) % 12; // 0-based
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  return {
+    from: `${year}-${pad(month + 1)}-01`,
+    to: `${year}-${pad(month + 1)}-${pad(lastDay)}`,
+  };
+};
+
 /** Format a date as a localized BD date string (no time). */
 export const fmtDateBD = (d: Date | string | null | undefined, lang: "bn" | "en" = "bn"): string => {
   if (!d) return "—";
