@@ -281,7 +281,7 @@ export default function Ledger() {
     const cashTxnTotal = cashIn + cashOut;
 
     return [
-      { key: "income"   as TabKey, label: "মোট আয়",          value: income,       icon: ArrowDownToLine, tone: "income",   hint: "আসলে প্রাপ্ত: বিক্রয় paid + কিস্তি আদায় + জমা" },
+      { key: "income"   as TabKey, label: "মোট আয়",          value: income,       icon: ArrowDownToLine, tone: "income",   hint: "নগদ বিক্রয় + কিস্তি বিক্রয়ের ডাউন পেমেন্ট + কিস্তি আদায় + ক্যাশ জমা (বাকি অংশ বাদে)" },
       { key: "expense"  as TabKey, label: "মোট খরচ",         value: expense,      icon: ArrowUpFromLine, tone: "expense",  hint: "খরচ এন্ট্রি + উত্তোলন (পণ্য ক্রয় বাদ)" },
       { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",    value: cashBalance,  icon: Coins,           tone: "balance",  hint: "অগ্রিম + কিস্তি আদায় + ক্যাশ জমা − ক্যাশ খরচ" },
       { key: "cash"     as TabKey, label: "ক্যাশ লেনদেন",    value: cashTxnTotal, icon: Wallet,          tone: "cash",     hint: "শুধু নগদ পেমেন্টের যোগফল (in+out)" },
