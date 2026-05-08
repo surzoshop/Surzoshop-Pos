@@ -41,8 +41,9 @@ export default function POS() {
   const [customerId, setCustomerId] = useState<string>("");
   const [installmentCount, setInstallmentCount] = useState(3);
   const [downPayment, setDownPayment] = useState(0);
-  const [interestRate, setInterestRate] = useState(0);
-  const [lateFeePerDay, setLateFeePerDay] = useState(0);
+  const [interestRate, setInterestRate] = useState(0); // kept for DB compatibility, always 0
+  const [lateFeePerDay, setLateFeePerDay] = useState(5); // default 5%
+  const [scheduleDates, setScheduleDates] = useState<string[]>([]);
   const [guarantors, setGuarantors] = useState<any[]>([]);
   const [guarantorId, setGuarantorId] = useState<string>("");
   const [showGuarantorForm, setShowGuarantorForm] = useState(false);
