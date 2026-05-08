@@ -121,7 +121,7 @@ export default function StockLedger() {
                   {rows.length === 0 && <tr><td colSpan={5} className="py-12 text-center text-muted-foreground">কোন movement নেই</td></tr>}
                   {rows.map((r, i) => (
                     <tr key={i} className="border-b border-[hsl(var(--surface-container-high))]/40">
-                      <td className="py-3 text-muted-foreground">{new Date(r.date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US")}</td>
+                      <td className="py-3 text-muted-foreground">{new Date(r.date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}</td>
                       <td className="py-3"><StatusPill tone={r.type === "purchase" || r.type === "return" ? "success" : r.type === "sale" ? "destructive" : "info"}>{r.ref}</StatusPill></td>
                       <td className="py-3 text-right text-primary font-semibold">{r.in_qty || "—"}</td>
                       <td className="py-3 text-right text-destructive font-semibold">{r.out_qty || "—"}</td>

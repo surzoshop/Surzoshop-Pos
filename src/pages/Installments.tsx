@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { todayBD, toBDDate, bdDateAddMonths } from "@/lib/datetime";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -52,7 +53,7 @@ export default function Installments() {
     customer_id: "", guarantor_id: "",
     items: [] as any[], pid: "", qty: 1, price: 0,
     down_payment: 2000, interest_rate: 0, tenure_months: 5, late_fee_per_day: 5, notes: "",
-    first_due: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().slice(0, 10),
+    first_due: bdDateAddMonths(1),
   });
 
   const load = async () => {
@@ -63,7 +64,7 @@ export default function Installments() {
       supabase.from("products").select("id,name,price,stock").order("name"),
       supabase.from("guarantors").select("id,name,phone").order("name"),
     ]);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayBD();
     const enriched = (insts ?? []).map(i => ({
       ...i,
       derived_status: i.status === "paid" ? "paid" : (i.due_date < today ? "overdue" : "pending"),
@@ -160,7 +161,7 @@ export default function Installments() {
       const d = new Date(firstDue); d.setMonth(d.getMonth() + idx);
       return {
         sale_id: sale.id, installment_no: idx + 1,
-        due_date: d.toISOString().slice(0, 10),
+        due_date: toBDDate(d),
         amount: idx === plan.tenure_months - 1 ? financed - per * (plan.tenure_months - 1) : per,
       };
     });
@@ -170,7 +171,7 @@ export default function Installments() {
     setOpenNew(false);
     setPlan({ customer_id: "", guarantor_id: "", items: [], pid: "", qty: 1, price: 0,
       down_payment: 2000, interest_rate: 0, tenure_months: 5, late_fee_per_day: 5, notes: "",
-      first_due: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().slice(0, 10) });
+      first_due: bdDateAddMonths(1) });
     load();
   };
 
@@ -282,7 +283,7 @@ export default function Installments() {
                   </div>
 
                   <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2">
-                    {t("startDate")}: {p.start_date ? new Date(p.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US") : "—"}
+                    {t("startDate")}: {p.start_date ? new Date(p.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" }) : "—"}
                   </div>
 
                   <div className="flex items-center justify-between bg-gradient-to-r from-[hsl(var(--surface-container-low))] to-[hsl(var(--surface-container))] rounded-xl p-3 text-sm border border-[hsl(var(--surface-container-high))]/40">
@@ -320,7 +321,7 @@ export default function Installments() {
                   <Stat icon={<CalendarDays className="h-4 w-4" />} label={t("noOfInstallments")} value={`${managing.tenure_months}`} accent="from-secondary/30 to-secondary/10" iconColor="text-[hsl(var(--secondary-foreground))]" border="border-secondary/40" delay={100} />
                   <Stat icon={<Percent className="h-4 w-4" />} label={t("lateFee")} value={`${managing.late_fee_pct}%`} accent="from-destructive/15 to-destructive/5" iconColor="text-destructive" border="border-destructive/25" delay={150} />
                   <Stat icon={<Clock className="h-4 w-4" />} label={t("frequency")} value={t("monthly")} accent="from-primary/10 to-primary/5" iconColor="text-primary" border="border-primary/20" delay={200} />
-                  <Stat icon={<CalendarDays className="h-4 w-4" />} label={t("startDate")} value={managing.start_date ? new Date(managing.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US") : "—"} accent="from-info/10 to-info/5" iconColor="text-info" border="border-info/20" delay={250} />
+                  <Stat icon={<CalendarDays className="h-4 w-4" />} label={t("startDate")} value={managing.start_date ? new Date(managing.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" }) : "—"} accent="from-info/10 to-info/5" iconColor="text-info" border="border-info/20" delay={250} />
                   <Stat icon={<CheckCircle2 className="h-4 w-4" />} label={t("paid")} value={fmt(managing.paid)} accent="from-primary/20 to-primary/5" iconColor="text-primary" valueColor="text-primary" border="border-primary/30" delay={300} />
                   <Stat icon={<AlertTriangle className="h-4 w-4" />} label={t("due")} value={fmt(managing.due)} accent="from-destructive/20 to-destructive/5" iconColor="text-destructive" valueColor="text-destructive" border="border-destructive/30" delay={350} />
                 </div>
@@ -337,7 +338,7 @@ export default function Installments() {
                         <div className="w-12 h-12 rounded-xl gradient-primary text-primary-foreground flex items-center justify-center font-black text-sm shadow-md">DP</div>
                         <div>
                           <div className="font-bold text-base">{t("downPayment")}</div>
-                          <div className="text-sm text-muted-foreground">{managing.start_date ? new Date(managing.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US") : "—"}</div>
+                          <div className="text-sm text-muted-foreground">{managing.start_date ? new Date(managing.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" }) : "—"}</div>
                         </div>
                       </div>
                       <div className="text-right">
@@ -375,7 +376,7 @@ export default function Installments() {
                               <div className="font-bold text-base">{lang === "bn" ? `কিস্তি ${i.installment_no}` : `Installment ${i.installment_no}`}</div>
                               <div className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
                                 <Clock className="h-3.5 w-3.5" />
-                                {new Date(i.due_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US")}
+                                {new Date(i.due_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}
                                 {days > 0 && <span className="text-destructive font-semibold">• {days} {t("overdueDays")}</span>}
                               </div>
                             </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { todayBD } from "@/lib/datetime";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
@@ -10,7 +11,7 @@ const STATUSES = ["present", "absent", "leave", "half_day"] as const;
 export default function Attendance() {
   const { t, lang } = useT();
   const { toast } = useToast();
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(todayBD());
   const [staff, setStaff] = useState<any[]>([]);
   const [att, setAtt] = useState<Record<string, string>>({});
 

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { toBDDate } from "@/lib/datetime";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,7 +43,7 @@ const catIcon = (name: string) => {
 
 type Range = "today" | "yesterday" | "this_month" | "last_month" | "all" | "custom";
 
-function ymd(d: Date) { return d.toISOString().slice(0, 10); }
+function ymd(d: Date) { return toBDDate(d); }
 function startOfMonth(d: Date) { return new Date(d.getFullYear(), d.getMonth(), 1); }
 function endOfMonth(d: Date) { return new Date(d.getFullYear(), d.getMonth() + 1, 0); }
 
@@ -398,7 +399,7 @@ export default function Expenses() {
                   <div className="flex-1 min-w-0">
                     <p className="font-extrabold text-foreground truncate text-sm md:text-base">{i.title}</p>
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] md:text-xs text-muted-foreground mt-0.5">
-                      <span className="font-semibold">{new Date(i.expense_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US")}</span>
+                      <span className="font-semibold">{new Date(i.expense_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}</span>
                       {i.expense_categories?.name && (
                         <>
                           <span>·</span>

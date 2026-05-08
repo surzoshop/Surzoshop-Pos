@@ -15,6 +15,7 @@ import { useMobileScanner } from "@/hooks/useMobileScanner";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { CustomerCombobox } from "@/components/CustomerCombobox";
 import { ThermalReceipt } from "@/components/ThermalReceipt";
+import { bdDateAddMonths, todayBD } from "@/lib/datetime";
 
 type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number; image_url?: string | null };
 type CartItem = { product: Product; qty: number };
@@ -173,17 +174,9 @@ export default function POS() {
     : total;
   const emi = paymentType === "installment" && installmentCount > 0 ? financed / installmentCount : 0;
 
-  // Default schedule dates: 5th of each upcoming month (local time, no UTC shift)
-  const defaultScheduleDates = (count: number): string[] => {
-    const today = new Date();
-    return Array.from({ length: count }).map((_, idx) => {
-      const d = new Date(today.getFullYear(), today.getMonth() + idx + 1, 5);
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${y}-${m}-${day}`;
-    });
-  };
+  // Default schedule dates: 5th of each upcoming month, in Asia/Dhaka tz
+  const defaultScheduleDates = (count: number): string[] =>
+    Array.from({ length: count }).map((_, idx) => bdDateAddMonths(idx + 1, 5));
 
   // Keep scheduleDates length in sync with installmentCount (preserve user-edited dates)
   useEffect(() => {
@@ -281,7 +274,7 @@ export default function POS() {
         const p: any = i.product;
         const months = p.has_warranty ? Number(p.warranty_months) || null : null;
         let warranty_until: string | null = null;
-        if (months) { const d = new Date(); d.setMonth(d.getMonth() + months); warranty_until = d.toISOString().slice(0, 10); }
+        if (months) { warranty_until = bdDateAddMonths(months); }
         return {
           sale_id: editingSaleId, product_id: i.product.id, product_name: i.product.name,
           qty: i.qty, unit_price: i.product.price, subtotal: i.product.price * i.qty,
@@ -331,8 +324,7 @@ export default function POS() {
       const months = p.has_warranty ? Number(p.warranty_months) || null : null;
       let warranty_until: string | null = null;
       if (months) {
-        const d = new Date(); d.setMonth(d.getMonth() + months);
-        warranty_until = d.toISOString().slice(0, 10);
+        warranty_until = bdDateAddMonths(months);
       }
       return {
         sale_id: sale.id, product_id: i.product.id, product_name: i.product.name,

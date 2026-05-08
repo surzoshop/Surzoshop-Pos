@@ -20,6 +20,7 @@ import {
   Receipt, ShoppingBag, Coins, ArrowDownToLine, ArrowUpFromLine,
   ListFilter, CalendarDays,
 } from "lucide-react";
+import { todayBD, addDaysBDStr, firstOfMonthBD, prevMonthRangeBD, fmtDateBD } from "@/lib/datetime";
 
 type Entry = {
   id: string;
@@ -40,21 +41,16 @@ type RangeKey = "today" | "7d" | "30d" | "thisMonth" | "lastMonth" | "lifetime";
 type RowFilter = "all" | "income" | "expense" | "deposit" | "withdraw";
 type ViewMode = "detailed" | "daily";
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => todayBD();
 const fmt = (n: number) => `৳${Number(n || 0).toLocaleString("bn-BD")}`;
 
 function rangeDates(r: RangeKey): { from: string; to: string } {
-  const t = new Date(); const to = t.toISOString().slice(0, 10);
-  const d = new Date(t);
+  const to = todayBD();
   if (r === "today")     return { from: to, to };
-  if (r === "7d")        { d.setDate(d.getDate() - 6);  return { from: d.toISOString().slice(0, 10), to }; }
-  if (r === "30d")       { d.setDate(d.getDate() - 29); return { from: d.toISOString().slice(0, 10), to }; }
-  if (r === "thisMonth") { d.setDate(1); return { from: d.toISOString().slice(0, 10), to }; }
-  if (r === "lastMonth") {
-    const a = new Date(t.getFullYear(), t.getMonth() - 1, 1);
-    const b = new Date(t.getFullYear(), t.getMonth(), 0);
-    return { from: a.toISOString().slice(0, 10), to: b.toISOString().slice(0, 10) };
-  }
+  if (r === "7d")        return { from: addDaysBDStr(to, -6), to };
+  if (r === "30d")       return { from: addDaysBDStr(to, -29), to };
+  if (r === "thisMonth") return { from: firstOfMonthBD(), to };
+  if (r === "lastMonth") return prevMonthRangeBD();
   return { from: "2000-01-01", to };
 }
 

@@ -106,11 +106,11 @@ export default function Warranty() {
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Calendar className="h-4 w-4" />
-                        বিক্রয়: <span className="font-semibold text-foreground">{sold.toLocaleDateString("bn-BD")}</span>
+                        বিক্রয়: <span className="font-semibold text-foreground">{sold.toLocaleDateString("bn-BD", { timeZone: "Asia/Dhaka" })}</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <ShieldCheck className="h-4 w-4" />
-                        মেয়াদ: <span className="font-semibold text-foreground">{until.toLocaleDateString("bn-BD")}</span>
+                        মেয়াদ: <span className="font-semibold text-foreground">{until.toLocaleDateString("bn-BD", { timeZone: "Asia/Dhaka" })}</span>
                         <span className={`text-xs font-bold ${valid ? "text-primary" : "text-destructive"}`}>
                           ({valid ? `${daysLeft} দিন বাকি` : `${Math.abs(daysLeft)} দিন আগে শেষ`})
                         </span>

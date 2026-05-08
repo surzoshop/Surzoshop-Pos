@@ -26,7 +26,7 @@ export type ThermalReceiptProps = {
 
 export const ThermalReceipt = forwardRef<HTMLDivElement, ThermalReceiptProps>((p, ref) => {
   const date = typeof p.createdAt === "string" ? new Date(p.createdAt) : p.createdAt;
-  const dateStr = date.toLocaleString("bn-BD", { hour12: true });
+  const dateStr = date.toLocaleString("bn-BD", { timeZone: "Asia/Dhaka", hour12: true });
 
   return (
     <div ref={ref} className="thermal-receipt mx-auto bg-white text-black" style={{ width: "80mm", padding: "4mm 3mm", fontFamily: "'Courier New', monospace", fontSize: "11px", lineHeight: 1.35 }}>

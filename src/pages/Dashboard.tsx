@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { todayBD, toBDDate } from "@/lib/datetime";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
@@ -63,10 +64,10 @@ export default function Dashboard() {
     const days: Record<string, number> = {};
     for (let i = 6; i >= 0; i--) {
       const d = new Date(today); d.setDate(d.getDate() - i);
-      days[d.toISOString().slice(0, 10)] = 0;
+      days[toBDDate(d)] = 0;
     }
     (salesWeek.data ?? []).forEach(s => {
-      const k = new Date(s.created_at).toISOString().slice(0, 10);
+      const k = toBDDate(s.created_at);
       if (k in days) days[k] += Number(s.total);
     });
     const dayNames = lang === "bn"
@@ -293,7 +294,7 @@ export default function Dashboard() {
                   <div key={r.id} className="bg-[hsl(var(--surface-container-low))] p-3 rounded-xl flex items-center justify-between gap-2 border border-transparent hover:border-sky-500/30 transition-all">
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-sm truncate">{r.customers?.name ?? t("walkInCustomer")}</p>
-                      <p className="text-[11px] text-muted-foreground">{new Date(r.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US")}</p>
+                      <p className="text-[11px] text-muted-foreground">{new Date(r.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}</p>
                     </div>
                     <div className="text-right shrink-0">
                       <p className="font-bold text-sm">{fmt(total)}</p>
@@ -331,7 +332,7 @@ export default function Dashboard() {
                     const s = sm[status];
                     return (
                       <tr key={r.id} className="hover:bg-[hsl(var(--surface-container-low))] transition-colors border-b border-[hsl(var(--surface-container-high))]/20 last:border-0">
-                        <td className="py-4">{new Date(r.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US")}</td>
+                        <td className="py-4">{new Date(r.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}</td>
                         <td className="py-4 font-semibold">{r.customers?.name ?? t("walkInCustomer")}</td>
                         <td className="py-4 font-bold text-foreground">{fmt(total)}</td>
                         <td className="py-4 text-right">

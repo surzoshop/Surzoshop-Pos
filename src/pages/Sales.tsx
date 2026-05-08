@@ -54,7 +54,7 @@ export default function Sales() {
         <td style="text-align:right">${fmt(Number(it.unit_price))}</td>
         <td style="text-align:right;font-weight:700">${fmt(Number(it.subtotal))}</td>
       </tr>`).join("");
-    const dateStr = new Date(sale.created_at).toLocaleString(lang === "bn" ? "bn-BD" : "en-US");
+    const dateStr = new Date(sale.created_at).toLocaleString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" });
     const shopName = currentShop?.name ?? "Shop";
     const html = `<!doctype html><html><head><meta charset="utf-8"><title>${sale.invoice_no}</title>
       <style>
@@ -254,7 +254,7 @@ export default function Sales() {
                       <StatusPill tone={tone}>{t(s.status as any)}</StatusPill>
                     </div>
                     <div className="text-[11px] text-muted-foreground mt-0.5">
-                      {new Date(s.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US")}
+                      {new Date(s.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}
                       {s.customers?.name ? ` · ${s.customers.name}` : ""}
                     </div>
                   </div>
@@ -311,7 +311,7 @@ export default function Sales() {
                 return (
                   <tr key={s.id} className="hover:bg-[hsl(var(--surface-container-low))] transition-colors">
                     <td className="py-4 font-bold text-foreground">{s.invoice_no}</td>
-                    <td className="py-4 text-muted-foreground">{new Date(s.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US")}</td>
+                    <td className="py-4 text-muted-foreground">{new Date(s.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}</td>
                     <td className="py-4 font-medium">{s.customers?.name ?? "—"}</td>
                     <td className="py-4">{t(s.payment_type === "cash" ? "cash" : "installmentSale")}</td>
                     <td className="py-4 font-bold text-primary">{fmt(Number(s.total))}</td>
