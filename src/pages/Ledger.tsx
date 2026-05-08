@@ -105,6 +105,7 @@ export default function Ledger() {
   const [expensesAgg, setExpensesAgg] = useState<{ date: string; total: number; title: string; method: string }[]>([]);
   const [instPayAgg, setInstPayAgg] = useState<{ date: string; amount: number }[]>([]);
   const [profitAgg, setProfitAgg] = useState<{ date: string; profit: number }[]>([]);
+  const [purchaseCostAgg, setPurchaseCostAgg] = useState<{ date: string; total: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Top section state
@@ -160,7 +161,11 @@ export default function Ledger() {
     let siq = supabase.from("sale_items").select("qty,unit_price,subtotal,sales!inner(created_at,discount,total,id),products(cost)");
     if (currentShop) siq = siq.eq("shop_id", currentShop.id);
 
-    const [{ data, error }, { data: sd }, { data: pd }, { data: ed }, { data: ipd }, { data: sid }] = await Promise.all([q, sq, pq, eq_, ipq, siq]);
+    // Purchase cost (live): purchase_items joined with products(cost) — uses CURRENT product cost
+    let piq = supabase.from("purchase_items").select("qty,created_at,purchases!inner(created_at),products(cost)");
+    if (currentShop) piq = piq.eq("shop_id", currentShop.id);
+
+    const [{ data, error }, { data: sd }, { data: pd }, { data: ed }, { data: ipd }, { data: sid }, { data: pid }] = await Promise.all([q, sq, pq, eq_, ipq, siq, piq]);
     if (error) toast.error(error.message);
     setEntries((data ?? []) as any);
     setSalesAgg((sd ?? []).map((s: any) => ({
@@ -210,6 +215,15 @@ export default function Ledger() {
       profitByDate.set(s.date, (profitByDate.get(s.date) ?? 0) + profit);
     });
     setProfitAgg(Array.from(profitByDate.entries()).map(([date, profit]) => ({ date, profit })));
+
+    // Aggregate live purchase cost (qty × current product.cost) by date
+    const pcByDate = new Map<string, number>();
+    (pid ?? []).forEach((row: any) => {
+      const date = String(row.purchases?.created_at ?? row.created_at).slice(0, 10);
+      const amt = Number(row.qty || 0) * Number(row.products?.cost || 0);
+      pcByDate.set(date, (pcByDate.get(date) ?? 0) + amt);
+    });
+    setPurchaseCostAgg(Array.from(pcByDate.entries()).map(([date, total]) => ({ date, total })));
 
     setLoading(false);
   };
@@ -296,8 +310,8 @@ export default function Ledger() {
     const realExpense = expensesAgg.filter(x => inRange(x.date)).reduce((s, x) => s + x.total, 0);
     const expense = cashbookExpense + realExpense;
 
-    // স্টক ক্রয় খরচ: purchases table only
-    const stockBuy = purchasesAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.total, 0);
+    // স্টক ক্রয় খরচ: live = Σ(qty × পণ্যের বর্তমান ক্রয়মূল্য) — পণ্য তালিকায় cost edit করলেই auto আপডেট
+    const stockBuy = purchaseCostAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.total, 0);
 
     // নগদ ব্যালেন্স: ডাউন পেমেন্ট + কিস্তি আদায় + পূর্ণ নগদ অর্ডার (অর্থাৎ sales.paid সব মিলিয়ে + কিস্তি আদায়)
     const cashBalance = salesPaid + instPaid;
@@ -316,10 +330,10 @@ export default function Ledger() {
       { key: "expense"  as TabKey, label: "মোট খরচ",         value: expense,      icon: ArrowUpFromLine, tone: "expense",  hint: "খরচ এন্ট্রি + উত্তোলন (পণ্য ক্রয় বাদ)" },
       { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",    value: cashBalance,  icon: Coins,           tone: "balance",  hint: "ডাউন পেমেন্ট + কিস্তি আদায় + পূর্ণ নগদ অর্ডার" },
       { key: "cash"     as TabKey, label: "ক্যাশ লেনদেন",    value: cashTxnTotal, icon: Wallet,          tone: "cash",     hint: "শুধু নগদ পেমেন্টের যোগফল (in+out)" },
-      { key: "purchase" as TabKey, label: "স্টক ক্রয় খরচ",    value: stockBuy,     icon: ShoppingBag,     tone: "purchase", hint: "সরবরাহকারী থেকে পণ্য ক্রয় (invoice total)" },
+      { key: "purchase" as TabKey, label: "স্টক ক্রয় খরচ",    value: stockBuy,     icon: ShoppingBag,     tone: "purchase", hint: "Σ(পরিমাণ × পণ্যের বর্তমান ক্রয়মূল্য) — পণ্য তালিকায় cost edit করলেই auto আপডেট" },
       { key: "sales"    as TabKey, label: "মোট বিক্রয়",       value: salesTotal,   icon: Receipt,         tone: "sales",    hint: "বিক্রয় ইনভয়েস (বাকি সহ মোট)" },
     ];
-  }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg, profitAgg, topFrom, topTo]);
+  }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg, profitAgg, purchaseCostAgg, topFrom, topTo]);
 
   // 3 big totals (under account tabs) — based on lower range + tab + account filter
   const lowerFiltered = useMemo(() => synthEntries.filter(e => {
