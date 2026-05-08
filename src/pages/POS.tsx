@@ -167,16 +167,35 @@ export default function POS() {
     : total;
   const emi = paymentType === "installment" && installmentCount > 0 ? financed / installmentCount : 0;
 
+  // Default schedule dates: 5th of each upcoming month
+  const defaultScheduleDates = (count: number): string[] => {
+    const today = new Date();
+    return Array.from({ length: count }).map((_, idx) => {
+      // first installment = 5th of next month, then +1 month each
+      const d = new Date(today.getFullYear(), today.getMonth() + idx + 1, 5);
+      return d.toISOString().slice(0, 10);
+    });
+  };
+
+  // Keep scheduleDates length in sync with installmentCount (preserve user-edited dates)
+  useEffect(() => {
+    if (paymentType !== "installment") return;
+    setScheduleDates(prev => {
+      const def = defaultScheduleDates(installmentCount);
+      return Array.from({ length: installmentCount }).map((_, i) => prev[i] || def[i]);
+    });
+  }, [installmentCount, paymentType]);
+
   // EMI schedule preview
   const schedulePreview = useMemo(() => {
     if (paymentType !== "installment" || installmentCount <= 0 || financed <= 0) return [];
     const per = Math.round((financed / installmentCount) * 100) / 100;
+    const dates = scheduleDates.length === installmentCount ? scheduleDates : defaultScheduleDates(installmentCount);
     return Array.from({ length: installmentCount }).map((_, idx) => {
-      const d = new Date(); d.setMonth(d.getMonth() + idx + 1);
       const amount = idx === installmentCount - 1 ? financed - per * (installmentCount - 1) : per;
-      return { no: idx + 1, date: d.toISOString().slice(0, 10), amount };
+      return { no: idx + 1, date: dates[idx], amount };
     });
-  }, [paymentType, installmentCount, financed]);
+  }, [paymentType, installmentCount, financed, scheduleDates]);
 
   // Subscribe to barcodes from paired mobile scanner (managed globally)
   useEffect(() => {
