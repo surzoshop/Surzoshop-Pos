@@ -128,18 +128,19 @@ export default function POS() {
   });
 
   const addToCart = (p: Product) => {
-    if (p.stock <= 0) {
+    const extra = originalQty[p.id] || 0;
+    if (p.stock + extra <= 0) {
       toast({ title: t("outOfStock"), variant: "destructive" });
       return;
     }
     setCart(c => {
       const ex = c.find(i => i.product.id === p.id);
-      if (ex) return c.map(i => i.product.id === p.id ? { ...i, qty: Math.min(i.qty + 1, p.stock) } : i);
+      if (ex) return c.map(i => i.product.id === p.id ? { ...i, qty: Math.min(i.qty + 1, p.stock + extra) } : i);
       return [...c, { product: p, qty: 1 }];
     });
   };
   const updateQty = (id: string, delta: number) => {
-    setCart(c => c.map(i => i.product.id === id ? { ...i, qty: Math.max(1, Math.min(i.qty + delta, i.product.stock)) } : i));
+    setCart(c => c.map(i => i.product.id === id ? { ...i, qty: Math.max(1, Math.min(i.qty + delta, i.product.stock + (originalQty[i.product.id] || 0))) } : i));
   };
   const removeItem = (id: string) => setCart(c => c.filter(i => i.product.id !== id));
 
