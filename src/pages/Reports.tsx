@@ -61,8 +61,8 @@ function getRange(period: Period, monthVal: string, yearVal: number, from: strin
 }
 
 function fmtDate(d: string | Date, lang: string) {
-  return new Date(d).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US",
-    { year: "numeric", month: "short", day: "2-digit" });
+  return new Date(d).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB",
+    { timeZone: "Asia/Dhaka", year: "numeric", month: "short", day: "2-digit" });
 }
 
 function downloadCSV(filename: string, headers: string[], rows: (string | number)[][]) {
