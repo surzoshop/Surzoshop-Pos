@@ -629,6 +629,15 @@ export default function POS() {
             <div className="flex justify-between text-muted-foreground"><span>{t("subtotal")}:</span><span>{fmt(subtotal)}</span></div>
             <div className="flex justify-between text-muted-foreground"><span>{t("vat")} (0%):</span><span>{fmt(0)}</span></div>
             <div className="flex justify-between text-muted-foreground"><span>{t("discount")}:</span><span className="text-destructive">-{fmt(discount)}</span></div>
+            {paymentType === "installment" && downPayment > 0 && (
+              <div className="flex justify-between text-muted-foreground"><span>{lang === "bn" ? "ডাউন পেমেন্ট" : "Down Payment"}:</span><span className="text-success">-{fmt(downPayment)}</span></div>
+            )}
+            {due > 0 && (
+              <div className="flex justify-between items-center bg-destructive/10 -mx-1 px-3 py-2 rounded-lg">
+                <span className="font-bold text-destructive">{lang === "bn" ? "বকেয়া" : "Due"}:</span>
+                <span className="font-extrabold text-destructive text-base">{fmt(due)}</span>
+              </div>
+            )}
 
             {/* Editable Grand Total — always-visible editor with -/+ buttons */}
             <div className="pt-3 border-t border-dashed border-[hsl(var(--surface-container-highest))]">
