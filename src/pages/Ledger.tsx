@@ -216,6 +216,15 @@ export default function Ledger() {
     });
     setProfitAgg(Array.from(profitByDate.entries()).map(([date, profit]) => ({ date, profit })));
 
+    // Aggregate live purchase cost (qty × current product.cost) by date
+    const pcByDate = new Map<string, number>();
+    (pid ?? []).forEach((row: any) => {
+      const date = String(row.purchases?.created_at ?? row.created_at).slice(0, 10);
+      const amt = Number(row.qty || 0) * Number(row.products?.cost || 0);
+      pcByDate.set(date, (pcByDate.get(date) ?? 0) + amt);
+    });
+    setPurchaseCostAgg(Array.from(pcByDate.entries()).map(([date, total]) => ({ date, total })));
+
     setLoading(false);
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [currentShop?.id]);
