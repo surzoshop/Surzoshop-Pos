@@ -87,9 +87,15 @@ export default function POS() {
       if (sale.payment_type === "installment") {
         setPaymentType("installment");
         setDownPayment(Number(sale.down_payment) || 0);
-        setInterestRate(Number(sale.interest_rate) || 0);
+        setInterestRate(0);
         setInstallmentCount(Number(sale.tenure_months) || 3);
-        setLateFeePerDay(Number(sale.late_fee_per_day) || 0);
+        setLateFeePerDay(Number(sale.late_fee_per_day) || 5);
+        const { data: existingInst } = await supabase
+          .from("installments").select("installment_no, due_date")
+          .eq("sale_id", editId).order("installment_no");
+        if (existingInst && existingInst.length) {
+          setScheduleDates(existingInst.map((i: any) => i.due_date));
+        }
         setGuarantorId(sale.guarantor_id || "");
       } else if (Number(sale.due) > 0) {
         setPaymentType("due");
