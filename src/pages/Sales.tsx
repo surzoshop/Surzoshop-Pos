@@ -242,8 +242,12 @@ export default function Sales() {
           {filtered.length === 0 && <div className="py-12 text-center text-muted-foreground text-sm">{t("noResults")}</div>}
           {filtered.map((s, i) => {
             const due = Number(s.due);
-            const tone = due === 0 ? "success" : due === Number(s.total) ? "warning" : "destructive";
-            const accent = due === 0 ? "from-primary to-primary-glow" : due === Number(s.total) ? "from-secondary to-secondary/60" : "from-destructive to-destructive/70";
+            const total = Number(s.total);
+            const isFullDue = due > 0 && due >= total;
+            const tone = due === 0 ? "success" : isFullDue ? "destructive" : "warning";
+            const accent = due === 0 ? "from-primary to-primary-glow" : isFullDue ? "from-destructive to-destructive/70" : "from-secondary to-secondary/60";
+            const payLabel = s.payment_type === "installment" ? t("installmentSale") : (due > 0 ? (lang === "bn" ? "বাকি" : "Credit") : t("cash"));
+            const statusLabel = isFullDue ? (lang === "bn" ? "বকেয়া" : "Due") : t(s.status as any);
             return (
               <div key={s.id} className="relative overflow-hidden bg-[hsl(var(--surface-container-low))] rounded-xl p-3 animate-fade-in shadow-sm hover:shadow-md transition-all" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
                 <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${accent}`} />
@@ -251,7 +255,7 @@ export default function Sales() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-foreground text-sm">{s.invoice_no}</span>
-                      <StatusPill tone={tone}>{t(s.status as any)}</StatusPill>
+                      <StatusPill tone={tone}>{statusLabel}</StatusPill>
                     </div>
                     <div className="text-[11px] text-muted-foreground mt-0.5">
                       {new Date(s.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}
@@ -264,7 +268,7 @@ export default function Sales() {
                   </div>
                 </div>
                 <div className="mt-2 pt-2 border-t border-[hsl(var(--surface-container))] flex items-center justify-between pl-2">
-                  <span className="text-[11px] text-muted-foreground">{t(s.payment_type === "cash" ? "cash" : "installmentSale")}</span>
+                  <span className="text-[11px] text-muted-foreground">{payLabel}</span>
                   <div className="flex items-center gap-1">
                     <button onClick={() => printReceipt(s)} className="p-2 rounded-lg bg-info/10 text-info active:scale-95 hover:bg-info/20 transition-all">
                       <Printer className="h-4 w-4" />
@@ -307,16 +311,20 @@ export default function Sales() {
               )}
               {filtered.map(s => {
                 const due = Number(s.due);
-                const tone = due === 0 ? "success" : due === Number(s.total) ? "warning" : "destructive";
+                const total = Number(s.total);
+                const isFullDue = due > 0 && due >= total;
+                const tone = due === 0 ? "success" : isFullDue ? "destructive" : "warning";
+                const payLabel = s.payment_type === "installment" ? t("installmentSale") : (due > 0 ? (lang === "bn" ? "বাকি" : "Credit") : t("cash"));
+                const statusLabel = isFullDue ? (lang === "bn" ? "বকেয়া" : "Due") : t(s.status as any);
                 return (
                   <tr key={s.id} className="hover:bg-[hsl(var(--surface-container-low))] transition-colors">
                     <td className="py-4 font-bold text-foreground">{s.invoice_no}</td>
                     <td className="py-4 text-muted-foreground">{new Date(s.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}</td>
                     <td className="py-4 font-medium">{s.customers?.name ?? "—"}</td>
-                    <td className="py-4">{t(s.payment_type === "cash" ? "cash" : "installmentSale")}</td>
+                    <td className="py-4">{payLabel}</td>
                     <td className="py-4 font-bold text-primary">{fmt(Number(s.total))}</td>
                     <td className="py-4">{due > 0 ? <span className="text-destructive font-semibold">{fmt(due)}</span> : <span className="text-muted-foreground">—</span>}</td>
-                    <td className="py-4"><StatusPill tone={tone}>{t(s.status as any)}</StatusPill></td>
+                    <td className="py-4"><StatusPill tone={tone}>{statusLabel}</StatusPill></td>
                     <td className="py-4 text-right">
                       <div className="inline-flex items-center gap-1">
                         <button onClick={() => printReceipt(s)} title="প্রিন্ট" className="p-1.5 rounded-md hover:bg-info/10 text-info">
