@@ -41,8 +41,9 @@ export default function POS() {
   const [customerId, setCustomerId] = useState<string>("");
   const [installmentCount, setInstallmentCount] = useState(3);
   const [downPayment, setDownPayment] = useState(0);
-  const [interestRate, setInterestRate] = useState(0);
-  const [lateFeePerDay, setLateFeePerDay] = useState(0);
+  const [interestRate, setInterestRate] = useState(0); // kept for DB compatibility, always 0
+  const [lateFeePerDay, setLateFeePerDay] = useState(5); // default 5%
+  const [scheduleDates, setScheduleDates] = useState<string[]>([]);
   const [guarantors, setGuarantors] = useState<any[]>([]);
   const [guarantorId, setGuarantorId] = useState<string>("");
   const [showGuarantorForm, setShowGuarantorForm] = useState(false);
@@ -86,9 +87,15 @@ export default function POS() {
       if (sale.payment_type === "installment") {
         setPaymentType("installment");
         setDownPayment(Number(sale.down_payment) || 0);
-        setInterestRate(Number(sale.interest_rate) || 0);
+        setInterestRate(0);
         setInstallmentCount(Number(sale.tenure_months) || 3);
-        setLateFeePerDay(Number(sale.late_fee_per_day) || 0);
+        setLateFeePerDay(Number(sale.late_fee_per_day) || 5);
+        const { data: existingInst } = await supabase
+          .from("installments").select("installment_no, due_date")
+          .eq("sale_id", editId).order("installment_no");
+        if (existingInst && existingInst.length) {
+          setScheduleDates(existingInst.map((i: any) => i.due_date));
+        }
         setGuarantorId(sale.guarantor_id || "");
       } else if (Number(sale.due) > 0) {
         setPaymentType("due");
@@ -166,16 +173,35 @@ export default function POS() {
     : total;
   const emi = paymentType === "installment" && installmentCount > 0 ? financed / installmentCount : 0;
 
+  // Default schedule dates: 5th of each upcoming month
+  const defaultScheduleDates = (count: number): string[] => {
+    const today = new Date();
+    return Array.from({ length: count }).map((_, idx) => {
+      // first installment = 5th of next month, then +1 month each
+      const d = new Date(today.getFullYear(), today.getMonth() + idx + 1, 5);
+      return d.toISOString().slice(0, 10);
+    });
+  };
+
+  // Keep scheduleDates length in sync with installmentCount (preserve user-edited dates)
+  useEffect(() => {
+    if (paymentType !== "installment") return;
+    setScheduleDates(prev => {
+      const def = defaultScheduleDates(installmentCount);
+      return Array.from({ length: installmentCount }).map((_, i) => prev[i] || def[i]);
+    });
+  }, [installmentCount, paymentType]);
+
   // EMI schedule preview
   const schedulePreview = useMemo(() => {
     if (paymentType !== "installment" || installmentCount <= 0 || financed <= 0) return [];
     const per = Math.round((financed / installmentCount) * 100) / 100;
+    const dates = scheduleDates.length === installmentCount ? scheduleDates : defaultScheduleDates(installmentCount);
     return Array.from({ length: installmentCount }).map((_, idx) => {
-      const d = new Date(); d.setMonth(d.getMonth() + idx + 1);
       const amount = idx === installmentCount - 1 ? financed - per * (installmentCount - 1) : per;
-      return { no: idx + 1, date: d.toISOString().slice(0, 10), amount };
+      return { no: idx + 1, date: dates[idx], amount };
     });
-  }, [paymentType, installmentCount, financed]);
+  }, [paymentType, installmentCount, financed, scheduleDates]);
 
   // Subscribe to barcodes from paired mobile scanner (managed globally)
   useEffect(() => {
@@ -265,14 +291,12 @@ export default function POS() {
       // 5) Recreate installments if installment type
       if (paymentType === "installment" && due > 0) {
         const per = Math.round((due / installmentCount) * 100) / 100;
-        const schedule = Array.from({ length: installmentCount }).map((_, idx) => {
-          const d = new Date(); d.setMonth(d.getMonth() + idx + 1);
-          return {
-            sale_id: editingSaleId, installment_no: idx + 1,
-            due_date: d.toISOString().slice(0, 10),
-            amount: idx === installmentCount - 1 ? due - per * (installmentCount - 1) : per,
-          };
-        });
+        const dates = scheduleDates.length === installmentCount ? scheduleDates : defaultScheduleDates(installmentCount);
+        const schedule = Array.from({ length: installmentCount }).map((_, idx) => ({
+          sale_id: editingSaleId, installment_no: idx + 1,
+          due_date: dates[idx],
+          amount: idx === installmentCount - 1 ? due - per * (installmentCount - 1) : per,
+        }));
         await supabase.from("installments").insert(schedule);
       }
 
@@ -318,24 +342,22 @@ export default function POS() {
 
     if (paymentType === "installment" && due > 0) {
       const per = Math.round((due / installmentCount) * 100) / 100;
-      const schedule = Array.from({ length: installmentCount }).map((_, idx) => {
-        const d = new Date(); d.setMonth(d.getMonth() + idx + 1);
-        return {
-          sale_id: sale.id, installment_no: idx + 1,
-          due_date: d.toISOString().slice(0, 10),
-          amount: idx === installmentCount - 1 ? due - per * (installmentCount - 1) : per,
-        };
-      });
+      const dates = scheduleDates.length === installmentCount ? scheduleDates : defaultScheduleDates(installmentCount);
+      const schedule = Array.from({ length: installmentCount }).map((_, idx) => ({
+        sale_id: sale.id, installment_no: idx + 1,
+        due_date: dates[idx],
+        amount: idx === installmentCount - 1 ? due - per * (installmentCount - 1) : per,
+      }));
       await supabase.from("installments").insert(schedule);
     }
 
     const firstDue = paymentType === "installment" && installmentCount > 0
-      ? (() => { const d = new Date(); d.setMonth(d.getMonth() + 1); return d.toISOString().slice(0, 10); })()
+      ? (scheduleDates[0] || defaultScheduleDates(installmentCount)[0])
       : undefined;
     setLastSale({ ...sale, items: cart, customer: customers.find(c => c.id === customerId), payment_method: paymentMethod, first_due: firstDue });
     setShowReceipt(true);
     setCart([]); setDiscount(0); setCustomerId(""); setPaymentType("cash"); setPaymentMethod("cash");
-    setDownPayment(0); setInterestRate(0); setLateFeePerDay(0); setGuarantorId("");
+    setDownPayment(0); setInterestRate(0); setLateFeePerDay(5); setGuarantorId(""); setScheduleDates([]);
     setDuePaid(0); setTotalOverride(null);
     load();
     toast({ title: lang === "bn" ? "বিক্রয় সম্পন্ন" : "Sale completed" });
@@ -511,9 +533,9 @@ export default function POS() {
             {paymentType === "installment" && (
               <div className="mb-3 space-y-2 p-3 rounded-xl bg-secondary/15">
                 <div className="text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--secondary-foreground))]">{t("loanTerms")}</div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <Label className="text-xs">{t("downPayment")}</Label>
+                    <Label className="text-xs">Down Payment</Label>
                     <Input type="number" value={downPayment} onChange={e => setDownPayment(+e.target.value || 0)} className="h-9" />
                   </div>
                   <div>
@@ -522,11 +544,7 @@ export default function POS() {
                       onChange={e => setInstallmentCount(Math.max(1, +e.target.value))} className="h-9" />
                   </div>
                   <div>
-                    <Label className="text-xs">{t("interestRate")}</Label>
-                    <Input type="number" value={interestRate} onChange={e => setInterestRate(+e.target.value || 0)} className="h-9" />
-                  </div>
-                  <div>
-                    <Label className="text-xs">{t("lateFee")}</Label>
+                    <Label className="text-xs">{t("lateFee")} (%)</Label>
                     <Input type="number" value={lateFeePerDay} onChange={e => setLateFeePerDay(+e.target.value || 0)} className="h-9" />
                   </div>
                 </div>
@@ -544,17 +562,26 @@ export default function POS() {
                   </div>
                 </div>
                 <div className="space-y-1 pt-2 border-t border-secondary/30 text-xs">
-                  <div className="flex justify-between"><span className="text-muted-foreground">মোট সুদ</span><span className="font-bold">{fmt(interestAmount)}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">EMI / {t("months")}</span><span className="font-bold text-primary">{fmt(emi)}</span></div>
                 </div>
                 {schedulePreview.length > 0 && (
-                  <details className="text-xs rounded-lg bg-[hsl(var(--surface-container-lowest))] p-2">
+                  <details open className="text-xs rounded-lg bg-[hsl(var(--surface-container-lowest))] p-2">
                     <summary className="cursor-pointer font-bold flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> {t("schedule")} preview ({schedulePreview.length})</summary>
-                    <div className="max-h-32 overflow-y-auto mt-2 space-y-1">
-                      {schedulePreview.map(s => (
-                        <div key={s.no} className="flex justify-between border-b border-dashed border-muted/50 py-0.5">
-                          <span>#{s.no} · {s.date}</span>
-                          <span className="font-mono font-bold">{fmt(s.amount)}</span>
+                    <div className="max-h-48 overflow-y-auto mt-2 space-y-1">
+                      {schedulePreview.map((s, idx) => (
+                        <div key={s.no} className="flex items-center gap-2 border-b border-dashed border-muted/50 py-1">
+                          <span className="w-8 shrink-0 font-bold">#{s.no}</span>
+                          <Input
+                            type="date"
+                            value={s.date}
+                            onChange={e => {
+                              const next = [...(scheduleDates.length === installmentCount ? scheduleDates : defaultScheduleDates(installmentCount))];
+                              next[idx] = e.target.value;
+                              setScheduleDates(next);
+                            }}
+                            className="h-7 text-xs flex-1 px-1"
+                          />
+                          <span className="font-mono font-bold w-20 text-right">{fmt(s.amount)}</span>
                         </div>
                       ))}
                     </div>
