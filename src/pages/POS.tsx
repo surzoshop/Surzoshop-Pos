@@ -15,6 +15,7 @@ import { useMobileScanner } from "@/hooks/useMobileScanner";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { CustomerCombobox } from "@/components/CustomerCombobox";
 import { ThermalReceipt } from "@/components/ThermalReceipt";
+import { bdDateAddMonths, todayBD } from "@/lib/datetime";
 
 type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number; image_url?: string | null };
 type CartItem = { product: Product; qty: number };
