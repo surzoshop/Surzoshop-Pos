@@ -105,6 +105,7 @@ export default function Ledger() {
   const [expensesAgg, setExpensesAgg] = useState<{ date: string; total: number; title: string; method: string }[]>([]);
   const [instPayAgg, setInstPayAgg] = useState<{ date: string; amount: number }[]>([]);
   const [profitAgg, setProfitAgg] = useState<{ date: string; profit: number }[]>([]);
+  const [purchaseCostAgg, setPurchaseCostAgg] = useState<{ date: string; total: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Top section state
