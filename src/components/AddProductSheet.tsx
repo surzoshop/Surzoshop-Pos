@@ -106,8 +106,39 @@ export function AddProductSheet({ open, onOpenChange, onSaved, editing }: Props)
       payload.barcode = await generateBarcode(productName);
       ({ error } = await supabase.from("products").insert(payload));
     }
+    if (error) { setSaving(false); return toast({ title: error.message, variant: "destructive" }); }
+
+    // Sync purchase history when cost changes on edit:
+    // - update purchase_items.unit_cost & subtotal for this product
+    // - recompute each affected purchase: subtotal/total, mark paid = total, due = 0
+    if (isEdit && Number(editing.cost || 0) !== cost) {
+      const { data: items } = await supabase
+        .from("purchase_items")
+        .select("id,purchase_id,qty")
+        .eq("product_id", editing.id);
+      const affectedPurchaseIds = new Set<string>();
+      for (const it of items ?? []) {
+        const newSub = Number(it.qty || 0) * cost;
+        await supabase.from("purchase_items")
+          .update({ unit_cost: cost, subtotal: newSub })
+          .eq("id", it.id);
+        if (it.purchase_id) affectedPurchaseIds.add(it.purchase_id);
+      }
+      for (const pid of affectedPurchaseIds) {
+        const { data: allItems } = await supabase
+          .from("purchase_items").select("subtotal").eq("purchase_id", pid);
+        const subtotal = (allItems ?? []).reduce((s: number, r: any) => s + Number(r.subtotal || 0), 0);
+        const { data: pur } = await supabase
+          .from("purchases").select("discount").eq("id", pid).maybeSingle();
+        const discount = Number(pur?.discount || 0);
+        const total = Math.max(subtotal - discount, 0);
+        await supabase.from("purchases")
+          .update({ subtotal, total, paid: total, due: 0 })
+          .eq("id", pid);
+      }
+    }
+
     setSaving(false);
-    if (error) return toast({ title: error.message, variant: "destructive" });
     toast({ title: isEdit ? "পণ্য আপডেট হয়েছে" : "পণ্য যোগ হয়েছে" });
     onOpenChange(false);
     onSaved?.();
