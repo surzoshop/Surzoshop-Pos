@@ -435,6 +435,12 @@ export default function POS() {
       </section>
 
       <section className="lg:col-span-2 flex flex-col bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-4 sm:p-6 lg:min-h-0 shadow-sm">
+        {editingSaleId && (
+          <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs sm:text-sm font-semibold text-primary">
+            <span>✎ এডিট মোড — ইনভয়েস আপডেট হবে</span>
+            <button onClick={() => navigate("/sales")} className="underline hover:text-primary/80">বাতিল</button>
+          </div>
+        )}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-extrabold flex items-center gap-2 text-foreground">
             <ShoppingCart className="h-6 w-6 text-primary" />
