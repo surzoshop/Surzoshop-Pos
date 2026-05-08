@@ -17,6 +17,7 @@ export default function Sales() {
   const { currentShop } = useShop();
   const { role } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const isAdmin = role === "admin";
 
   const [items, setItems] = useState<any[]>([]);
