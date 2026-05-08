@@ -110,7 +110,7 @@ export default function Ledger() {
   const [loading, setLoading] = useState(true);
 
   // Top section state
-  const [topRange, setTopRange] = useState<RangeKey>("thisMonth");
+  const [topRange, setTopRange] = useState<RangeKey>("30d");
   const [topFrom, setTopFrom] = useState("");
   const [topTo, setTopTo] = useState("");
   const [topSearch, setTopSearch] = useState("");
