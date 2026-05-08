@@ -81,12 +81,15 @@ export default function CustomerLedger() {
           </div>
 
           <SurfaceCard className="p-6">
-            <h3 className="text-lg font-bold mb-4">{selected?.name ?? "—"}</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">{selected?.name ?? "—"}</h3>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">ইতিহাস (History)</span>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="text-[11px] uppercase tracking-widest text-muted-foreground border-b border-[hsl(var(--surface-container-high))]">
-                    <th className="pb-3 font-bold">{t("date")}</th>
+                    <th className="pb-3 font-bold">তারিখ ও সময়</th>
                     <th className="pb-3 font-bold">বিবরণ</th>
                     <th className="pb-3 font-bold text-right">ডেবিট</th>
                     <th className="pb-3 font-bold text-right">ক্রেডিট</th>
@@ -97,7 +100,7 @@ export default function CustomerLedger() {
                   {txns.length === 0 && <tr><td colSpan={5} className="py-12 text-center text-muted-foreground">কোন লেনদেন নেই</td></tr>}
                   {txns.map((x, i) => (
                     <tr key={i} className="border-b border-[hsl(var(--surface-container-high))]/40">
-                      <td className="py-3 text-muted-foreground">{new Date(x.date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}</td>
+                      <td className="py-3 text-muted-foreground whitespace-nowrap text-xs">{fmtDateTimeBD(x.date, lang)}</td>
                       <td className="py-3"><StatusPill tone={x.type === "sale" ? "info" : "success"}>{x.ref}</StatusPill></td>
                       <td className="py-3 text-right text-destructive font-semibold">{x.debit > 0 ? fmt(x.debit) : "—"}</td>
                       <td className="py-3 text-right text-primary font-semibold">{x.credit > 0 ? fmt(x.credit) : "—"}</td>
