@@ -342,19 +342,17 @@ export default function POS() {
 
     if (paymentType === "installment" && due > 0) {
       const per = Math.round((due / installmentCount) * 100) / 100;
-      const schedule = Array.from({ length: installmentCount }).map((_, idx) => {
-        const d = new Date(); d.setMonth(d.getMonth() + idx + 1);
-        return {
-          sale_id: sale.id, installment_no: idx + 1,
-          due_date: d.toISOString().slice(0, 10),
-          amount: idx === installmentCount - 1 ? due - per * (installmentCount - 1) : per,
-        };
-      });
+      const dates = scheduleDates.length === installmentCount ? scheduleDates : defaultScheduleDates(installmentCount);
+      const schedule = Array.from({ length: installmentCount }).map((_, idx) => ({
+        sale_id: sale.id, installment_no: idx + 1,
+        due_date: dates[idx],
+        amount: idx === installmentCount - 1 ? due - per * (installmentCount - 1) : per,
+      }));
       await supabase.from("installments").insert(schedule);
     }
 
     const firstDue = paymentType === "installment" && installmentCount > 0
-      ? (() => { const d = new Date(); d.setMonth(d.getMonth() + 1); return d.toISOString().slice(0, 10); })()
+      ? (scheduleDates[0] || defaultScheduleDates(installmentCount)[0])
       : undefined;
     setLastSale({ ...sale, items: cart, customer: customers.find(c => c.id === customerId), payment_method: paymentMethod, first_due: firstDue });
     setShowReceipt(true);
