@@ -147,26 +147,31 @@ export default function Ledger() {
       .order("entry_date", { ascending: false }).order("created_at", { ascending: false });
     if (currentShop) q = q.eq("shop_id", currentShop.id);
 
-    let sq = supabase.from("sales").select("created_at,total,customers(name)").order("created_at", { ascending: false });
+    let sq = supabase.from("sales").select("created_at,total,paid,customers(name)").order("created_at", { ascending: false });
     if (currentShop) sq = sq.eq("shop_id", currentShop.id);
 
-    let pq = supabase.from("purchases").select("created_at,total,suppliers(name)").order("created_at", { ascending: false });
+    let pq = supabase.from("purchases").select("created_at,total,paid,suppliers(name)").order("created_at", { ascending: false });
     if (currentShop) pq = pq.eq("shop_id", currentShop.id);
 
     let eq_ = supabase.from("expenses").select("expense_date,amount,title,payment_method").order("expense_date", { ascending: false });
     if (currentShop) eq_ = eq_.eq("shop_id", currentShop.id);
 
-    const [{ data, error }, { data: sd }, { data: pd }, { data: ed }] = await Promise.all([q, sq, pq, eq_]);
+    let ipq = supabase.from("installment_payments").select("paid_at,amount").order("paid_at", { ascending: false });
+    if (currentShop) ipq = ipq.eq("shop_id", currentShop.id);
+
+    const [{ data, error }, { data: sd }, { data: pd }, { data: ed }, { data: ipd }] = await Promise.all([q, sq, pq, eq_, ipq]);
     if (error) toast.error(error.message);
     setEntries((data ?? []) as any);
     setSalesAgg((sd ?? []).map((s: any) => ({
       date: String(s.created_at).slice(0, 10),
       total: Number(s.total || 0),
+      paid: Number(s.paid || 0),
       party: s.customers?.name ?? null,
     })));
     setPurchasesAgg((pd ?? []).map((p: any) => ({
       date: String(p.created_at).slice(0, 10),
       total: Number(p.total || 0),
+      paid: Number(p.paid || 0),
       party: p.suppliers?.name ?? null,
     })));
     setExpensesAgg((ed ?? []).map((e: any) => ({
@@ -174,6 +179,10 @@ export default function Ledger() {
       total: Number(e.amount || 0),
       title: e.title ?? "খরচ",
       method: e.payment_method ?? "cash",
+    })));
+    setInstPayAgg((ipd ?? []).map((p: any) => ({
+      date: String(p.paid_at).slice(0, 10),
+      amount: Number(p.amount || 0),
     })));
     setLoading(false);
   };
