@@ -434,7 +434,7 @@ export default function POS() {
         </div>
       </section>
 
-      <section className="lg:col-span-2 flex flex-col bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-4 sm:p-6 lg:min-h-0 shadow-sm">
+      <section className="lg:col-span-2 flex flex-col bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-4 sm:p-6 lg:min-h-0 shadow-sm lg:overflow-y-auto">
         {editingSaleId && (
           <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs sm:text-sm font-semibold text-primary">
             <span>✎ এডিট মোড — ইনভয়েস আপডেট হবে</span>
