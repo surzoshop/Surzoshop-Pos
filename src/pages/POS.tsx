@@ -216,6 +216,72 @@ export default function POS() {
 
     setSubmitting(true);
     try {
+    // ============ EDIT MODE: update existing sale ============
+    if (editingSaleId) {
+      // 1) Restock previous items
+      for (const [pid, qty] of Object.entries(originalQty)) {
+        const { data: prod } = await supabase.from("products").select("stock").eq("id", pid).maybeSingle();
+        if (prod) await supabase.from("products").update({ stock: Number(prod.stock) + Number(qty) }).eq("id", pid);
+      }
+      // 2) Delete existing installments + payments + items
+      const { data: insts } = await supabase.from("installments").select("id").eq("sale_id", editingSaleId);
+      const instIds = (insts ?? []).map((i: any) => i.id);
+      if (instIds.length) {
+        await supabase.from("installment_payments").delete().in("installment_id", instIds);
+        await supabase.from("installments").delete().in("id", instIds);
+      }
+      await supabase.from("sale_items").delete().eq("sale_id", editingSaleId);
+
+      // 3) Update sales row
+      const updatePayload: any = {
+        customer_id: customerId || null,
+        subtotal, discount, total, paid, due,
+        payment_type: paymentType === "due" ? "cash" : paymentType,
+        status: due > 0 ? "partial" : "completed",
+        down_payment: paymentType === "installment" ? downPayment : 0,
+        interest_rate: paymentType === "installment" ? interestRate : 0,
+        tenure_months: paymentType === "installment" ? installmentCount : null,
+        emi_amount: paymentType === "installment" ? emi : null,
+        late_fee_per_day: paymentType === "installment" ? lateFeePerDay : 0,
+        guarantor_id: paymentType === "installment" ? guarantorId : null,
+      };
+      const { error: uerr } = await supabase.from("sales").update(updatePayload).eq("id", editingSaleId);
+      if (uerr) { toast({ title: uerr.message, variant: "destructive" }); return; }
+
+      // 4) Insert new sale_items (trigger will decrement stock)
+      const newItems = cart.map(i => {
+        const p: any = i.product;
+        const months = p.has_warranty ? Number(p.warranty_months) || null : null;
+        let warranty_until: string | null = null;
+        if (months) { const d = new Date(); d.setMonth(d.getMonth() + months); warranty_until = d.toISOString().slice(0, 10); }
+        return {
+          sale_id: editingSaleId, product_id: i.product.id, product_name: i.product.name,
+          qty: i.qty, unit_price: i.product.price, subtotal: i.product.price * i.qty,
+          warranty_months: months, warranty_until,
+        };
+      });
+      await supabase.from("sale_items").insert(newItems);
+
+      // 5) Recreate installments if installment type
+      if (paymentType === "installment" && due > 0) {
+        const per = Math.round((due / installmentCount) * 100) / 100;
+        const schedule = Array.from({ length: installmentCount }).map((_, idx) => {
+          const d = new Date(); d.setMonth(d.getMonth() + idx + 1);
+          return {
+            sale_id: editingSaleId, installment_no: idx + 1,
+            due_date: d.toISOString().slice(0, 10),
+            amount: idx === installmentCount - 1 ? due - per * (installmentCount - 1) : per,
+          };
+        });
+        await supabase.from("installments").insert(schedule);
+      }
+
+      toast({ title: lang === "bn" ? "ইনভয়েস আপডেট হয়েছে ✓" : "Sale updated" });
+      navigate("/sales");
+      return;
+    }
+
+    // ============ NEW SALE ============
     const salePayload: any = {
       customer_id: customerId || null,
       subtotal, discount, total, paid, due,
