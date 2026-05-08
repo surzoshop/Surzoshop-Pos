@@ -255,7 +255,7 @@ export default function Sales() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-foreground text-sm">{s.invoice_no}</span>
-                      <StatusPill tone={tone}>{t(s.status as any)}</StatusPill>
+                      <StatusPill tone={tone}>{statusLabel}</StatusPill>
                     </div>
                     <div className="text-[11px] text-muted-foreground mt-0.5">
                       {new Date(s.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}
