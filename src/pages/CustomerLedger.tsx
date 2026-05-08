@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import { Search, Wallet, ShoppingBag, AlertCircle } from "lucide-react";
 import { PageHeader, SurfaceCard, StatusPill } from "@/components/PageHeader";
+import { fmtDateTimeBD } from "@/lib/datetime";
 
 export default function CustomerLedger() {
   const { t, lang, fmt } = useT();
