@@ -186,30 +186,36 @@ export default function Ledger() {
 
   // Convert sales/purchases/expenses into synthetic ledger entries so all tabs show real DB data
   const synthEntries: Entry[] = useMemo(() => {
-    const sales: Entry[] = salesAgg.map((s, i) => ({
-      id: `sale-${i}-${s.date}`,
-      entry_date: s.date,
-      entry_type: "deposit",
-      amount: s.total,
-      category: "Sales / বিক্রয়",
-      payment_method: "cash",
-      reference_no: null,
-      party_name: s.party,
-      notes: null,
-      created_at: s.date,
-    }));
-    const purchases: Entry[] = purchasesAgg.map((p, i) => ({
-      id: `pur-${i}-${p.date}`,
-      entry_date: p.date,
-      entry_type: "withdraw",
-      amount: p.total,
-      category: "Purchase / স্টক ক্রয়",
-      payment_method: "cash",
-      reference_no: null,
-      party_name: p.party,
-      notes: null,
-      created_at: p.date,
-    }));
+    // বিক্রয় থেকে আসলে প্রাপ্ত নগদ (paid) — বাকি/কিস্তি অংশ এখানে আয় হিসেবে গণ্য নয়
+    const sales: Entry[] = salesAgg
+      .filter(s => s.paid > 0)
+      .map((s, i) => ({
+        id: `sale-${i}-${s.date}`,
+        entry_date: s.date,
+        entry_type: "deposit",
+        amount: s.paid,
+        category: "Sales / বিক্রয় (প্রাপ্ত)",
+        payment_method: "cash",
+        reference_no: null,
+        party_name: s.party,
+        notes: null,
+        created_at: s.date,
+      }));
+    // ক্রয়ে আসলে যত নগদ পরিশোধিত (paid) — বাকি অংশ খরচ হিসেবে গণ্য নয়
+    const purchases: Entry[] = purchasesAgg
+      .filter(p => p.paid > 0)
+      .map((p, i) => ({
+        id: `pur-${i}-${p.date}`,
+        entry_date: p.date,
+        entry_type: "withdraw",
+        amount: p.paid,
+        category: "Purchase / স্টক ক্রয় (পরিশোধিত)",
+        payment_method: "cash",
+        reference_no: null,
+        party_name: p.party,
+        notes: null,
+        created_at: p.date,
+      }));
     const expenseRows: Entry[] = expensesAgg.map((x, i) => ({
       id: `exp-${i}-${x.date}`,
       entry_date: x.date,
