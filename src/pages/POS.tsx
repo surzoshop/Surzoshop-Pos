@@ -53,8 +53,53 @@ export default function POS() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const mobileScanner = useMobileScanner();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const editId = searchParams.get("edit");
+  const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
+  const [originalQty, setOriginalQty] = useState<Record<string, number>>({});
+  const [editLoaded, setEditLoaded] = useState(false);
 
   useEffect(() => { inputRef.current?.focus(); load(); }, []);
+
+  // Load existing sale into POS for editing
+  useEffect(() => {
+    if (!editId || editLoaded || products.length === 0) return;
+    (async () => {
+      const { data: sale } = await supabase.from("sales").select("*").eq("id", editId).maybeSingle();
+      if (!sale) { toast({ title: "Sale পাওয়া যায়নি", variant: "destructive" }); return; }
+      const { data: items } = await supabase.from("sale_items").select("*").eq("sale_id", editId);
+      const orig: Record<string, number> = {};
+      const newCart: CartItem[] = [];
+      (items ?? []).forEach((it: any) => {
+        const p = products.find(pp => pp.id === it.product_id);
+        if (p) {
+          orig[p.id] = (orig[p.id] || 0) + Number(it.qty);
+          newCart.push({ product: { ...p, price: Number(it.unit_price) }, qty: Number(it.qty) });
+        }
+      });
+      setEditingSaleId(editId);
+      setOriginalQty(orig);
+      setCart(newCart);
+      setCustomerId(sale.customer_id || "");
+      setDiscount(Number(sale.discount) || 0);
+      if (sale.payment_type === "installment") {
+        setPaymentType("installment");
+        setDownPayment(Number(sale.down_payment) || 0);
+        setInterestRate(Number(sale.interest_rate) || 0);
+        setInstallmentCount(Number(sale.tenure_months) || 3);
+        setLateFeePerDay(Number(sale.late_fee_per_day) || 0);
+        setGuarantorId(sale.guarantor_id || "");
+      } else if (Number(sale.due) > 0) {
+        setPaymentType("due");
+        setDuePaid(Number(sale.paid) || 0);
+      } else {
+        setPaymentType("cash");
+      }
+      setEditLoaded(true);
+      toast({ title: `এডিট মোড — ${sale.invoice_no}` });
+    })();
+  }, [editId, products, editLoaded]);
 
   const load = async () => {
     const [{ data: p }, { data: c }, { data: g }] = await Promise.all([
