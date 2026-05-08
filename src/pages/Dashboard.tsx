@@ -63,10 +63,10 @@ export default function Dashboard() {
     const days: Record<string, number> = {};
     for (let i = 6; i >= 0; i--) {
       const d = new Date(today); d.setDate(d.getDate() - i);
-      days[d.toISOString().slice(0, 10)] = 0;
+      days[toBDDate(d)] = 0;
     }
     (salesWeek.data ?? []).forEach(s => {
-      const k = new Date(s.created_at).toISOString().slice(0, 10);
+      const k = toBDDate(s.created_at);
       if (k in days) days[k] += Number(s.total);
     });
     const dayNames = lang === "bn"

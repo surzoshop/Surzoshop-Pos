@@ -116,7 +116,7 @@ export default function Reports() {
         supabase.from("purchase_items").select("product_id,product_name,qty,unit_cost,subtotal,purchases!inner(created_at)")
           .gte("purchases.created_at", startISO).lte("purchases.created_at", endISO).limit(5000),
         supabase.from("expenses").select("id,title,amount,expense_date,payment_method,notes,category_id,expense_categories(name)")
-          .gte("expense_date", start.toISOString().slice(0, 10)).lte("expense_date", end.toISOString().slice(0, 10))
+          .gte("expense_date", toBDDate(start)).lte("expense_date", toBDDate(end))
           .order("expense_date", { ascending: true }).limit(2000),
         supabase.from("products").select("id,name,sku,stock,cost,price,is_active").eq("is_active", true).limit(2000),
         supabase.from("customers").select("id,name,phone").limit(2000),
@@ -165,13 +165,13 @@ export default function Reports() {
       return map.get(key)!;
     };
     data.sales.forEach(s => {
-      const key = new Date(s.created_at).toISOString().slice(0, 10);
+      const key = toBDDate(s.created_at);
       const r = ensure(key);
       r.sales += Number(s.total); r.orders += 1; r.discount += Number(s.discount);
       r.paid += Number(s.paid); r.due += Number(s.due);
     });
     data.purchases.forEach(p => {
-      const key = new Date(p.created_at).toISOString().slice(0, 10);
+      const key = toBDDate(p.created_at);
       ensure(key).purchase += Number(p.total);
     });
     data.expenses.forEach(e => {
@@ -381,7 +381,7 @@ export default function Reports() {
       doc.text(`${shopName}  •  Page ${i} of ${pageCount}`, W / 2, doc.internal.pageSize.getHeight() - 16, { align: "center" });
     }
 
-    doc.save(`Report_${start.toISOString().slice(0,10)}_${end.toISOString().slice(0,10)}.pdf`);
+    doc.save(`Report_${toBDDate(start)}_${toBDDate(end)}.pdf`);
   };
 
   /* ----------------------------- Excel (styled, multi-sheet) ------- */
@@ -488,12 +488,12 @@ export default function Reports() {
       [32,14,10,14,14,18,18]);
 
     const buf = await wb.xlsx.writeBuffer();
-    saveAs(new Blob([buf]), `Report_${start.toISOString().slice(0,10)}_${end.toISOString().slice(0,10)}.xlsx`);
+    saveAs(new Blob([buf]), `Report_${toBDDate(start)}_${toBDDate(end)}.xlsx`);
   };
 
   /* ----------------------------- CSV ------------------------------- */
   const csvAll = () => {
-    const periodTag = `${start.toISOString().slice(0,10)}_${end.toISOString().slice(0,10)}`;
+    const periodTag = `${toBDDate(start)}_${toBDDate(end)}`;
     downloadCSV(`Sales_${periodTag}.csv`,
       ["Invoice", "Date", "Customer", "Phone", "Subtotal", "Discount", "Total", "Paid", "Due", "Status"],
       data.sales.map((s: any) => [
@@ -607,7 +607,7 @@ export default function Reports() {
           printTarget="sales"
           onPrint={() => handlePrint("sales")}
           onCsv={() => downloadCSV(
-            `Sales_${start.toISOString().slice(0,10)}.csv`,
+            `Sales_${toBDDate(start)}.csv`,
             ["Invoice", "Date", "Customer", "Total", "Paid", "Due", "Status"],
             data.sales.map((s: any) => [s.invoice_no, new Date(s.created_at).toLocaleString("en-GB", { timeZone: "Asia/Dhaka" }),
               s.customers?.name ?? "Walk-in", Number(s.total), Number(s.paid), Number(s.due), s.status]))}
@@ -667,7 +667,7 @@ export default function Reports() {
           printTarget="purchases"
           onPrint={() => handlePrint("purchases")}
           onCsv={() => downloadCSV(
-            `Purchases_${start.toISOString().slice(0,10)}.csv`,
+            `Purchases_${toBDDate(start)}.csv`,
             ["Bill No", "Date", "Supplier", "Total", "Paid", "Due"],
             data.purchases.map((p: any) => [p.bill_no, new Date(p.created_at).toLocaleString("en-GB", { timeZone: "Asia/Dhaka" }),
               p.suppliers?.name ?? "—", Number(p.total), Number(p.paid), Number(p.due)]))}
@@ -698,7 +698,7 @@ export default function Reports() {
           printTarget="expenses"
           onPrint={() => handlePrint("expenses")}
           onCsv={() => downloadCSV(
-            `Expenses_${start.toISOString().slice(0,10)}.csv`,
+            `Expenses_${toBDDate(start)}.csv`,
             ["Date", "Title", "Category", "Method", "Amount"],
             data.expenses.map((e: any) => [e.expense_date, e.title,
               e.expense_categories?.name ?? "—", e.payment_method ?? "cash", Number(e.amount)]))}
@@ -734,7 +734,7 @@ export default function Reports() {
           printTarget="pl"
           onPrint={() => handlePrint("pl")}
           onCsv={() => downloadCSV(
-            `Stock_${new Date().toISOString().slice(0,10)}.csv`,
+            `Stock_${todayBD()}.csv`,
             ["Product", "SKU", "Stock", "Cost", "Price", "Stock Value (cost)", "Stock Value (sale)"],
             data.products.map((p: any) => [p.name, p.sku ?? "",
               p.stock, Number(p.cost), Number(p.price),

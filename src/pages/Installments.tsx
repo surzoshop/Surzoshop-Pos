@@ -52,7 +52,7 @@ export default function Installments() {
     customer_id: "", guarantor_id: "",
     items: [] as any[], pid: "", qty: 1, price: 0,
     down_payment: 2000, interest_rate: 0, tenure_months: 5, late_fee_per_day: 5, notes: "",
-    first_due: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().slice(0, 10),
+    first_due: bdDateAddMonths(1),
   });
 
   const load = async () => {
@@ -63,7 +63,7 @@ export default function Installments() {
       supabase.from("products").select("id,name,price,stock").order("name"),
       supabase.from("guarantors").select("id,name,phone").order("name"),
     ]);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayBD();
     const enriched = (insts ?? []).map(i => ({
       ...i,
       derived_status: i.status === "paid" ? "paid" : (i.due_date < today ? "overdue" : "pending"),
@@ -160,7 +160,7 @@ export default function Installments() {
       const d = new Date(firstDue); d.setMonth(d.getMonth() + idx);
       return {
         sale_id: sale.id, installment_no: idx + 1,
-        due_date: d.toISOString().slice(0, 10),
+        due_date: toBDDate(d),
         amount: idx === plan.tenure_months - 1 ? financed - per * (plan.tenure_months - 1) : per,
       };
     });
@@ -170,7 +170,7 @@ export default function Installments() {
     setOpenNew(false);
     setPlan({ customer_id: "", guarantor_id: "", items: [], pid: "", qty: 1, price: 0,
       down_payment: 2000, interest_rate: 0, tenure_months: 5, late_fee_per_day: 5, notes: "",
-      first_due: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().slice(0, 10) });
+      first_due: bdDateAddMonths(1) });
     load();
   };
 

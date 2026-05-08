@@ -42,7 +42,7 @@ const catIcon = (name: string) => {
 
 type Range = "today" | "yesterday" | "this_month" | "last_month" | "all" | "custom";
 
-function ymd(d: Date) { return d.toISOString().slice(0, 10); }
+function ymd(d: Date) { return toBDDate(d); }
 function startOfMonth(d: Date) { return new Date(d.getFullYear(), d.getMonth(), 1); }
 function endOfMonth(d: Date) { return new Date(d.getFullYear(), d.getMonth() + 1, 0); }
 
