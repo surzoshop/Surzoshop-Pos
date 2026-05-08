@@ -217,7 +217,7 @@ export default function StockAdjustments() {
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-sm truncate">{i.product_name}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {new Date(i.created_at).toLocaleString(lang === "bn" ? "bn-BD" : "en-US")}
+                    {new Date(i.created_at).toLocaleString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}
                     {i.reason && ` • ${i.reason}`}
                   </p>
                 </div>

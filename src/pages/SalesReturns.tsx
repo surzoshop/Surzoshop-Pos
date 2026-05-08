@@ -78,7 +78,7 @@ export default function SalesReturns() {
               {returns.map(r => (
                 <tr key={r.id} className="hover:bg-[hsl(var(--surface-container-low))]">
                   <td className="py-4 font-bold">{r.return_no}</td>
-                  <td className="py-4">{new Date(r.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US")}</td>
+                  <td className="py-4">{new Date(r.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}</td>
                   <td className="py-4">{r.sales?.invoice_no ?? "—"}</td>
                   <td className="py-4">{r.sales?.customers?.name ?? "—"}</td>
                   <td className="py-4 text-muted-foreground">{r.reason ?? "—"}</td>

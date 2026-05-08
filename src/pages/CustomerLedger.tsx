@@ -96,7 +96,7 @@ export default function CustomerLedger() {
                   {txns.length === 0 && <tr><td colSpan={5} className="py-12 text-center text-muted-foreground">কোন লেনদেন নেই</td></tr>}
                   {txns.map((x, i) => (
                     <tr key={i} className="border-b border-[hsl(var(--surface-container-high))]/40">
-                      <td className="py-3 text-muted-foreground">{new Date(x.date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US")}</td>
+                      <td className="py-3 text-muted-foreground">{new Date(x.date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}</td>
                       <td className="py-3"><StatusPill tone={x.type === "sale" ? "info" : "success"}>{x.ref}</StatusPill></td>
                       <td className="py-3 text-right text-destructive font-semibold">{x.debit > 0 ? fmt(x.debit) : "—"}</td>
                       <td className="py-3 text-right text-primary font-semibold">{x.credit > 0 ? fmt(x.credit) : "—"}</td>

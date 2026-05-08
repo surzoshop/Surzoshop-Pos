@@ -273,7 +273,7 @@ export default function Purchases() {
     const qrData = encodeURIComponent(`Invoice:${p.billNo}|Total:${grand}|Shop:${p.shop?.name ?? ""}|Date:${p.billDate}`);
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${qrData}`;
     const timeStr = new Date().toLocaleTimeString("bn-BD", { hour12: true });
-    const dateBn = new Date(p.billDate).toLocaleDateString("bn-BD", { day: "2-digit", month: "long", year: "numeric" });
+    const dateBn = new Date(p.billDate).toLocaleDateString("bn-BD", { timeZone: "Asia/Dhaka", day: "2-digit", month: "long", year: "numeric" });
     const payMethodBn = ((p.paymentMethod||'cash')+"").toLowerCase()==="cash" ? "নগদ" : ((p.paymentMethod||'')+"").toUpperCase();
     const status = dueAmt === 0 ? "পরিশোধিত" : dueAmt === grand ? "অপরিশোধিত" : "আংশিক";
     const orderStatus = "সম্পন্ন";
@@ -502,7 +502,7 @@ export default function Purchases() {
               {filtered.map(p => (
                 <tr key={p.id} className="hover:bg-[hsl(var(--surface-container-low))]">
                   <td className="py-4 font-bold">{p.bill_no}</td>
-                  <td className="py-4">{new Date(p.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US")}</td>
+                  <td className="py-4">{new Date(p.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}</td>
                   <td className="py-4">{p.suppliers?.name ?? "—"}</td>
                   <td className="py-4 font-bold text-primary">{fmt(Number(p.total))}</td>
                   <td className="py-4">{fmt(Number(p.paid))}</td>
@@ -937,7 +937,7 @@ export default function Purchases() {
           {viewBill && (
             <div className="space-y-3">
               <div className="text-sm text-muted-foreground">
-                {new Date(viewBill.created_at).toLocaleString(lang === "bn" ? "bn-BD" : "en-US")} · {viewBill.suppliers?.name ?? "—"}
+                {new Date(viewBill.created_at).toLocaleString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })} · {viewBill.suppliers?.name ?? "—"}
               </div>
               <table className="w-full text-sm">
                 <thead className="text-[11px] uppercase tracking-wider text-muted-foreground border-b border-[hsl(var(--surface-container-high))]">

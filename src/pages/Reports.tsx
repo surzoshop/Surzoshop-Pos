@@ -781,7 +781,7 @@ export default function Reports() {
         </Section>
 
         <div className="text-center text-[10px] text-muted-foreground py-4 print:block">
-          {t("generatedOn")}: {new Date().toLocaleString(lang === "bn" ? "bn-BD" : "en-US")}
+          {t("generatedOn")}: {new Date().toLocaleString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}
         </div>
       </div>
 

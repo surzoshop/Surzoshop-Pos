@@ -233,7 +233,7 @@ export default function Customers() {
                           <div className="font-bold text-sm">{s.invoice_no}</div>
                           <div className="text-xs text-muted-foreground flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {new Date(s.created_at).toLocaleString("bn-BD")}
+                            {new Date(s.created_at).toLocaleString("bn-BD", { timeZone: "Asia/Dhaka" })}
                           </div>
                           <div className="text-[10px] mt-1">
                             <StatusPill tone={s.status === "completed" ? "success" : s.status === "partial" ? "warning" : "info"}>

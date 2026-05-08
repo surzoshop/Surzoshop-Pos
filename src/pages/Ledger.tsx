@@ -42,7 +42,7 @@ type RowFilter = "all" | "income" | "expense" | "deposit" | "withdraw";
 type ViewMode = "detailed" | "daily";
 
 const today = () => todayBD();
-const fmt = (n: number) => `৳${Number(n || 0).toLocaleString("bn-BD")}`;
+const fmt = (n: number) => `৳${Number(n || 0).toLocaleString("bn-BD", { timeZone: "Asia/Dhaka" })}`;
 
 function rangeDates(r: RangeKey): { from: string; to: string } {
   const to = todayBD();
@@ -684,7 +684,7 @@ function MiniStat({ label, value, icon: Icon, tone, active, onClick, hint }: any
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      <div className="mt-2 text-xl font-black text-foreground truncate">{`৳${Number(value || 0).toLocaleString("bn-BD")}`}</div>
+      <div className="mt-2 text-xl font-black text-foreground truncate">{`৳${Number(value || 0).toLocaleString("bn-BD", { timeZone: "Asia/Dhaka" })}`}</div>
       {hint && <div className="mt-1 text-[10px] sm:text-[11px] text-muted-foreground leading-tight line-clamp-2">{hint}</div>}
     </button>
   );

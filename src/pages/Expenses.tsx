@@ -398,7 +398,7 @@ export default function Expenses() {
                   <div className="flex-1 min-w-0">
                     <p className="font-extrabold text-foreground truncate text-sm md:text-base">{i.title}</p>
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] md:text-xs text-muted-foreground mt-0.5">
-                      <span className="font-semibold">{new Date(i.expense_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US")}</span>
+                      <span className="font-semibold">{new Date(i.expense_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}</span>
                       {i.expense_categories?.name && (
                         <>
                           <span>·</span>
