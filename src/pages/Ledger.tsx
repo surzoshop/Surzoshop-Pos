@@ -104,9 +104,10 @@ export default function Ledger() {
   const { user } = useAuth();
   const { currentShop } = useShop();
   const [entries, setEntries] = useState<Entry[]>([]);
-  const [salesAgg, setSalesAgg] = useState<{ date: string; total: number; party: string | null }[]>([]);
-  const [purchasesAgg, setPurchasesAgg] = useState<{ date: string; total: number; party: string | null }[]>([]);
+  const [salesAgg, setSalesAgg] = useState<{ date: string; total: number; paid: number; party: string | null }[]>([]);
+  const [purchasesAgg, setPurchasesAgg] = useState<{ date: string; total: number; paid: number; party: string | null }[]>([]);
   const [expensesAgg, setExpensesAgg] = useState<{ date: string; total: number; title: string; method: string }[]>([]);
+  const [instPayAgg, setInstPayAgg] = useState<{ date: string; amount: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Top section state
