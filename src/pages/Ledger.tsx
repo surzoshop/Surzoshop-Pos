@@ -156,7 +156,11 @@ export default function Ledger() {
     let ipq = supabase.from("installment_payments").select("paid_at,amount").order("paid_at", { ascending: false });
     if (currentShop) ipq = ipq.eq("shop_id", currentShop.id);
 
-    const [{ data, error }, { data: sd }, { data: pd }, { data: ed }, { data: ipd }] = await Promise.all([q, sq, pq, eq_, ipq]);
+    // Profit calculation: sale_items joined with sales (date) and products (cost)
+    let siq = supabase.from("sale_items").select("qty,unit_price,subtotal,sales!inner(created_at,discount,total,id),products(cost)");
+    if (currentShop) siq = siq.eq("shop_id", currentShop.id);
+
+    const [{ data, error }, { data: sd }, { data: pd }, { data: ed }, { data: ipd }, { data: sid }] = await Promise.all([q, sq, pq, eq_, ipq, siq]);
     if (error) toast.error(error.message);
     setEntries((data ?? []) as any);
     setSalesAgg((sd ?? []).map((s: any) => ({
@@ -181,6 +185,32 @@ export default function Ledger() {
       date: String(p.paid_at).slice(0, 10),
       amount: Number(p.amount || 0),
     })));
+
+    // Aggregate profit per sale, then bucket by date
+    const perSale = new Map<string, { date: string; revenue: number; cost: number; discount: number; total: number }>();
+    (sid ?? []).forEach((row: any) => {
+      const sale = row.sales;
+      if (!sale) return;
+      const key = sale.id;
+      const cur = perSale.get(key) ?? {
+        date: String(sale.created_at).slice(0, 10),
+        revenue: 0,
+        cost: 0,
+        discount: Number(sale.discount || 0),
+        total: Number(sale.total || 0),
+      };
+      cur.revenue += Number(row.subtotal || 0);
+      cur.cost    += Number(row.products?.cost || 0) * Number(row.qty || 0);
+      perSale.set(key, cur);
+    });
+    const profitByDate = new Map<string, number>();
+    perSale.forEach(s => {
+      // Profit = sale total (after discount) − cost of goods sold
+      const profit = s.total - s.cost;
+      profitByDate.set(s.date, (profitByDate.get(s.date) ?? 0) + profit);
+    });
+    setProfitAgg(Array.from(profitByDate.entries()).map(([date, profit]) => ({ date, profit })));
+
     setLoading(false);
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [currentShop?.id]);
