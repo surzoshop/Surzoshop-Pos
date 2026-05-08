@@ -454,7 +454,7 @@ export default function POS() {
           )}
         </div>
 
-        <div className="lg:flex-1 lg:overflow-y-auto space-y-3 mb-4 max-h-[60vh] lg:max-h-none overflow-y-auto">
+        <div className="space-y-3 mb-4 max-h-[60vh] lg:max-h-[40vh] overflow-y-auto pr-1">
           {cart.length === 0 && (
             <div className="text-center text-muted-foreground py-12">{t("emptyCart")}</div>
           )}
