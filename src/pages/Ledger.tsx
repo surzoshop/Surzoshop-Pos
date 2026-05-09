@@ -319,12 +319,13 @@ export default function Ledger() {
     const cashbookOut = entries.filter(e => e.entry_type === "withdraw" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
       .reduce((s, e) => s + Number(e.amount || 0), 0);
     const expenseCash = expensesAgg.filter(x => inRange(x.date) && (x.method || "cash") === "cash").reduce((s, x) => s + x.total, 0);
-    const purchasePaidCash = purchasesAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.paid, 0);
 
+    // নগদ আয় = বিক্রয় থেকে প্রাপ্ত নগদ + কিস্তি আদায় + ম্যানুয়াল নগদ জমা
     const cashIn = salesPaid + instPaid + cashbookIn;
-    const cashOut = cashbookOut + expenseCash + purchasePaidCash;
+    // নগদ খরচ = শুধু খরচ + ম্যানুয়াল নগদ উত্তোলন (স্টক ক্রয়মূল্য বাদ — তা আলাদা কার্ডে)
+    const cashOut = cashbookOut + expenseCash;
 
-    // নগদ ব্যালেন্স = হাতে অবশিষ্ট নগদ = (নগদ আয়) − (নগদ খরচ + পরিশোধিত ক্রয় + উত্তোলন)
+    // নগদ ব্যালেন্স = নগদ আয় − নগদ খরচ (খরচ না থাকলে পুরো আয়ই ব্যালেন্স)
     const cashBalance = cashIn - cashOut;
     const cashTxnTotal = cashIn + cashOut;
 
