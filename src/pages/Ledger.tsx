@@ -313,16 +313,19 @@ export default function Ledger() {
     // স্টক ক্রয় খরচ: live = Σ(qty × পণ্যের বর্তমান ক্রয়মূল্য) — পণ্য তালিকায় cost edit করলেই auto আপডেট
     const stockBuy = purchaseCostAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.total, 0);
 
-    // নগদ ব্যালেন্স: ডাউন পেমেন্ট + কিস্তি আদায় + পূর্ণ নগদ অর্ডার (অর্থাৎ sales.paid সব মিলিয়ে + কিস্তি আদায়)
-    const cashBalance = salesPaid + instPaid;
+    // ক্যাশ ইন/আউট (নগদ পেমেন্ট মাত্র)
+    const cashbookIn = entries.filter(e => e.entry_type === "deposit" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
+      .reduce((s, e) => s + Number(e.amount || 0), 0);
+    const cashbookOut = entries.filter(e => e.entry_type === "withdraw" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
+      .reduce((s, e) => s + Number(e.amount || 0), 0);
+    const expenseCash = expensesAgg.filter(x => inRange(x.date) && (x.method || "cash") === "cash").reduce((s, x) => s + x.total, 0);
+    const purchasePaidCash = purchasesAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.paid, 0);
 
-    // ক্যাশ লেনদেন (in+out) তথ্যমূলক
-    const cashIn = salesPaid + instPaid
-      + entries.filter(e => e.entry_type === "deposit" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
-        .reduce((s, e) => s + Number(e.amount || 0), 0);
-    const cashOut = entries.filter(e => e.entry_type === "withdraw" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
-      .reduce((s, e) => s + Number(e.amount || 0), 0)
-      + expensesAgg.filter(x => inRange(x.date) && (x.method || "cash") === "cash").reduce((s, x) => s + x.total, 0);
+    const cashIn = salesPaid + instPaid + cashbookIn;
+    const cashOut = cashbookOut + expenseCash + purchasePaidCash;
+
+    // নগদ ব্যালেন্স = হাতে অবশিষ্ট নগদ = (নগদ আয়) − (নগদ খরচ + পরিশোধিত ক্রয় + উত্তোলন)
+    const cashBalance = cashIn - cashOut;
     const cashTxnTotal = cashIn + cashOut;
 
     return [
