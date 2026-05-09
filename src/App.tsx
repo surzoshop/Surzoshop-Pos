@@ -27,6 +27,7 @@ import CustomerLedger from "./pages/CustomerLedger";
 import StockLedger from "./pages/StockLedger";
 import Purchases from "./pages/Purchases";
 import Ledger from "./pages/Ledger";
+import CashbookHistory from "./pages/CashbookHistory";
 import Expenses from "./pages/Expenses";
 import StockAdjustments from "./pages/StockAdjustments";
 import Staff from "./pages/Staff";
@@ -69,6 +70,7 @@ const App = () => (
                     <Route path="/stock-ledger" element={<PageGate page="stock-ledger"><StockLedger /></PageGate>} />
                     <Route path="/purchases" element={<PageGate page="purchases"><Purchases /></PageGate>} />
                     <Route path="/ledger" element={<Ledger />} />
+                    <Route path="/cashbook-history" element={<CashbookHistory />} />
                     <Route path="/expenses" element={<PageGate page="expenses"><Expenses /></PageGate>} />
                     <Route path="/stock-adjustments" element={<PageGate page="stock-adjustments"><StockAdjustments /></PageGate>} />
                     <Route path="/staff" element={<PageGate page="staff"><Staff /></PageGate>} />

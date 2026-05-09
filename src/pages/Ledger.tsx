@@ -18,8 +18,9 @@ import {
   ArrowDownCircle, ArrowUpCircle, Wallet, TrendingUp, TrendingDown,
   Search, Calendar as CalendarIcon, FileText, Download, BookOpen,
   Receipt, ShoppingBag, Coins, ArrowDownToLine, ArrowUpFromLine,
-  ListFilter, CalendarDays,
+  ListFilter, CalendarDays, History,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { todayBD, addDaysBDStr, firstOfMonthBD, prevMonthRangeBD, fmtDateBD } from "@/lib/datetime";
 
 type Entry = {
@@ -424,7 +425,7 @@ export default function Ledger() {
           <h1 className="text-xl sm:text-2xl font-black text-foreground truncate">{TAB_META[tab].title}</h1>
           <p className="text-xs text-muted-foreground">{TAB_META[tab].subtitle}</p>
         </div>
-        <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
+        <div className="grid grid-cols-3 sm:flex gap-2 w-full sm:w-auto">
           <Button onClick={() => setDialog("deposit")}
             className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-md">
             <ArrowDownCircle className="h-4 w-4" /> জমা
@@ -432,6 +433,9 @@ export default function Ledger() {
           <Button onClick={() => setDialog("withdraw")}
             className="w-full sm:w-auto bg-rose-600 hover:bg-rose-700 text-white shadow-md">
             <ArrowUpCircle className="h-4 w-4" /> উত্তোলন
+          </Button>
+          <Button asChild variant="outline" className="w-full sm:w-auto shadow-sm">
+            <Link to="/cashbook-history"><History className="h-4 w-4" /> হিস্ট্রি</Link>
           </Button>
         </div>
       </div>
@@ -772,7 +776,7 @@ function BigStat({ label, value, icon, accent, hint }: any) {
 function EntryDialog({ open, type, onOpenChange, onSaved, userId, shopId }: any) {
   const [date, setDate] = useState(today());
   const [amount, setAmount] = useState("");
-  const [accountKind, setAccountKind] = useState<"customer" | "supplier" | "owner" | "general">("general");
+  const [accountKind, setAccountKind] = useState<"customer" | "supplier" | "owner" | "cash" | "general">("general");
   const [category, setCategory] = useState("");
   const [party, setParty] = useState("");
   const [method, setMethod] = useState("cash");
@@ -795,9 +799,10 @@ function EntryDialog({ open, type, onOpenChange, onSaved, userId, shopId }: any)
     const finalCategory = accountKind !== "general"
       ? `${accountKind}${category ? " - " + category : ""}`
       : (category || null);
+    const finalMethod = accountKind === "cash" ? "cash" : method;
     const { error } = await supabase.from("cash_book" as any).insert({
       shop_id: shopId, entry_date: date, entry_type: type, amount: amt,
-      category: finalCategory, party_name: party || null, payment_method: method,
+      category: finalCategory, party_name: party || null, payment_method: finalMethod,
       reference_no: ref || null, notes: notes || null, created_by: userId,
     });
     setSaving(false);
@@ -827,6 +832,7 @@ function EntryDialog({ open, type, onOpenChange, onSaved, userId, shopId }: any)
               <SelectTrigger className="h-11 sm:h-10"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="general">সাধারণ</SelectItem>
+                <SelectItem value="cash">নগদ ব্যালেন্স</SelectItem>
                 <SelectItem value="customer">কাস্টমার</SelectItem>
                 <SelectItem value="supplier">সাপ্লায়ার</SelectItem>
                 <SelectItem value="owner">ওনার</SelectItem>
