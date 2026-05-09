@@ -776,7 +776,7 @@ function BigStat({ label, value, icon, accent, hint }: any) {
 function EntryDialog({ open, type, onOpenChange, onSaved, userId, shopId }: any) {
   const [date, setDate] = useState(today());
   const [amount, setAmount] = useState("");
-  const [accountKind, setAccountKind] = useState<"customer" | "supplier" | "owner" | "general">("general");
+  const [accountKind, setAccountKind] = useState<"customer" | "supplier" | "owner" | "cash" | "general">("general");
   const [category, setCategory] = useState("");
   const [party, setParty] = useState("");
   const [method, setMethod] = useState("cash");
