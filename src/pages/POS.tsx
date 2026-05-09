@@ -21,6 +21,18 @@ type Product = { id: string; name: string; barcode: string | null; sku: string |
 type CartItem = { product: Product; qty: number };
 
 const VAT_RATE = 0; // VAT disabled — to be configured later via dedicated VAT settings page
+const INSTALLMENT_DUE_DAY = 5;
+const roundMoney = (value: number) => Math.round(value * 100) / 100;
+
+const recoverBaseTotal = (sale: any) => {
+  const total = Number(sale.total) || 0;
+  const downPayment = Number(sale.down_payment) || 0;
+  const interestRate = Number(sale.interest_rate) || 0;
+  const tenureMonths = Number(sale.tenure_months) || 0;
+  const interestFactor = (interestRate / 100) * (tenureMonths / 12);
+  if (!interestFactor) return total;
+  return roundMoney((total + downPayment * interestFactor) / (1 + interestFactor));
+};
 
 export default function POS() {
   const { t, fmt, lang } = useT();
