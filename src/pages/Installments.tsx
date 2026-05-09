@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { todayBD, toBDDate, bdDateAddMonths } from "@/lib/datetime";
+import { todayBD, bdDateAddMonths } from "@/lib/datetime";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,6 +30,17 @@ type Plan = {
 };
 
 const DAY = 1000 * 60 * 60 * 24;
+const INSTALLMENT_DUE_DAY = 5;
+
+const addMonthsToDateStr = (dateStr: string, monthsToAdd: number) => {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const targetMonthIndex = month - 1 + monthsToAdd;
+  const targetYear = year + Math.floor(targetMonthIndex / 12);
+  const targetMonth = ((targetMonthIndex % 12) + 12) % 12;
+  const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+  const targetDay = Math.min(day, daysInMonth);
+  return `${targetYear}-${String(targetMonth + 1).padStart(2, "0")}-${String(targetDay).padStart(2, "0")}`;
+};
 
 export default function Installments() {
   const { t, fmt, lang } = useT();
@@ -53,7 +64,7 @@ export default function Installments() {
     customer_id: "", guarantor_id: "",
     items: [] as any[], pid: "", qty: 1, price: 0,
     down_payment: 2000, interest_rate: 0, tenure_months: 5, late_fee_per_day: 5, notes: "",
-    first_due: bdDateAddMonths(1),
+    first_due: bdDateAddMonths(1, INSTALLMENT_DUE_DAY),
   });
 
   const load = async () => {
@@ -156,12 +167,10 @@ export default function Installments() {
     await supabase.from("sale_items").insert(saleItems);
 
     const per = Math.round((financed / plan.tenure_months) * 100) / 100;
-    const firstDue = new Date(plan.first_due);
     const schedule = Array.from({ length: plan.tenure_months }).map((_, idx) => {
-      const d = new Date(firstDue); d.setMonth(d.getMonth() + idx);
       return {
         sale_id: sale.id, installment_no: idx + 1,
-        due_date: toBDDate(d),
+        due_date: addMonthsToDateStr(plan.first_due || bdDateAddMonths(1, INSTALLMENT_DUE_DAY), idx),
         amount: idx === plan.tenure_months - 1 ? financed - per * (plan.tenure_months - 1) : per,
       };
     });
@@ -171,7 +180,7 @@ export default function Installments() {
     setOpenNew(false);
     setPlan({ customer_id: "", guarantor_id: "", items: [], pid: "", qty: 1, price: 0,
       down_payment: 2000, interest_rate: 0, tenure_months: 5, late_fee_per_day: 5, notes: "",
-      first_due: bdDateAddMonths(1) });
+      first_due: bdDateAddMonths(1, INSTALLMENT_DUE_DAY) });
     load();
   };
 

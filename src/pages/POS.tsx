@@ -21,6 +21,17 @@ type Product = { id: string; name: string; barcode: string | null; sku: string |
 type CartItem = { product: Product; qty: number };
 
 const VAT_RATE = 0; // VAT disabled — to be configured later via dedicated VAT settings page
+const INSTALLMENT_DUE_DAY = 5;
+const roundMoney = (value: number) => Math.round(value * 100) / 100;
+
+const recoverBaseTotal = (sale: any) => {
+  const total = Number(sale.total) || 0;
+  const downPayment = Number(sale.down_payment) || 0;
+  const interestRate = Number(sale.interest_rate) || 0;
+  const tenureMonths = Number(sale.tenure_months) || 0;
+  const interestFactor = (interestRate / 100) * (tenureMonths / 12);
+  return interestFactor ? roundMoney((total + downPayment * interestFactor) / (1 + interestFactor)) : total;
+};
 
 export default function POS() {
   const { t, fmt, lang } = useT();
@@ -73,18 +84,29 @@ export default function POS() {
       const { data: items } = await supabase.from("sale_items").select("*").eq("sale_id", editId);
       const orig: Record<string, number> = {};
       const newCart: CartItem[] = [];
+      const savedDiscount = Number(sale.discount) || 0;
+      const rawSubtotal = (items ?? []).reduce((sum: number, it: any) => sum + Number(it.subtotal ?? (Number(it.unit_price) * Number(it.qty))), 0);
+      const savedBaseTotal = recoverBaseTotal(sale);
+      const intendedSubtotal = savedBaseTotal + savedDiscount;
+      const shouldNormalizeItemPrices = rawSubtotal > 0 && Math.abs(intendedSubtotal - rawSubtotal) > 0.009;
       (items ?? []).forEach((it: any) => {
         const p = products.find(pp => pp.id === it.product_id);
         if (p) {
-          orig[p.id] = (orig[p.id] || 0) + Number(it.qty);
-          newCart.push({ product: { ...p, price: Number(it.unit_price) }, qty: Number(it.qty) });
+          const qty = Number(it.qty) || 1;
+          const lineSubtotal = Number(it.subtotal ?? (Number(it.unit_price) * qty));
+          const effectiveUnitPrice = shouldNormalizeItemPrices
+            ? roundMoney((lineSubtotal * (intendedSubtotal / rawSubtotal)) / qty)
+            : Number(it.unit_price);
+          orig[p.id] = (orig[p.id] || 0) + qty;
+          newCart.push({ product: { ...p, price: effectiveUnitPrice }, qty });
         }
       });
       setEditingSaleId(editId);
       setOriginalQty(orig);
       setCart(newCart);
       setCustomerId(sale.customer_id || "");
-      setDiscount(Number(sale.discount) || 0);
+      setDiscount(savedDiscount);
+      setTotalOverride(null);
       if (sale.payment_type === "installment") {
         setPaymentType("installment");
         setDownPayment(Number(sale.down_payment) || 0);
@@ -135,12 +157,15 @@ export default function POS() {
     return true;
   });
 
+  const clearTotalOverride = () => setTotalOverride(null);
+
   const addToCart = (p: Product) => {
     const extra = originalQty[p.id] || 0;
     if (p.stock + extra <= 0) {
       toast({ title: t("outOfStock"), variant: "destructive" });
       return;
     }
+    clearTotalOverride();
     setCart(c => {
       const ex = c.find(i => i.product.id === p.id);
       if (ex) return c.map(i => i.product.id === p.id ? { ...i, qty: Math.min(i.qty + 1, p.stock + extra) } : i);
@@ -148,10 +173,12 @@ export default function POS() {
     });
   };
   const updateQty = (id: string, delta: number) => {
+    clearTotalOverride();
     setCart(c => c.map(i => i.product.id === id ? { ...i, qty: Math.max(1, Math.min(i.qty + delta, i.product.stock + (originalQty[i.product.id] || 0))) } : i));
   };
-  const removeItem = (id: string) => setCart(c => c.filter(i => i.product.id !== id));
+  const removeItem = (id: string) => { clearTotalOverride(); setCart(c => c.filter(i => i.product.id !== id)); };
   const updatePrice = (id: string, price: number) => {
+    clearTotalOverride();
     setCart(c => c.map(i => i.product.id === id ? { ...i, product: { ...i.product, price: Math.max(0, price) } } : i));
   };
 
@@ -179,7 +206,7 @@ export default function POS() {
 
   // Default schedule dates: 5th of each upcoming month, in Asia/Dhaka tz
   const defaultScheduleDates = (count: number): string[] =>
-    Array.from({ length: count }).map((_, idx) => bdDateAddMonths(idx + 1, 5));
+    Array.from({ length: count }).map((_, idx) => bdDateAddMonths(idx + 1, INSTALLMENT_DUE_DAY));
 
   // Keep scheduleDates length in sync with installmentCount (preserve user-edited dates)
   useEffect(() => {
