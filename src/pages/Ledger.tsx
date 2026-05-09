@@ -310,8 +310,8 @@ export default function Ledger() {
     const realExpense = expensesAgg.filter(x => inRange(x.date)).reduce((s, x) => s + x.total, 0);
     const expense = cashbookExpense + realExpense;
 
-    // স্টক ক্রয় খরচ: live = Σ(qty × পণ্যের বর্তমান ক্রয়মূল্য) — পণ্য তালিকায় cost edit করলেই auto আপডেট
-    const stockBuy = purchaseCostAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.total, 0);
+    // স্টক ক্রয়মূল্য = প্রকৃত স্টক ক্রয় ইনভয়েসের মোট মূল্য (purchases টেবিল থেকে)
+    const stockBuy = purchasesAgg.filter(p => inRange(p.date)).reduce((s, p) => s + Number(p.total || 0), 0);
 
     // ক্যাশ ইন/আউট (নগদ পেমেন্ট মাত্র)
     const cashbookIn = entries.filter(e => e.entry_type === "deposit" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
