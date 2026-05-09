@@ -18,8 +18,9 @@ import {
   ArrowDownCircle, ArrowUpCircle, Wallet, TrendingUp, TrendingDown,
   Search, Calendar as CalendarIcon, FileText, Download, BookOpen,
   Receipt, ShoppingBag, Coins, ArrowDownToLine, ArrowUpFromLine,
-  ListFilter, CalendarDays,
+  ListFilter, CalendarDays, History,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { todayBD, addDaysBDStr, firstOfMonthBD, prevMonthRangeBD, fmtDateBD } from "@/lib/datetime";
 
 type Entry = {
