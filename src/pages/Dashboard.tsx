@@ -20,6 +20,7 @@ export default function Dashboard() {
     totalCustomers: 0, totalDue: 0,
     todayStockUnits: 0, yestStockUnits: 0,
     todaySoldQty: 0, yestSoldQty: 0,
+    totalPurchases: 0,
   });
   const [weekly, setWeekly] = useState<{ day: string; total: number }[]>([]);
   const [topProducts, setTopProducts] = useState<{ name: string; qty: number; revenue: number }[]>([]);
@@ -37,7 +38,7 @@ export default function Dashboard() {
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const weekStart = new Date(today); weekStart.setDate(weekStart.getDate() - 6);
 
-    const [salesToday, salesYest, salesMonth, salesWeek, itemsMonth, items30, lowStockData, recentSales, productsAll, customersCount, duesData, soldTodayData, soldYestData, purchasedTodayData] = await Promise.all([
+    const [salesToday, salesYest, salesMonth, salesWeek, itemsMonth, items30, lowStockData, recentSales, productsAll, customersCount, duesData, soldTodayData, soldYestData, purchasedTodayData, purchasesAllData] = await Promise.all([
       supabase.from("sales").select("total,due").gte("created_at", today.toISOString()),
       supabase.from("sales").select("total").gte("created_at", yest.toISOString()).lt("created_at", today.toISOString()),
       supabase.from("sales").select("total").gte("created_at", monthStart.toISOString()),
@@ -52,6 +53,7 @@ export default function Dashboard() {
       supabase.from("sale_items").select("qty,sales!inner(created_at)").gte("sales.created_at", today.toISOString()),
       supabase.from("sale_items").select("qty,sales!inner(created_at)").gte("sales.created_at", yest.toISOString()).lt("sales.created_at", today.toISOString()),
       supabase.from("purchase_items").select("qty,purchases!inner(created_at)").gte("purchases.created_at", today.toISOString()),
+      supabase.from("purchases").select("total"),
     ]);
 
     const todayTotal = (salesToday.data ?? []).reduce((a, b) => a + Number(b.total), 0);
@@ -91,6 +93,7 @@ export default function Dashboard() {
     const todaySoldQty = (soldTodayData.data ?? []).reduce((a: number, b: any) => a + Number(b.qty), 0);
     const yestSoldQty = (soldYestData.data ?? []).reduce((a: number, b: any) => a + Number(b.qty), 0);
     const purchasedTodayQty = (purchasedTodayData.data ?? []).reduce((a: number, b: any) => a + Number(b.qty), 0);
+    const totalPurchases = (purchasesAllData.data ?? []).reduce((a: number, b: any) => a + Number(b.total || 0), 0);
     // আজকের সকাল = বর্তমান stock + আজ বিক্রি − আজ ক্রয়
     const yestStockUnits = stockUnits + todaySoldQty - purchasedTodayQty;
     setStats({
@@ -105,6 +108,7 @@ export default function Dashboard() {
       totalDue,
       todayStockUnits: stockUnits, yestStockUnits,
       todaySoldQty, yestSoldQty,
+      totalPurchases,
     });
   };
 
@@ -197,16 +201,16 @@ export default function Dashboard() {
           label={t("totalCustomers")} value={`${stats.totalCustomers}`} sub={t("registeredBuyers")}
         />
         <ColorStatCard
-          to="/installments" theme="rose" icon={<CircleDollarSign />}
-          chip={t("urgent")}
-          label={t("pendingDue")} value={fmt(stats.totalDue)} sub={t("uncollected")}
+          to="/products" theme="rose" icon={<CircleDollarSign />}
+          chip={t("info")}
+          label="স্টক বিক্রয় মূল্য" value={fmt(stats.stockSaleValue)} sub="বর্তমান স্টক × বিক্রয়মূল্য"
         />
       </div>
 
       {/* Mini stat row — secondary metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
         <MiniStat to="/products" theme="teal" icon={<Package className="h-4 w-4" />} label="স্টক ক্রয় মূল্য" value={fmt(stats.stockCostValue)} />
-        <MiniStat to="/products" theme="emerald" icon={<CircleDollarSign className="h-4 w-4" />} label="স্টক বিক্রয় মূল্য" value={fmt(stats.stockSaleValue)} />
+        <MiniStat to="/ledger" theme="emerald" icon={<ShoppingBag className="h-4 w-4" />} label="মোট ক্রয় মূল্য" value={fmt(stats.totalPurchases)} />
         <MiniStat to="/reports" theme="violet" icon={<TrendingUp className="h-4 w-4" />} label="মাসিক লাভ" value={fmt(stats.monthProfit)} />
         <MiniStat to="/sales" theme="sky" icon={<ShoppingBag className="h-4 w-4" />} label="আজকের বিক্রয়" value={fmt(stats.todaySales)} />
       </div>
