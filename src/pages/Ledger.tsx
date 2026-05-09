@@ -328,13 +328,16 @@ export default function Ledger() {
     const cashBalance = cashIn - cashOut;
     const cashTxnTotal = cashIn + cashOut;
 
+    // মোট আয় = বিক্রয়ের মোট মূল্য (ছাড় বাদে), নগদ + কিস্তি সব মিলিয়ে = sales.total যোগফল
+    const totalIncome = salesTotal;
+
     return [
-      { key: "income"   as TabKey, label: "মোট আয় (লাভ)",     value: income,       icon: ArrowDownToLine, tone: "income",   hint: "প্রকৃত লাভ = বিক্রয়মূল্য (ছাড় বাদে) − পণ্যের ক্রয়মূল্য" },
-      { key: "expense"  as TabKey, label: "মোট খরচ",         value: expense,      icon: ArrowUpFromLine, tone: "expense",  hint: "খরচ এন্ট্রি + manual উত্তোলন (পণ্য ক্রয় বাদ)" },
-      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",    value: cashBalance,  icon: Coins,           tone: "balance",  hint: "হাতে অবশিষ্ট নগদ = (নগদ আয় + কিস্তি আদায় + ক্যাশ জমা) − (নগদ খরচ + পরিশোধিত ক্রয় + উত্তোলন)" },
-      { key: "cash"     as TabKey, label: "ক্যাশ লেনদেন",    value: cashTxnTotal, icon: Wallet,          tone: "cash",     hint: "শুধু নগদ পেমেন্টের যোগফল (in+out)" },
-      { key: "purchase" as TabKey, label: "স্টক ক্রয় খরচ",    value: stockBuy,     icon: ShoppingBag,     tone: "purchase", hint: "Σ(পরিমাণ × পণ্যের বর্তমান ক্রয়মূল্য) — পণ্য তালিকায় cost edit করলেই auto আপডেট" },
-      { key: "sales"    as TabKey, label: "মোট বিক্রয়",       value: salesTotal,   icon: Receipt,         tone: "sales",    hint: "বিক্রয় ইনভয়েস (বাকি সহ মোট)" },
+      { key: "sales"    as TabKey, label: "মোট আয়",              value: totalIncome,  icon: ArrowDownToLine, tone: "income",   hint: "বিক্রয়ের মোট মূল্য (ছাড় বাদে) — নগদ + কিস্তি সব মিলিয়ে" },
+      { key: "income"   as TabKey, label: "বিক্রয় থেকে মোট লাভ", value: income,       icon: TrendingUp,      tone: "income",   hint: "প্রকৃত লাভ = বিক্রয়মূল্য (ছাড় বাদে) − পণ্যের ক্রয়মূল্য" },
+      { key: "expense"  as TabKey, label: "মোট খরচ",             value: expense,      icon: ArrowUpFromLine, tone: "expense",  hint: "খরচ এন্ট্রি + manual উত্তোলন (পণ্য ক্রয় বাদ)" },
+      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",        value: cashBalance,  icon: Coins,           tone: "balance",  hint: "হাতে অবশিষ্ট নগদ = (নগদ আয় + কিস্তি আদায় + ক্যাশ জমা) − (নগদ খরচ + পরিশোধিত ক্রয় + উত্তোলন)" },
+      { key: "purchase" as TabKey, label: "স্টক ক্রয় খরচ",        value: stockBuy,     icon: ShoppingBag,     tone: "purchase", hint: "Σ(পরিমাণ × পণ্যের বর্তমান ক্রয়মূল্য)" },
+      { key: "sales"    as TabKey, label: "মোট বিক্রয় (ইনভয়েস)", value: salesTotal,   icon: Receipt,         tone: "sales",    hint: "বিক্রয় ইনভয়েসের মোট (বাকি সহ)" },
     ];
   }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg, profitAgg, purchaseCostAgg, topFrom, topTo]);
 
