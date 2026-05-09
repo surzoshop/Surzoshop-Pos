@@ -150,12 +150,15 @@ export default function POS() {
     return true;
   });
 
+  const clearTotalOverride = () => setTotalOverride(null);
+
   const addToCart = (p: Product) => {
     const extra = originalQty[p.id] || 0;
     if (p.stock + extra <= 0) {
       toast({ title: t("outOfStock"), variant: "destructive" });
       return;
     }
+    clearTotalOverride();
     setCart(c => {
       const ex = c.find(i => i.product.id === p.id);
       if (ex) return c.map(i => i.product.id === p.id ? { ...i, qty: Math.min(i.qty + 1, p.stock + extra) } : i);
@@ -163,10 +166,12 @@ export default function POS() {
     });
   };
   const updateQty = (id: string, delta: number) => {
+    clearTotalOverride();
     setCart(c => c.map(i => i.product.id === id ? { ...i, qty: Math.max(1, Math.min(i.qty + delta, i.product.stock + (originalQty[i.product.id] || 0))) } : i));
   };
-  const removeItem = (id: string) => setCart(c => c.filter(i => i.product.id !== id));
+  const removeItem = (id: string) => { clearTotalOverride(); setCart(c => c.filter(i => i.product.id !== id)); };
   const updatePrice = (id: string, price: number) => {
+    clearTotalOverride();
     setCart(c => c.map(i => i.product.id === id ? { ...i, product: { ...i.product, price: Math.max(0, price) } } : i));
   };
 
