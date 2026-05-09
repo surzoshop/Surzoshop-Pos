@@ -157,12 +157,10 @@ export default function Installments() {
     await supabase.from("sale_items").insert(saleItems);
 
     const per = Math.round((financed / plan.tenure_months) * 100) / 100;
-    const firstDue = new Date(plan.first_due);
     const schedule = Array.from({ length: plan.tenure_months }).map((_, idx) => {
-      const d = new Date(firstDue); d.setMonth(d.getMonth() + idx);
       return {
         sale_id: sale.id, installment_no: idx + 1,
-        due_date: toBDDate(d),
+        due_date: bdDateAddMonths(idx + 1, INSTALLMENT_DUE_DAY),
         amount: idx === plan.tenure_months - 1 ? financed - per * (plan.tenure_months - 1) : per,
       };
     });
@@ -172,7 +170,7 @@ export default function Installments() {
     setOpenNew(false);
     setPlan({ customer_id: "", guarantor_id: "", items: [], pid: "", qty: 1, price: 0,
       down_payment: 2000, interest_rate: 0, tenure_months: 5, late_fee_per_day: 5, notes: "",
-      first_due: bdDateAddMonths(1) });
+      first_due: bdDateAddMonths(1, INSTALLMENT_DUE_DAY) });
     load();
   };
 
