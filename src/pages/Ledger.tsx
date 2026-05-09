@@ -313,22 +313,25 @@ export default function Ledger() {
     // স্টক ক্রয় খরচ: live = Σ(qty × পণ্যের বর্তমান ক্রয়মূল্য) — পণ্য তালিকায় cost edit করলেই auto আপডেট
     const stockBuy = purchaseCostAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.total, 0);
 
-    // নগদ ব্যালেন্স: ডাউন পেমেন্ট + কিস্তি আদায় + পূর্ণ নগদ অর্ডার (অর্থাৎ sales.paid সব মিলিয়ে + কিস্তি আদায়)
-    const cashBalance = salesPaid + instPaid;
+    // ক্যাশ ইন/আউট (নগদ পেমেন্ট মাত্র)
+    const cashbookIn = entries.filter(e => e.entry_type === "deposit" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
+      .reduce((s, e) => s + Number(e.amount || 0), 0);
+    const cashbookOut = entries.filter(e => e.entry_type === "withdraw" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
+      .reduce((s, e) => s + Number(e.amount || 0), 0);
+    const expenseCash = expensesAgg.filter(x => inRange(x.date) && (x.method || "cash") === "cash").reduce((s, x) => s + x.total, 0);
+    const purchasePaidCash = purchasesAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.paid, 0);
 
-    // ক্যাশ লেনদেন (in+out) তথ্যমূলক
-    const cashIn = salesPaid + instPaid
-      + entries.filter(e => e.entry_type === "deposit" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
-        .reduce((s, e) => s + Number(e.amount || 0), 0);
-    const cashOut = entries.filter(e => e.entry_type === "withdraw" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
-      .reduce((s, e) => s + Number(e.amount || 0), 0)
-      + expensesAgg.filter(x => inRange(x.date) && (x.method || "cash") === "cash").reduce((s, x) => s + x.total, 0);
+    const cashIn = salesPaid + instPaid + cashbookIn;
+    const cashOut = cashbookOut + expenseCash + purchasePaidCash;
+
+    // নগদ ব্যালেন্স = হাতে অবশিষ্ট নগদ = (নগদ আয়) − (নগদ খরচ + পরিশোধিত ক্রয় + উত্তোলন)
+    const cashBalance = cashIn - cashOut;
     const cashTxnTotal = cashIn + cashOut;
 
     return [
-      { key: "income"   as TabKey, label: "মোট আয় (লাভ)",     value: income,       icon: ArrowDownToLine, tone: "income",   hint: "প্রকৃত লাভ = বিক্রয়মূল্য − পণ্যের ক্রয়মূল্য (ছাড় সহ)" },
-      { key: "expense"  as TabKey, label: "মোট খরচ",         value: expense,      icon: ArrowUpFromLine, tone: "expense",  hint: "খরচ এন্ট্রি + উত্তোলন (পণ্য ক্রয় বাদ)" },
-      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",    value: cashBalance,  icon: Coins,           tone: "balance",  hint: "ডাউন পেমেন্ট + কিস্তি আদায় + পূর্ণ নগদ অর্ডার" },
+      { key: "income"   as TabKey, label: "মোট আয় (লাভ)",     value: income,       icon: ArrowDownToLine, tone: "income",   hint: "প্রকৃত লাভ = বিক্রয়মূল্য (ছাড় বাদে) − পণ্যের ক্রয়মূল্য" },
+      { key: "expense"  as TabKey, label: "মোট খরচ",         value: expense,      icon: ArrowUpFromLine, tone: "expense",  hint: "খরচ এন্ট্রি + manual উত্তোলন (পণ্য ক্রয় বাদ)" },
+      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",    value: cashBalance,  icon: Coins,           tone: "balance",  hint: "হাতে অবশিষ্ট নগদ = (নগদ আয় + কিস্তি আদায় + ক্যাশ জমা) − (নগদ খরচ + পরিশোধিত ক্রয় + উত্তোলন)" },
       { key: "cash"     as TabKey, label: "ক্যাশ লেনদেন",    value: cashTxnTotal, icon: Wallet,          tone: "cash",     hint: "শুধু নগদ পেমেন্টের যোগফল (in+out)" },
       { key: "purchase" as TabKey, label: "স্টক ক্রয় খরচ",    value: stockBuy,     icon: ShoppingBag,     tone: "purchase", hint: "Σ(পরিমাণ × পণ্যের বর্তমান ক্রয়মূল্য) — পণ্য তালিকায় cost edit করলেই auto আপডেট" },
       { key: "sales"    as TabKey, label: "মোট বিক্রয়",       value: salesTotal,   icon: Receipt,         tone: "sales",    hint: "বিক্রয় ইনভয়েস (বাকি সহ মোট)" },
@@ -506,9 +509,9 @@ export default function Ledger() {
 
       {/* 3 totals */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-        <BigStat label="মোট জমা (Cr)" value={fmt(totals.cr)}      icon={<ArrowDownToLine className="h-5 w-5" />} accent="emerald" hint="নির্বাচিত ট্যাব ও তারিখে সকল আয়/জমার যোগফল" />
-        <BigStat label="মোট খরচ (Dr)" value={fmt(totals.dr)}      icon={<ArrowUpFromLine className="h-5 w-5" />} accent="rose"    hint="নির্বাচিত ট্যাব ও তারিখে সকল খরচ/উত্তোলনের যোগফল" />
-        <BigStat label="নীট ব্যালেন্স"  value={fmt(totals.balance)} icon={<BookOpen className="h-5 w-5" />}        accent="indigo"  hint="মোট জমা (Cr) − মোট খরচ (Dr) — বর্তমান ট্যাব/তারিখ/ফিল্টার অনুযায়ী" />
+        <BigStat label={`মোট জমা (${TAB_META[tab].rangeChip})`} value={fmt(totals.cr)}      icon={<ArrowDownToLine className="h-5 w-5" />} accent="emerald" hint={`নীচের তারিখ-পরিসর + "${TAB_META[tab].title}" ট্যাবে প্রদর্শিত সকল আয়/জমার যোগফল`} />
+        <BigStat label={`মোট খরচ (${TAB_META[tab].rangeChip})`} value={fmt(totals.dr)}      icon={<ArrowUpFromLine className="h-5 w-5" />} accent="rose"    hint={`নীচের তারিখ-পরিসর + "${TAB_META[tab].title}" ট্যাবে প্রদর্শিত সকল খরচ/উত্তোলনের যোগফল`} />
+        <BigStat label="নীট ব্যালেন্স (এই তালিকার)" value={fmt(totals.balance)} icon={<BookOpen className="h-5 w-5" />}        accent="indigo"  hint="মোট জমা − মোট খরচ (শুধু এই তালিকায় যা দেখাচ্ছে)। ⚠️ এটা হাতে নগদ নয় — উপরের 'নগদ ব্যালেন্স' কার্ডে হাতে অবশিষ্ট নগদ দেখুন।" />
       </div>
 
       {/* Lower filter row */}
