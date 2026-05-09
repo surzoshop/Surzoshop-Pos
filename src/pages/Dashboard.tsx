@@ -171,7 +171,7 @@ export default function Dashboard() {
         <ColorStatCard
           to="/reports" theme="violet" icon={<Wallet />}
           chip={t("monthTarget")}
-          label={t("totalRevenue")} value={fmt(stats.monthSales)} sub={t("monthlyProfit")}
+          label="মোট বিক্রয়" value={fmt(stats.monthSales)} sub="এই মাসের মোট বিক্রয়"
         />
         <ColorStatCard
           to="/sales" theme="sky" icon={<ShoppingBag />}
