@@ -97,6 +97,9 @@ export default function POS() {
       setCart(newCart);
       setCustomerId(sale.customer_id || "");
       setDiscount(Number(sale.discount) || 0);
+      const savedSubtotal = (items ?? []).reduce((sum: number, it: any) => sum + Number(it.subtotal ?? (Number(it.unit_price) * Number(it.qty))), 0);
+      const savedBaseTotal = recoverBaseTotal(sale);
+      setTotalOverride(Math.abs(savedBaseTotal - (savedSubtotal - (Number(sale.discount) || 0))) > 0.009 ? savedBaseTotal : null);
       if (sale.payment_type === "installment") {
         setPaymentType("installment");
         setDownPayment(Number(sale.down_payment) || 0);
@@ -191,7 +194,7 @@ export default function POS() {
 
   // Default schedule dates: 5th of each upcoming month, in Asia/Dhaka tz
   const defaultScheduleDates = (count: number): string[] =>
-    Array.from({ length: count }).map((_, idx) => bdDateAddMonths(idx + 1, 5));
+    Array.from({ length: count }).map((_, idx) => bdDateAddMonths(idx + 1, INSTALLMENT_DUE_DAY));
 
   // Keep scheduleDates length in sync with installmentCount (preserve user-edited dates)
   useEffect(() => {
