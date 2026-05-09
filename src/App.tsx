@@ -27,6 +27,7 @@ import CustomerLedger from "./pages/CustomerLedger";
 import StockLedger from "./pages/StockLedger";
 import Purchases from "./pages/Purchases";
 import Ledger from "./pages/Ledger";
+import CashbookHistory from "./pages/CashbookHistory";
 import Expenses from "./pages/Expenses";
 import StockAdjustments from "./pages/StockAdjustments";
 import Staff from "./pages/Staff";
