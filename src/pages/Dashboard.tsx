@@ -207,12 +207,46 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Mini stat row — secondary metrics */}
+      {/* Mini stat row — secondary metrics with explanations */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
-        <MiniStat to="/products" theme="teal" icon={<Package className="h-4 w-4" />} label="স্টক ক্রয় মূল্য" value={fmt(stats.stockCostValue)} />
-        <MiniStat to="/ledger" theme="emerald" icon={<ShoppingBag className="h-4 w-4" />} label="মোট ক্রয় মূল্য" value={fmt(stats.totalPurchases)} />
-        <MiniStat to="/reports" theme="violet" icon={<TrendingUp className="h-4 w-4" />} label="মাসিক লাভ" value={fmt(stats.monthProfit)} />
-        <MiniStat to="/sales" theme="sky" icon={<ShoppingBag className="h-4 w-4" />} label="আজকের বিক্রয়" value={fmt(stats.todaySales)} />
+        <MiniStat
+          to="/products" theme="teal" icon={<Package className="h-4 w-4" />}
+          label="স্টক ক্রয় মূল্য" value={fmt(stats.stockCostValue)}
+          hint="বর্তমান স্টক × ক্রয়মূল্য"
+        />
+        <MiniStat
+          to="/ledger" theme="emerald" icon={<ShoppingBag className="h-4 w-4" />}
+          label="মোট ক্রয় মূল্য" value={fmt(stats.totalPurchases)}
+          hint="সকল ক্রয়ের যোগফল (lifetime)"
+        />
+        <MiniStat
+          to="/reports" theme="violet" icon={<TrendingUp className="h-4 w-4" />}
+          label="মাসিক লাভ" value={fmt(stats.monthProfit)}
+          hint="এ মাসে: বিক্রয় − ক্রয়মূল্য"
+        />
+        <MiniStat
+          to="/ledger" theme="amber" icon={<AlertTriangle className="h-4 w-4" />}
+          label="মূল্য পার্থক্য" value={fmt(Math.max(0, stats.totalPurchases - stats.stockCostValue))}
+          hint="বিক্রিত পণ্যের ক্রয়মূল্য (COGS)"
+        />
+      </div>
+
+      {/* Explanation card — why the difference */}
+      <div className="bg-[hsl(var(--surface-container-lowest))] border border-amber-500/30 rounded-2xl p-4 md:p-5">
+        <div className="flex items-start gap-3">
+          <div className="h-9 w-9 shrink-0 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow shadow-amber-500/30">
+            <AlertTriangle className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h4 className="text-sm md:text-base font-bold text-foreground font-bn">পার্থক্যের কারণ — কেন মোট ক্রয় ও স্টক ক্রয়মূল্য আলাদা?</h4>
+            <p className="text-[12px] md:text-[13px] text-muted-foreground mt-1 font-bn leading-relaxed">
+              <b className="text-foreground">মোট ক্রয় মূল্য</b> = এখন পর্যন্ত সব ক্রয়ের যোগফল (বিক্রি হয়ে গেলেও কমে না)। <br/>
+              <b className="text-foreground">স্টক ক্রয় মূল্য</b> = বর্তমানে দোকানে যা স্টক আছে শুধু তার ক্রয়মূল্য। <br/>
+              <b className="text-foreground">পার্থক্য ({fmt(Math.max(0, stats.totalPurchases - stats.stockCostValue))})</b> = ইতিমধ্যে যেসব পণ্য বিক্রি হয়ে গেছে তাদের ক্রয়মূল্য (COGS)। <br/>
+              <span className="text-[11px]">⚠️ নোট: পণ্যের ক্রয়মূল্য আপডেট হলে পুরনো ক্রয়ের হিস্ট্রিও আপডেট হয়ে যায়, তাই কিছু ক্ষেত্রে সামান্য বেশি/কম দেখাতে পারে।</span>
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Main Layout */}
@@ -485,12 +519,12 @@ function QAButton({ to, onClick, icon, label, tone = "emerald" }: any) {
   return <Link to={to} className={cls}>{inner}</Link>;
 }
 
-function MiniStat({ to, theme, icon, label, value }: any) {
+function MiniStat({ to, theme, icon, label, value, hint }: any) {
   const T = THEMES[theme] ?? THEMES.violet;
   return (
     <Link
       to={to ?? "#"}
-      className={`group flex items-center gap-2.5 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--border))] ${T.accent} rounded-xl px-3 py-2.5 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200`}
+      className={`group flex items-start gap-2.5 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--border))] ${T.accent} rounded-xl px-3 py-2.5 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200`}
     >
       <div className={`h-8 w-8 shrink-0 ${T.iconGrad} text-white rounded-lg flex items-center justify-center shadow ${T.iconShadow}`}>
         {icon}
@@ -498,6 +532,7 @@ function MiniStat({ to, theme, icon, label, value }: any) {
       <div className="min-w-0 flex-1">
         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider truncate font-bn">{label}</p>
         <p className={`text-sm md:text-base font-extrabold text-foreground truncate font-bn ${T.valueText} transition-colors`}>{value}</p>
+        {hint && <p className="text-[10px] text-muted-foreground font-semibold mt-0.5 truncate font-bn">{hint}</p>}
       </div>
     </Link>
   );
