@@ -799,9 +799,10 @@ function EntryDialog({ open, type, onOpenChange, onSaved, userId, shopId }: any)
     const finalCategory = accountKind !== "general"
       ? `${accountKind}${category ? " - " + category : ""}`
       : (category || null);
+    const finalMethod = accountKind === "cash" ? "cash" : method;
     const { error } = await supabase.from("cash_book" as any).insert({
       shop_id: shopId, entry_date: date, entry_type: type, amount: amt,
-      category: finalCategory, party_name: party || null, payment_method: method,
+      category: finalCategory, party_name: party || null, payment_method: finalMethod,
       reference_no: ref || null, notes: notes || null, created_by: userId,
     });
     setSaving(false);
