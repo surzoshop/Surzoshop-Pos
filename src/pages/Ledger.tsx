@@ -319,12 +319,13 @@ export default function Ledger() {
     const cashbookOut = entries.filter(e => e.entry_type === "withdraw" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
       .reduce((s, e) => s + Number(e.amount || 0), 0);
     const expenseCash = expensesAgg.filter(x => inRange(x.date) && (x.method || "cash") === "cash").reduce((s, x) => s + x.total, 0);
-    const purchasePaidCash = purchasesAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.paid, 0);
 
+    // নগদ আয় = বিক্রয় থেকে প্রাপ্ত নগদ + কিস্তি আদায় + ম্যানুয়াল নগদ জমা
     const cashIn = salesPaid + instPaid + cashbookIn;
-    const cashOut = cashbookOut + expenseCash + purchasePaidCash;
+    // নগদ খরচ = শুধু খরচ + ম্যানুয়াল নগদ উত্তোলন (স্টক ক্রয়মূল্য বাদ — তা আলাদা কার্ডে)
+    const cashOut = cashbookOut + expenseCash;
 
-    // নগদ ব্যালেন্স = হাতে অবশিষ্ট নগদ = (নগদ আয়) − (নগদ খরচ + পরিশোধিত ক্রয় + উত্তোলন)
+    // নগদ ব্যালেন্স = নগদ আয় − নগদ খরচ (খরচ না থাকলে পুরো আয়ই ব্যালেন্স)
     const cashBalance = cashIn - cashOut;
     const cashTxnTotal = cashIn + cashOut;
 
@@ -334,7 +335,7 @@ export default function Ledger() {
     return [
       { key: "sales"    as TabKey, label: "মোট আয়",              value: totalIncome,  icon: ArrowDownToLine, tone: "income",   hint: "বিক্রয় থেকে প্রাপ্ত নগদ = ডাউন পেমেন্ট + সম্পূর্ণ পরিশোধিত + কিস্তি আদায়" },
       { key: "expense"  as TabKey, label: "মোট খরচ",             value: expense,      icon: ArrowUpFromLine, tone: "expense",  hint: "খরচ এন্ট্রি + manual উত্তোলন (পণ্য ক্রয় বাদ)" },
-      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",        value: cashBalance,  icon: Coins,           tone: "balance",  hint: "হাতে অবশিষ্ট নগদ = (নগদ আয় + কিস্তি আদায় + ক্যাশ জমা) − (নগদ খরচ + পরিশোধিত ক্রয় + উত্তোলন)" },
+      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",        value: cashBalance,  icon: Coins,           tone: "balance",  hint: "মোট আয় − মোট খরচ (স্টক ক্রয়মূল্য বাদ; খরচ না থাকলে পুরো আয়ই ব্যালেন্স)" },
       { key: "income"   as TabKey, label: "বিক্রয় থেকে মোট লাভ", value: income,       icon: TrendingUp,      tone: "income",   hint: "প্রকৃত লাভ = বিক্রয়মূল্য (ছাড় বাদে) − পণ্যের ক্রয়মূল্য" },
       { key: "purchase" as TabKey, label: "স্টক ক্রয় খরচ",        value: stockBuy,     icon: ShoppingBag,     tone: "purchase", hint: "Σ(পরিমাণ × পণ্যের বর্তমান ক্রয়মূল্য)" },
       { key: "sales"    as TabKey, label: "মোট বিক্রয় (ইনভয়েস)", value: salesTotal,   icon: Receipt,         tone: "sales",    hint: "বিক্রয় ইনভয়েসের মোট (বাকি সহ)" },
