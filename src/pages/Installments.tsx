@@ -32,6 +32,16 @@ type Plan = {
 const DAY = 1000 * 60 * 60 * 24;
 const INSTALLMENT_DUE_DAY = 5;
 
+const addMonthsToDateStr = (dateStr: string, monthsToAdd: number) => {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const targetMonthIndex = month - 1 + monthsToAdd;
+  const targetYear = year + Math.floor(targetMonthIndex / 12);
+  const targetMonth = ((targetMonthIndex % 12) + 12) % 12;
+  const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+  const targetDay = Math.min(day, daysInMonth);
+  return `${targetYear}-${String(targetMonth + 1).padStart(2, "0")}-${String(targetDay).padStart(2, "0")}`;
+};
+
 export default function Installments() {
   const { t, fmt, lang } = useT();
   const { user } = useAuth();
@@ -160,7 +170,7 @@ export default function Installments() {
     const schedule = Array.from({ length: plan.tenure_months }).map((_, idx) => {
       return {
         sale_id: sale.id, installment_no: idx + 1,
-        due_date: bdDateAddMonths(idx + 1, INSTALLMENT_DUE_DAY),
+        due_date: addMonthsToDateStr(plan.first_due || bdDateAddMonths(1, INSTALLMENT_DUE_DAY), idx),
         amount: idx === plan.tenure_months - 1 ? financed - per * (plan.tenure_months - 1) : per,
       };
     });
