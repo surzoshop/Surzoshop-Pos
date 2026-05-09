@@ -85,21 +85,29 @@ export default function POS() {
       const { data: items } = await supabase.from("sale_items").select("*").eq("sale_id", editId);
       const orig: Record<string, number> = {};
       const newCart: CartItem[] = [];
+      const savedDiscount = Number(sale.discount) || 0;
+      const rawSubtotal = (items ?? []).reduce((sum: number, it: any) => sum + Number(it.subtotal ?? (Number(it.unit_price) * Number(it.qty))), 0);
+      const savedBaseTotal = recoverBaseTotal(sale);
+      const intendedSubtotal = savedBaseTotal + savedDiscount;
+      const shouldNormalizeItemPrices = rawSubtotal > 0 && Math.abs(intendedSubtotal - rawSubtotal) > 0.009;
       (items ?? []).forEach((it: any) => {
         const p = products.find(pp => pp.id === it.product_id);
         if (p) {
-          orig[p.id] = (orig[p.id] || 0) + Number(it.qty);
-          newCart.push({ product: { ...p, price: Number(it.unit_price) }, qty: Number(it.qty) });
+          const qty = Number(it.qty) || 1;
+          const lineSubtotal = Number(it.subtotal ?? (Number(it.unit_price) * qty));
+          const effectiveUnitPrice = shouldNormalizeItemPrices
+            ? roundMoney((lineSubtotal * (intendedSubtotal / rawSubtotal)) / qty)
+            : Number(it.unit_price);
+          orig[p.id] = (orig[p.id] || 0) + qty;
+          newCart.push({ product: { ...p, price: effectiveUnitPrice }, qty });
         }
       });
       setEditingSaleId(editId);
       setOriginalQty(orig);
       setCart(newCart);
       setCustomerId(sale.customer_id || "");
-      setDiscount(Number(sale.discount) || 0);
-      const savedSubtotal = (items ?? []).reduce((sum: number, it: any) => sum + Number(it.subtotal ?? (Number(it.unit_price) * Number(it.qty))), 0);
-      const savedBaseTotal = recoverBaseTotal(sale);
-      setTotalOverride(Math.abs(savedBaseTotal - (savedSubtotal - (Number(sale.discount) || 0))) > 0.009 ? savedBaseTotal : null);
+      setDiscount(savedDiscount);
+      setTotalOverride(null);
       if (sale.payment_type === "installment") {
         setPaymentType("installment");
         setDownPayment(Number(sale.down_payment) || 0);
