@@ -425,7 +425,7 @@ export default function Ledger() {
           <h1 className="text-xl sm:text-2xl font-black text-foreground truncate">{TAB_META[tab].title}</h1>
           <p className="text-xs text-muted-foreground">{TAB_META[tab].subtitle}</p>
         </div>
-        <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
+        <div className="grid grid-cols-3 sm:flex gap-2 w-full sm:w-auto">
           <Button onClick={() => setDialog("deposit")}
             className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-md">
             <ArrowDownCircle className="h-4 w-4" /> জমা
@@ -433,6 +433,9 @@ export default function Ledger() {
           <Button onClick={() => setDialog("withdraw")}
             className="w-full sm:w-auto bg-rose-600 hover:bg-rose-700 text-white shadow-md">
             <ArrowUpCircle className="h-4 w-4" /> উত্তোলন
+          </Button>
+          <Button asChild variant="outline" className="w-full sm:w-auto shadow-sm">
+            <Link to="/cashbook-history"><History className="h-4 w-4" /> হিস্ট্রি</Link>
           </Button>
         </div>
       </div>
