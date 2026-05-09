@@ -305,11 +305,9 @@ export default function Ledger() {
     const profit = profitAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.profit, 0);
     const income = profit;
 
-    // খরচ: শুধু expenses table + cash_book withdrawals (পণ্য ক্রয় বাদ)
-    const cashbookExpense = entries.filter(e => e.entry_type === "withdraw" && inRange(e.entry_date))
-      .reduce((s, e) => s + Number(e.amount || 0), 0);
+    // মোট খরচ: শুধুমাত্র খরচ এন্ট্রি পেজ থেকে (cash_book জমা/উত্তোলন বাদ, পণ্য ক্রয় বাদ)
     const realExpense = expensesAgg.filter(x => inRange(x.date)).reduce((s, x) => s + x.total, 0);
-    const expense = cashbookExpense + realExpense;
+    const expense = realExpense;
 
     // স্টক ক্রয়মূল্য = প্রকৃত স্টক ক্রয় ইনভয়েসের মোট মূল্য (purchases টেবিল থেকে)
     const stockBuy = purchasesAgg.filter(p => inRange(p.date)).reduce((s, p) => s + Number(p.total || 0), 0);
