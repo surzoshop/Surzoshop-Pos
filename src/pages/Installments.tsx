@@ -30,6 +30,7 @@ type Plan = {
 };
 
 const DAY = 1000 * 60 * 60 * 24;
+const INSTALLMENT_DUE_DAY = 5;
 
 export default function Installments() {
   const { t, fmt, lang } = useT();
@@ -53,7 +54,7 @@ export default function Installments() {
     customer_id: "", guarantor_id: "",
     items: [] as any[], pid: "", qty: 1, price: 0,
     down_payment: 2000, interest_rate: 0, tenure_months: 5, late_fee_per_day: 5, notes: "",
-    first_due: bdDateAddMonths(1),
+    first_due: bdDateAddMonths(1, INSTALLMENT_DUE_DAY),
   });
 
   const load = async () => {
