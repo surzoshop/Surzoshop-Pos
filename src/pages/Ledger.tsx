@@ -736,7 +736,7 @@ function MiniStat({ label, value, icon: Icon, tone, active, onClick, hint }: any
         active ? `${t.activeBg} shadow-lg scale-[1.02]` : "shadow-sm"
       }`}>
       <div className="flex items-start justify-between gap-2">
-        <div className={`text-xs font-bold ${t.text} truncate`}>{label}</div>
+        <div className={`text-xs font-bold ${t.text} leading-tight break-words`}>{label}</div>
         <div className={`h-9 w-9 rounded-xl grid place-items-center shadow-md ${t.icon} transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6`}>
           <Icon className="h-4 w-4" />
         </div>
