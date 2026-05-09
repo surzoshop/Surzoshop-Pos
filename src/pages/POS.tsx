@@ -151,6 +151,9 @@ export default function POS() {
     setCart(c => c.map(i => i.product.id === id ? { ...i, qty: Math.max(1, Math.min(i.qty + delta, i.product.stock + (originalQty[i.product.id] || 0))) } : i));
   };
   const removeItem = (id: string) => setCart(c => c.filter(i => i.product.id !== id));
+  const updatePrice = (id: string, price: number) => {
+    setCart(c => c.map(i => i.product.id === id ? { ...i, product: { ...i.product, price: Math.max(0, price) } } : i));
+  };
 
   const subtotal = cart.reduce((a, i) => a + i.product.price * i.qty, 0);
   const vat = subtotal * VAT_RATE;
@@ -485,7 +488,7 @@ export default function POS() {
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="font-semibold text-foreground text-sm truncate">{i.product.name}</h4>
-                <div className="flex items-center justify-between mt-2 gap-2">
+                <div className="flex items-center justify-between mt-2 gap-2 flex-wrap">
                   <div className="flex items-center gap-2 bg-[hsl(var(--surface-container-high))] rounded-full px-2 py-1">
                     <button onClick={() => updateQty(i.product.id, -1)} className="w-6 h-6 flex items-center justify-center bg-[hsl(var(--surface-container-lowest))] rounded-full shadow-sm active:scale-90">
                       <Minus className="h-3 w-3" />
@@ -494,6 +497,16 @@ export default function POS() {
                     <button onClick={() => updateQty(i.product.id, 1)} className="w-6 h-6 flex items-center justify-center bg-[hsl(var(--surface-container-lowest))] rounded-full shadow-sm active:scale-90">
                       <Plus className="h-3 w-3" />
                     </button>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-muted-foreground">৳</span>
+                    <Input
+                      type="number"
+                      value={i.product.price}
+                      onChange={(e) => updatePrice(i.product.id, +e.target.value)}
+                      className="h-7 w-20 text-xs px-2"
+                      title="প্রতি একক বিক্রয় মূল্য"
+                    />
                   </div>
                   <span className="font-bold text-primary text-sm">{fmt(i.product.price * i.qty)}</span>
                   <button onClick={() => removeItem(i.product.id)} className="text-destructive p-1">
