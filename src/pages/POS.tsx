@@ -151,6 +151,9 @@ export default function POS() {
     setCart(c => c.map(i => i.product.id === id ? { ...i, qty: Math.max(1, Math.min(i.qty + delta, i.product.stock + (originalQty[i.product.id] || 0))) } : i));
   };
   const removeItem = (id: string) => setCart(c => c.filter(i => i.product.id !== id));
+  const updatePrice = (id: string, price: number) => {
+    setCart(c => c.map(i => i.product.id === id ? { ...i, product: { ...i.product, price: Math.max(0, price) } } : i));
+  };
 
   const subtotal = cart.reduce((a, i) => a + i.product.price * i.qty, 0);
   const vat = subtotal * VAT_RATE;
