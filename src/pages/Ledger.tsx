@@ -831,6 +831,7 @@ function EntryDialog({ open, type, onOpenChange, onSaved, userId, shopId }: any)
               <SelectTrigger className="h-11 sm:h-10"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="general">সাধারণ</SelectItem>
+                <SelectItem value="cash">নগদ ব্যালেন্স</SelectItem>
                 <SelectItem value="customer">কাস্টমার</SelectItem>
                 <SelectItem value="supplier">সাপ্লায়ার</SelectItem>
                 <SelectItem value="owner">ওনার</SelectItem>
