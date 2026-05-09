@@ -305,11 +305,9 @@ export default function Ledger() {
     const profit = profitAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.profit, 0);
     const income = profit;
 
-    // খরচ: শুধু expenses table + cash_book withdrawals (পণ্য ক্রয় বাদ)
-    const cashbookExpense = entries.filter(e => e.entry_type === "withdraw" && inRange(e.entry_date))
-      .reduce((s, e) => s + Number(e.amount || 0), 0);
+    // মোট খরচ: শুধুমাত্র খরচ এন্ট্রি পেজ থেকে (cash_book জমা/উত্তোলন বাদ, পণ্য ক্রয় বাদ)
     const realExpense = expensesAgg.filter(x => inRange(x.date)).reduce((s, x) => s + x.total, 0);
-    const expense = cashbookExpense + realExpense;
+    const expense = realExpense;
 
     // স্টক ক্রয়মূল্য = প্রকৃত স্টক ক্রয় ইনভয়েসের মোট মূল্য (purchases টেবিল থেকে)
     const stockBuy = purchasesAgg.filter(p => inRange(p.date)).reduce((s, p) => s + Number(p.total || 0), 0);
@@ -335,7 +333,7 @@ export default function Ledger() {
 
     return [
       { key: "sales"    as TabKey, label: "নগদ আয়",              value: totalIncome,  icon: ArrowDownToLine, tone: "income",   hint: "বিক্রয় থেকে প্রাপ্ত নগদ = ডাউন পেমেন্ট + সম্পূর্ণ পরিশোধিত + কিস্তি আদায়" },
-      { key: "expense"  as TabKey, label: "মোট খরচ",             value: expense,      icon: ArrowUpFromLine, tone: "expense",  hint: "খরচ এন্ট্রি + manual উত্তোলন (পণ্য ক্রয় বাদ)" },
+      { key: "expense"  as TabKey, label: "মোট খরচ",             value: expense,      icon: ArrowUpFromLine, tone: "expense",  hint: "শুধুমাত্র খরচ এন্ট্রি পেজ থেকে (জমা/উত্তোলনের কোনো প্রভাব নেই)" },
       { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",        value: cashBalance,  icon: Coins,           tone: "balance",  hint: "মোট আয় − মোট খরচ (স্টক ক্রয়মূল্য বাদ; খরচ না থাকলে পুরো আয়ই ব্যালেন্স)" },
       { key: "income"   as TabKey, label: "বিক্রয় থেকে মোট লাভ", value: income,       icon: TrendingUp,      tone: "income",   hint: "প্রকৃত লাভ = বিক্রয়মূল্য (ছাড় বাদে) − পণ্যের ক্রয়মূল্য" },
       { key: "purchase" as TabKey, label: "স্টক ক্রয়মূল্য",         value: stockBuy,     icon: ShoppingBag,     tone: "purchase", hint: "ক্রয় ইনভয়েসের মোট মূল্য (যত টাকার স্টক ক্রয় করেছেন)" },
