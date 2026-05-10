@@ -16,7 +16,6 @@ export default function Auth() {
   const { toast } = useToast();
   const nav = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
-  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("phone");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -36,10 +35,7 @@ export default function Auth() {
         toast({ title: "Success", description: "Account created. You can now log in." });
         setMode("login");
       } else {
-        const loginEmail =
-          loginMethod === "phone"
-            ? `${phone.replace(/\D+/g, "")}@staff.local`
-            : email;
+        const loginEmail = `${phone.replace(/\D+/g, "")}@staff.local`;
         const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
         if (error) throw error;
         nav("/");
@@ -168,20 +164,7 @@ export default function Auth() {
                 </Field>
               )}
 
-              {mode === "login" && (
-                <div className="grid grid-cols-2 gap-1 bg-muted/60 rounded-lg p-1">
-                  <button type="button" onClick={() => setLoginMethod("phone")}
-                    className={`py-1.5 text-xs font-bold rounded-md transition-all ${loginMethod === "phone" ? "bg-background shadow text-foreground" : "text-muted-foreground"}`}>
-                    {lang === "bn" ? "মোবাইল দিয়ে" : "By Mobile"}
-                  </button>
-                  <button type="button" onClick={() => setLoginMethod("email")}
-                    className={`py-1.5 text-xs font-bold rounded-md transition-all ${loginMethod === "email" ? "bg-background shadow text-foreground" : "text-muted-foreground"}`}>
-                    {lang === "bn" ? "Email দিয়ে" : "By Email"}
-                  </button>
-                </div>
-              )}
-
-              {(mode === "signup" || loginMethod === "email") ? (
+              {mode === "signup" ? (
                 <Field label={t("email")} icon={<Mail className="h-4 w-4" />}>
                   <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="pl-10 h-11" placeholder="you@shop.com" />
                 </Field>
