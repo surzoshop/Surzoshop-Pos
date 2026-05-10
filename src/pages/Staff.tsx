@@ -15,7 +15,7 @@ import {
   Plus, Trash2, UserCog, ShieldCheck, KeyRound, Loader2, History, Search, Phone,
   LayoutDashboard, ShoppingCart, Receipt, RotateCcw, ShoppingBag, Package, Layers,
   Warehouse, ClipboardList, BookOpen, Wallet, Users, Truck, Contact, BarChart3,
-  CalendarCheck, Store,
+  CalendarCheck, Store, Pencil, CheckCircle2,
 } from "lucide-react";
 import { PageHeader, SurfaceCard, PrimaryButton } from "@/components/PageHeader";
 
@@ -58,7 +58,7 @@ const ACCESS_POINTS: { key: PageKey; label: string; icon: any }[] = [
 
 // Presets per position
 const PRESETS: Record<string, PageKey[]> = {
-  cashier: ["dashboard"],
+  cashier: ["dashboard", "pos", "sales", "customers"],
   accountant: ["dashboard", "expenses", "customer-ledger", "supplier-ledger", "reports"],
   manager: [...ACCESS_POINTS.map(a => a.key)].filter(k => k !== "shops" && k !== "staff") as PageKey[],
   salesman: ["dashboard", "pos", "customers", "products"],
@@ -81,7 +81,9 @@ export default function Staff() {
   const nav = useNavigate();
   const isAdmin = role === "admin";
   const [items, setItems] = useState<any[]>([]);
+  const [shopUsersByStaff, setShopUsersByStaff] = useState<Record<string, any[]>>({});
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [posFilter, setPosFilter] = useState<string>("all");
   const [form, setForm] = useState({ ...emptyForm });
@@ -95,6 +97,18 @@ export default function Staff() {
   const load = async () => {
     const { data } = await supabase.from("staff").select("*").order("created_at", { ascending: false });
     setItems(data ?? []);
+    const ids = (data ?? []).map((s: any) => s.id);
+    if (ids.length) {
+      const { data: su } = await supabase.from("shop_users").select("*").in("staff_id", ids);
+      const grouped: Record<string, any[]> = {};
+      (su ?? []).forEach((r: any) => {
+        if (!grouped[r.staff_id]) grouped[r.staff_id] = [];
+        grouped[r.staff_id].push(r);
+      });
+      setShopUsersByStaff(grouped);
+    } else {
+      setShopUsersByStaff({});
+    }
   };
   useEffect(() => { load(); }, []);
 
@@ -125,7 +139,7 @@ export default function Staff() {
 
   const onPositionChange = (v: string) => {
     setForm(f => ({ ...f, position: v }));
-    applyPreset(v);
+    if (!editingId) applyPreset(v);
   };
 
   const togglePerm = (k: string, v: boolean) => {
@@ -140,15 +154,41 @@ export default function Staff() {
   const clearAll = () => setPermissions({});
 
   const openSheet = () => {
+    setEditingId(null);
     setForm({ ...emptyForm });
     applyPreset("cashier");
+    setOpen(true);
+  };
+
+  const openEdit = (e: React.MouseEvent, s: any) => {
+    e.stopPropagation();
+    setEditingId(s.id);
+    const sus = shopUsersByStaff[s.id] ?? [];
+    const firstSu = sus[0];
+    setForm({
+      name: s.name ?? "",
+      phone: s.phone ?? "",
+      nid: s.nid ?? "",
+      address: s.address ?? "",
+      position: s.position ?? "cashier",
+      salary: Number(s.salary ?? 0),
+      loginPhone: firstSu?.email ?? s.phone ?? "",
+      password: "",
+      createLogin: !!firstSu,
+    });
+    // Load current permissions from existing shop_user
+    const perms: Record<string, boolean> = {};
+    if (firstSu?.permissions) {
+      Object.entries(firstSu.permissions).forEach(([k, v]) => { if (v) perms[k] = true; });
+    }
+    setPermissions(perms);
     setOpen(true);
   };
 
   const save = async () => {
     if (!form.name.trim()) return toast({ title: "নাম প্রয়োজন", variant: "destructive" });
 
-    if (form.createLogin) {
+    if (form.createLogin && !editingId) {
       const digits = form.loginPhone.replace(/\D+/g, "");
       if (!digits || digits.length < 6) {
         return toast({ title: "Login-এর জন্য সঠিক মোবাইল নম্বর দিন", variant: "destructive" });
@@ -157,40 +197,92 @@ export default function Staff() {
         return toast({ title: "Password কমপক্ষে ৬ অক্ষর", variant: "destructive" });
       }
     }
+    if (editingId && form.password && form.password.length < 6) {
+      return toast({ title: "Password কমপক্ষে ৬ অক্ষর", variant: "destructive" });
+    }
 
     setSaving(true);
     try {
-      // 1) Insert staff record
-      const { data: staffRow, error: sErr } = await supabase.from("staff").insert({
-        name: form.name,
-        phone: form.phone || form.loginPhone,
-        nid: form.nid, address: form.address,
-        position: form.position, salary: form.salary,
-        shop_id: null,
-      }).select().single();
-      if (sErr) throw sErr;
+      let staffId = editingId;
 
-      // 2) Optionally create login + permissions via edge function
+      if (editingId) {
+        const { error: uErr } = await supabase.from("staff").update({
+          name: form.name,
+          phone: form.phone || form.loginPhone,
+          nid: form.nid, address: form.address,
+          position: form.position, salary: form.salary,
+        }).eq("id", editingId);
+        if (uErr) throw uErr;
+      } else {
+        const { data: staffRow, error: sErr } = await supabase.from("staff").insert({
+          name: form.name,
+          phone: form.phone || form.loginPhone,
+          nid: form.nid, address: form.address,
+          position: form.position, salary: form.salary,
+          shop_id: null,
+        }).select().single();
+        if (sErr) throw sErr;
+        staffId = staffRow.id;
+      }
+
+      // Login + permissions handling
       if (form.createLogin) {
         const permsObj: Record<string, boolean> = {};
         ACCESS_POINTS.forEach(a => { if (permissions[a.key]) permsObj[a.key] = true; });
 
-        const { data, error: fnErr } = await supabase.functions.invoke("create-shop-user", {
-          body: {
-            phone: form.loginPhone,
-            password: form.password,
-            full_name: form.name,
-            staff_id: staffRow.id,
+        // Get all shops to attach this staff to (so they can access from any shop)
+        const { data: shopsRows } = await supabase.from("shops").select("id");
+        const shopList = (shopsRows ?? []) as { id: string }[];
+
+        // Need login phone for new + password change cases
+        const needsAuthCall = !editingId || !!form.password;
+
+        let userId: string | null = null;
+
+        if (needsAuthCall) {
+          const { data, error: fnErr } = await supabase.functions.invoke("create-shop-user", {
+            body: {
+              phone: form.loginPhone || form.phone,
+              password: form.password || undefined,
+              full_name: form.name,
+              staff_id: staffId,
+              permissions: permsObj,
+              // Pass first shop so edge function still works (it's optional now)
+              shop_id: shopList[0]?.id ?? null,
+            },
+          });
+          if (fnErr || (data as any)?.error) {
+            throw new Error((data as any)?.error || fnErr?.message || "Login তৈরি ব্যর্থ");
+          }
+          userId = (data as any)?.user_id ?? null;
+        } else {
+          // Editing without password change: pull user_id from existing shop_users row
+          const existing = shopUsersByStaff[staffId!]?.[0];
+          userId = existing?.user_id ?? null;
+        }
+
+        // Attach to all shops with these permissions
+        if (userId && shopList.length) {
+          const rows = shopList.map(s => ({
+            user_id: userId!,
+            shop_id: s.id,
+            staff_id: staffId,
+            display_name: form.name,
+            email: form.loginPhone || form.phone,
             permissions: permsObj,
-          },
-        });
-        if (fnErr || (data as any)?.error) {
-          throw new Error((data as any)?.error || fnErr?.message || "Login তৈরি ব্যর্থ");
+            is_active: true,
+          }));
+          const { error: suErr } = await supabase.from("shop_users").upsert(rows, { onConflict: "user_id,shop_id" });
+          if (suErr) throw suErr;
         }
       }
 
-      toast({ title: "স্টাফ সংরক্ষিত", description: form.createLogin ? "মোবাইল নম্বর দিয়ে login করতে পারবে" : "Staff record তৈরি হয়েছে" });
+      toast({
+        title: editingId ? "স্টাফ আপডেট হয়েছে" : "স্টাফ সংরক্ষিত",
+        description: form.createLogin ? "মোবাইল নম্বর দিয়ে login করতে পারবে" : "Staff record সংরক্ষিত",
+      });
       setOpen(false);
+      setEditingId(null);
       setForm({ ...emptyForm });
       load();
     } catch (e: any) {
@@ -247,6 +339,9 @@ export default function Staff() {
         {filteredItems.map(s => {
           const posLabel = POSITIONS.find(p => p.value === s.position)?.label ?? s.position;
           const initial = (s.name ?? "?").trim().charAt(0).toUpperCase();
+          const sus = shopUsersByStaff[s.id] ?? [];
+          const hasLogin = sus.length > 0;
+          const permCount = hasLogin ? Object.values(sus[0].permissions ?? {}).filter(Boolean).length : 0;
           return (
             <div
               key={s.id}
@@ -263,7 +358,12 @@ export default function Staff() {
                     <span className="inline-block mt-0.5 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-primary/10 text-primary">{posLabel}</span>
                   </div>
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex gap-1">
+                  {isAdmin && (
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={(e) => openEdit(e, s)} title="Edit">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Button size="icon" variant="ghost" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); nav(`/staff/${s.id}/history`); }} title="History">
                     <History className="h-4 w-4" />
                   </Button>
@@ -271,6 +371,25 @@ export default function Staff() {
                 </div>
               </div>
               {s.phone && <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Phone className="h-3 w-3" />{s.phone}</p>}
+
+              {/* Login + access status */}
+              <div className="mt-3 flex items-center gap-2 flex-wrap">
+                {hasLogin ? (
+                  <>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
+                      <CheckCircle2 className="h-3 w-3" /> Login সক্রিয়
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                      <ShieldCheck className="h-3 w-3" /> {permCount} access
+                    </span>
+                  </>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                    Login নাই
+                  </span>
+                )}
+              </div>
+
               <div className="mt-3 pt-3 border-t border-[hsl(var(--surface-container-high))] flex justify-between text-sm">
                 <span className="text-muted-foreground">{t("salary")}</span>
                 <span className="font-bold">{fmt(Number(s.salary))}</span>
@@ -280,8 +399,8 @@ export default function Staff() {
         })}
       </div>
 
-      {/* Side-slide Sheet for adding staff */}
-      <Sheet open={open} onOpenChange={setOpen}>
+      {/* Side-slide Sheet for adding/editing staff */}
+      <Sheet open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditingId(null); }}>
         <SheetContent
           side="right"
           className="w-full sm:max-w-xl md:max-w-2xl overflow-y-auto bg-[hsl(var(--surface-container-lowest))] p-0"
@@ -292,10 +411,10 @@ export default function Staff() {
                 <span className="h-9 w-9 rounded-xl bg-gradient-to-br from-pink-400 to-fuchsia-600 text-white flex items-center justify-center shadow shadow-pink-500/30">
                   <UserCog className="h-5 w-5" />
                 </span>
-                নতুন কর্মী যোগ করুন
+                {editingId ? "কর্মী সম্পাদনা" : "নতুন কর্মী যোগ করুন"}
               </SheetTitle>
               <SheetDescription className="font-bn">
-                নাম, পদ, বেতন ও Custom Access সহ একসাথে সেট করুন
+                নাম, পদ, বেতন, Password ও Custom Access একসাথে পরিচালনা করুন
               </SheetDescription>
             </SheetHeader>
           </div>
@@ -333,7 +452,6 @@ export default function Staff() {
                     onChange={e => setForm(f => ({
                       ...f,
                       phone: e.target.value,
-                      // auto-sync to login phone if user hasn't typed a different login phone yet
                       loginPhone: (!f.loginPhone || f.loginPhone === f.phone) ? e.target.value : f.loginPhone,
                     }))}
                     className="mt-1"
@@ -355,23 +473,39 @@ export default function Staff() {
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <KeyRound className="h-4 w-4 text-[hsl(var(--primary))]" />
-                  <h4 className="text-sm font-extrabold font-bn">App Login তৈরি করুন</h4>
+                  <h4 className="text-sm font-extrabold font-bn">App Login</h4>
                 </div>
-                <Switch checked={form.createLogin} onCheckedChange={(v) => setForm({ ...form, createLogin: v })} />
+                {!editingId && (
+                  <Switch checked={form.createLogin} onCheckedChange={(v) => setForm({ ...form, createLogin: v })} />
+                )}
               </div>
               {form.createLogin && (
                 <>
                   <p className="text-[11px] text-muted-foreground font-bn">
-                    এই কর্মী নিচের <b>মোবাইল নম্বর</b> ও <b>Password</b> দিয়ে App-এ login করতে পারবে। শুধুমাত্র নিচে দেওয়া access গুলো দেখতে পাবে।
+                    এই কর্মী নিচের <b>মোবাইল নম্বর</b> ও <b>Password</b> দিয়ে App-এ login করতে পারবে। সব shop-এ access পাবে নিচের permission অনুযায়ী।
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                       <Label className="text-xs font-bn">মোবাইল নম্বর (Login)</Label>
-                      <Input type="tel" value={form.loginPhone} onChange={e => setForm({ ...form, loginPhone: e.target.value })} placeholder="01XXXXXXXXX" className="mt-1" />
+                      <Input
+                        type="tel"
+                        value={form.loginPhone}
+                        onChange={e => setForm({ ...form, loginPhone: e.target.value })}
+                        placeholder="01XXXXXXXXX"
+                        className="mt-1"
+                        disabled={!!editingId}
+                      />
+                      {editingId && <p className="text-[10px] text-muted-foreground mt-1 font-bn">Login নম্বর পরিবর্তনযোগ্য নয়</p>}
                     </div>
                     <div>
-                      <Label className="text-xs">Password</Label>
-                      <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="কমপক্ষে ৬ অক্ষর" className="mt-1" />
+                      <Label className="text-xs">{editingId ? "নতুন Password (পরিবর্তন না করলে খালি রাখুন)" : "Password"}</Label>
+                      <Input
+                        type="password"
+                        value={form.password}
+                        onChange={e => setForm({ ...form, password: e.target.value })}
+                        placeholder={editingId ? "নতুন password (optional)" : "কমপক্ষে ৬ অক্ষর"}
+                        className="mt-1"
+                      />
                     </div>
                   </div>
                 </>
@@ -396,7 +530,7 @@ export default function Staff() {
                   </div>
                 </div>
                 <p className="text-[11px] text-muted-foreground font-bn">
-                  প্রতিটি section আলাদা করে toggle করুন। যেমন: Cashier-এর জন্য শুধু "ড্যাশবোর্ড" রাখুন।
+                  প্রতিটি section আলাদা করে toggle করুন। পরিবর্তন সব shop-এ apply হবে।
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -429,7 +563,7 @@ export default function Staff() {
             <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>{t("cancel")}</Button>
             <Button onClick={save} disabled={saving} className="gradient-primary text-primary-foreground">
               {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
-              সংরক্ষণ করুন
+              {editingId ? "আপডেট করুন" : "সংরক্ষণ করুন"}
             </Button>
           </div>
         </SheetContent>
