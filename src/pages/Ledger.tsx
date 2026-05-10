@@ -284,8 +284,22 @@ export default function Ledger() {
       notes: null,
       created_at: x.date,
     }));
-    return [...entries, ...sales, ...purchases, ...expenseRows];
-  }, [entries, salesAgg, purchasesAgg, expensesAgg]);
+    const instRows: Entry[] = instPayAgg
+      .filter(p => p.amount > 0)
+      .map((p, i) => ({
+        id: `inst-${i}-${p.date}`,
+        entry_date: p.date,
+        entry_type: "deposit",
+        amount: p.amount,
+        category: "Installment / কিস্তি আদায়",
+        payment_method: "cash",
+        reference_no: null,
+        party_name: null,
+        notes: null,
+        created_at: p.date,
+      }));
+    return [...entries, ...sales, ...purchases, ...expenseRows, ...instRows];
+  }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg]);
 
   // Apply top range to compute summary cards
   const topRangeFiltered = useMemo(() => synthEntries.filter(e => {
