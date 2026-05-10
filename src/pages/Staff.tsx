@@ -193,7 +193,7 @@ export default function Staff() {
             phone: form.loginPhone,
             password: form.password,
             full_name: form.name,
-            shop_id: form.shopId,
+            shop_id: shopId,
             staff_id: staffRow.id,
             permissions: permsObj,
           },
