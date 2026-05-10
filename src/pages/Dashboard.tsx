@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { todayBD, toBDDate } from "@/lib/datetime";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,10 +6,14 @@ import { useT } from "@/i18n/LanguageContext";
 import {
   Calendar, Wallet, ShoppingBag, AlertTriangle, PlusCircle, ScanLine,
   UserPlus, TrendingUp, Headset, Package, Users, Boxes, CircleDollarSign,
-  ArrowUpRight, ArrowDownRight, Archive, PackageCheck,
+  ArrowUpRight, ArrowDownRight, Archive, PackageCheck, CalendarRange,
 } from "lucide-react";
 import { AddProductSheet } from "@/components/AddProductSheet";
 import { AddCustomerSheet } from "@/components/AddCustomerSheet";
+
+const toMonthInput = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+const toDateInput  = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const toBnNum = (n: number | string) => String(n).replace(/[0-9]/g, (d) => "০১২৩৪৫৬৭৮৯"[+d]);
 
 export default function Dashboard() {
   const { t, fmt, lang } = useT();
@@ -29,30 +33,54 @@ export default function Dashboard() {
   const [productSheet, setProductSheet] = useState(false);
   const [customerSheet, setCustomerSheet] = useState(false);
 
-  useEffect(() => { void loadAll(); }, []);
+  // Period filters
+  const [selectedMonth, setSelectedMonth] = useState<Date>(() => {
+    const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    const d = new Date(); d.setHours(0, 0, 0, 0); return d;
+  });
+  const [weeklyMonth, setWeeklyMonth] = useState<Date>(() => {
+    const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+
+  const isCurrentMonth = useMemo(() => {
+    const n = new Date();
+    return selectedMonth.getFullYear() === n.getFullYear() && selectedMonth.getMonth() === n.getMonth();
+  }, [selectedMonth]);
+  const isToday = useMemo(() => {
+    const n = new Date(); n.setHours(0, 0, 0, 0);
+    return selectedDate.getTime() === n.getTime();
+  }, [selectedDate]);
+
+  useEffect(() => { void loadAll(); }, [selectedMonth, selectedDate, weeklyMonth]);
 
   const loadAll = async () => {
-    const now = new Date();
-    const today = new Date(now); today.setHours(0,0,0,0);
-    const yest = new Date(today); yest.setDate(yest.getDate() - 1);
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const weekStart = new Date(today); weekStart.setDate(weekStart.getDate() - 6);
+    const dayStart = new Date(selectedDate); dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
+    const prevDay = new Date(dayStart); prevDay.setDate(prevDay.getDate() - 1);
+
+    const monthStart = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+    const monthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1);
+
+    const wMonthStart = new Date(weeklyMonth.getFullYear(), weeklyMonth.getMonth(), 1);
+    const wMonthEnd = new Date(weeklyMonth.getFullYear(), weeklyMonth.getMonth() + 1, 1);
 
     const [salesToday, salesYest, salesMonth, salesWeek, itemsMonth, items30, lowStockData, recentSales, productsAll, customersCount, duesData, soldTodayData, soldYestData, purchasedTodayData, purchasesAllData] = await Promise.all([
-      supabase.from("sales").select("total,due").gte("created_at", today.toISOString()),
-      supabase.from("sales").select("total").gte("created_at", yest.toISOString()).lt("created_at", today.toISOString()),
-      supabase.from("sales").select("total").gte("created_at", monthStart.toISOString()),
-      supabase.from("sales").select("total,created_at").gte("created_at", weekStart.toISOString()),
-      supabase.from("sale_items").select("qty,unit_price,products(cost),sales!inner(created_at)").gte("sales.created_at", monthStart.toISOString()),
-      supabase.from("sale_items").select("product_name,qty,subtotal,sales!inner(created_at)").gte("sales.created_at", weekStart.toISOString()),
+      supabase.from("sales").select("total,due").gte("created_at", dayStart.toISOString()).lt("created_at", dayEnd.toISOString()),
+      supabase.from("sales").select("total").gte("created_at", prevDay.toISOString()).lt("created_at", dayStart.toISOString()),
+      supabase.from("sales").select("total").gte("created_at", monthStart.toISOString()).lt("created_at", monthEnd.toISOString()),
+      supabase.from("sales").select("total,created_at").gte("created_at", wMonthStart.toISOString()).lt("created_at", wMonthEnd.toISOString()),
+      supabase.from("sale_items").select("qty,unit_price,products(cost),sales!inner(created_at)").gte("sales.created_at", monthStart.toISOString()).lt("sales.created_at", monthEnd.toISOString()),
+      supabase.from("sale_items").select("product_name,qty,subtotal,sales!inner(created_at)").gte("sales.created_at", monthStart.toISOString()).lt("sales.created_at", monthEnd.toISOString()),
       supabase.from("products").select("id", { count: "exact", head: true }).lte("stock", 5),
       supabase.from("sales").select("id,invoice_no,total,due,created_at,customers(name)").order("created_at", { ascending: false }).limit(4),
       supabase.from("products").select("stock,cost,price", { count: "exact" }).eq("is_active", true),
       supabase.from("customers").select("id", { count: "exact", head: true }),
       supabase.from("sales").select("due").gt("due", 0),
-      supabase.from("sale_items").select("qty,sales!inner(created_at)").gte("sales.created_at", today.toISOString()),
-      supabase.from("sale_items").select("qty,sales!inner(created_at)").gte("sales.created_at", yest.toISOString()).lt("sales.created_at", today.toISOString()),
-      supabase.from("purchase_items").select("qty,purchases!inner(created_at)").gte("purchases.created_at", today.toISOString()),
+      supabase.from("sale_items").select("qty,sales!inner(created_at)").gte("sales.created_at", dayStart.toISOString()).lt("sales.created_at", dayEnd.toISOString()),
+      supabase.from("sale_items").select("qty,sales!inner(created_at)").gte("sales.created_at", prevDay.toISOString()).lt("sales.created_at", dayStart.toISOString()),
+      supabase.from("purchase_items").select("qty,purchases!inner(created_at)").gte("purchases.created_at", dayStart.toISOString()).lt("purchases.created_at", dayEnd.toISOString()),
       supabase.from("purchases").select("total"),
     ]);
 
@@ -63,19 +91,21 @@ export default function Dashboard() {
 
     setSalesTrend(yestTotal === 0 ? 100 : Math.round(((todayTotal - yestTotal) / yestTotal) * 100));
 
-    const days: Record<string, number> = {};
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(today); d.setDate(d.getDate() - i);
-      days[toBDDate(d)] = 0;
-    }
+    // Weekly chart: group sales of the selected weekly-month into weeks (W1..W5)
+    const weeksInMonth = (() => {
+      const last = new Date(wMonthEnd); last.setDate(last.getDate() - 1);
+      return Math.ceil((last.getDate() + ((wMonthStart.getDay() + 6) % 7)) / 7);
+    })();
+    const weekBuckets: number[] = Array.from({ length: weeksInMonth }, () => 0);
     (salesWeek.data ?? []).forEach(s => {
-      const k = toBDDate(s.created_at);
-      if (k in days) days[k] += Number(s.total);
+      const d = new Date(s.created_at as any);
+      const dayOfMonth = d.getDate();
+      const offset = (wMonthStart.getDay() + 6) % 7; // Mon-anchored offset
+      const wIdx = Math.min(weeksInMonth - 1, Math.floor((dayOfMonth - 1 + offset) / 7));
+      weekBuckets[wIdx] += Number(s.total);
     });
-    const dayNames = lang === "bn"
-      ? ["রবি","সোম","মঙ্গল","বুধ","বৃহঃ","শুক্র","শনি"]
-      : ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-    setWeekly(Object.entries(days).map(([date, total]) => ({ day: dayNames[new Date(date).getDay()], total })));
+    const wkLabel = lang === "bn" ? "সপ্তা" : "W";
+    setWeekly(weekBuckets.map((total, i) => ({ day: `${wkLabel}${lang === "bn" ? toBnNum(i + 1) : i + 1}`, total })));
 
     const map = new Map<string, { qty: number; revenue: number }>();
     (items30.data ?? []).forEach((i: any) => {
@@ -161,22 +191,78 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Period filter — month + date */}
+      <div className="bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--border))] rounded-2xl p-3 md:p-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="h-9 w-9 rounded-xl bg-[hsl(var(--primary)/0.1)] flex items-center justify-center">
+            <CalendarRange className="h-4 w-4 text-[hsl(var(--primary))]" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-foreground font-bn">সময় নির্বাচন</p>
+            <p className="text-[10px] text-muted-foreground font-bn">মাস ও তারিখ অনুযায়ী রিপোর্ট</p>
+          </div>
+        </div>
+        <div className="flex flex-1 flex-col sm:flex-row gap-2 md:gap-3 md:items-center">
+          <label className="flex flex-col gap-1 flex-1 min-w-0">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground font-bn">মাস</span>
+            <input
+              type="month"
+              value={toMonthInput(selectedMonth)}
+              onChange={(e) => {
+                const [y, m] = e.target.value.split("-").map(Number);
+                if (y && m) setSelectedMonth(new Date(y, m - 1, 1));
+              }}
+              className="bg-[hsl(var(--surface-container-low))] border border-[hsl(var(--border))] rounded-lg text-xs font-semibold py-2 px-3 outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.3)]"
+            />
+          </label>
+          <label className="flex flex-col gap-1 flex-1 min-w-0">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground font-bn">তারিখ (দৈনিক বিক্রয়)</span>
+            <input
+              type="date"
+              value={toDateInput(selectedDate)}
+              onChange={(e) => {
+                if (!e.target.value) return;
+                const [y, m, d] = e.target.value.split("-").map(Number);
+                const nd = new Date(y, m - 1, d); nd.setHours(0, 0, 0, 0);
+                setSelectedDate(nd);
+              }}
+              className="bg-[hsl(var(--surface-container-low))] border border-[hsl(var(--border))] rounded-lg text-xs font-semibold py-2 px-3 outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.3)]"
+            />
+          </label>
+          <button
+            onClick={() => {
+              const n = new Date();
+              setSelectedMonth(new Date(n.getFullYear(), n.getMonth(), 1));
+              const d = new Date(n); d.setHours(0, 0, 0, 0);
+              setSelectedDate(d);
+            }}
+            className="text-[11px] font-bold px-3 py-2 rounded-lg bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.2)] transition-colors self-end font-bn whitespace-nowrap"
+          >
+            আজ / এই মাস
+          </button>
+        </div>
+      </div>
+
       {/* Stats Bento Grid — colorful */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
         <ColorStatCard
           to="/sales" theme="emerald" icon={<Calendar />}
           chip={`${salesTrend >= 0 ? "+" : ""}${salesTrend}%`}
-          label={t("todaySales")} value={fmt(stats.todaySales)} sub={t("increaseFromYesterday")}
+          label={isToday ? t("todaySales") : "নির্বাচিত দিনের বিক্রয়"}
+          value={fmt(stats.todaySales)}
+          sub={isToday ? t("increaseFromYesterday") : selectedDate.toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB")}
         />
         <ColorStatCard
           to="/reports" theme="violet" icon={<Wallet />}
-          chip={t("monthTarget")}
-          label="মোট বিক্রয়" value={fmt(stats.monthSales)} sub="এই মাসের মোট বিক্রয়"
+          chip={isCurrentMonth ? t("monthTarget") : "নির্বাচিত মাস"}
+          label="মোট বিক্রয়" value={fmt(stats.monthSales)}
+          sub={`${selectedMonth.toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { month: "long", year: "numeric" })} এর মোট বিক্রয়`}
         />
         <ColorStatCard
           to="/sales" theme="sky" icon={<ShoppingBag />}
-          chip={`${stats.todayCount} আজ`}
-          label="মাসিক বিক্রয় সংখ্যা" value={`${stats.monthSalesCount}`} sub={`আজকের বিক্রয়: ${stats.deliveredToday}`}
+          chip={`${stats.todayCount} ${isToday ? "আজ" : "দিনে"}`}
+          label="মাসিক বিক্রয় সংখ্যা" value={`${stats.monthSalesCount}`}
+          sub={`${isToday ? "আজকের" : "নির্বাচিত দিনের"} বিক্রয়: ${stats.deliveredToday}`}
         />
         <ColorStatCard
           to="/products" theme="amber" icon={<AlertTriangle />}
@@ -222,7 +308,7 @@ export default function Dashboard() {
         <MiniStat
           to="/reports" theme="violet" icon={<TrendingUp className="h-4 w-4" />}
           label="মাসিক লাভ" value={fmt(stats.monthProfit)}
-          hint="এ মাসে: বিক্রয় − ক্রয়মূল্য"
+          hint={`${selectedMonth.toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { month: "long" })}: বিক্রয় − ক্রয়মূল্য`}
         />
         <MiniStat
           to="/ledger" theme="amber" icon={<AlertTriangle className="h-4 w-4" />}
@@ -261,14 +347,21 @@ export default function Dashboard() {
                   <TrendingUp className="h-5 w-5 text-[hsl(var(--primary))]" />
                 </div>
                 <div>
-                  <h3 className="text-base md:text-xl font-bold text-foreground">{t("weeklySalesAnalysis")}</h3>
-                  <p className="text-xs md:text-sm text-muted-foreground">{t("last7DaysReport")}</p>
+                  <h3 className="text-base md:text-xl font-bold text-foreground font-bn">সাপ্তাহিক বিক্রয় বিশ্লেষণ</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground font-bn">
+                    {weeklyMonth.toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { month: "long", year: "numeric" })} — সপ্তাহভিত্তিক
+                  </p>
                 </div>
               </div>
-              <select className="bg-[hsl(var(--surface-container-low))] border border-[hsl(var(--border))] rounded-lg text-[11px] md:text-xs font-semibold py-1.5 md:py-2 px-3 md:px-4 outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.3)] cursor-pointer">
-                <option>{t("thisWeek")}</option>
-                <option>{t("lastWeek")}</option>
-              </select>
+              <input
+                type="month"
+                value={toMonthInput(weeklyMonth)}
+                onChange={(e) => {
+                  const [y, m] = e.target.value.split("-").map(Number);
+                  if (y && m) setWeeklyMonth(new Date(y, m - 1, 1));
+                }}
+                className="bg-[hsl(var(--surface-container-low))] border border-[hsl(var(--border))] rounded-lg text-[11px] md:text-xs font-semibold py-1.5 md:py-2 px-3 md:px-4 outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.3)] cursor-pointer"
+              />
             </div>
 
             <div className="relative h-44 md:h-64 flex items-end justify-between gap-2 md:gap-4">
