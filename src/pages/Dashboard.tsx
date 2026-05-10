@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { AddProductSheet } from "@/components/AddProductSheet";
 import { AddCustomerSheet } from "@/components/AddCustomerSheet";
+import StaffPerformance from "@/components/dashboard/StaffPerformance";
+import CashFlowChart from "@/components/dashboard/CashFlowChart";
 
 const toMonthInput = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 const toDateInput  = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
