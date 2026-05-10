@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,7 +12,11 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Plus, Trash2, UserCog, ShieldCheck, KeyRound, Loader2,
+  Plus, Trash2, UserCog, ShieldCheck, KeyRound, Loader2, History, Search, Phone, Store as StoreIcon,
+  LayoutDashboard, ShoppingCart, Receipt, RotateCcw, ShoppingBag, Package, Layers,
+  Warehouse, ClipboardList, BookOpen, Wallet, Users, Truck, Contact, BarChart3,
+  CalendarCheck, Store,
+} from "lucide-react";
   LayoutDashboard, ShoppingCart, Receipt, RotateCcw, ShoppingBag, Package, Layers,
   Warehouse, ClipboardList, BookOpen, Wallet, Users, Truck, Contact, BarChart3,
   CalendarCheck, Store,
