@@ -191,6 +191,58 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Period filter — month + date */}
+      <div className="bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--border))] rounded-2xl p-3 md:p-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="h-9 w-9 rounded-xl bg-[hsl(var(--primary)/0.1)] flex items-center justify-center">
+            <CalendarRange className="h-4 w-4 text-[hsl(var(--primary))]" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-foreground font-bn">সময় নির্বাচন</p>
+            <p className="text-[10px] text-muted-foreground font-bn">মাস ও তারিখ অনুযায়ী রিপোর্ট</p>
+          </div>
+        </div>
+        <div className="flex flex-1 flex-col sm:flex-row gap-2 md:gap-3 md:items-center">
+          <label className="flex flex-col gap-1 flex-1 min-w-0">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground font-bn">মাস</span>
+            <input
+              type="month"
+              value={toMonthInput(selectedMonth)}
+              onChange={(e) => {
+                const [y, m] = e.target.value.split("-").map(Number);
+                if (y && m) setSelectedMonth(new Date(y, m - 1, 1));
+              }}
+              className="bg-[hsl(var(--surface-container-low))] border border-[hsl(var(--border))] rounded-lg text-xs font-semibold py-2 px-3 outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.3)]"
+            />
+          </label>
+          <label className="flex flex-col gap-1 flex-1 min-w-0">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground font-bn">তারিখ (দৈনিক বিক্রয়)</span>
+            <input
+              type="date"
+              value={toDateInput(selectedDate)}
+              onChange={(e) => {
+                if (!e.target.value) return;
+                const [y, m, d] = e.target.value.split("-").map(Number);
+                const nd = new Date(y, m - 1, d); nd.setHours(0, 0, 0, 0);
+                setSelectedDate(nd);
+              }}
+              className="bg-[hsl(var(--surface-container-low))] border border-[hsl(var(--border))] rounded-lg text-xs font-semibold py-2 px-3 outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.3)]"
+            />
+          </label>
+          <button
+            onClick={() => {
+              const n = new Date();
+              setSelectedMonth(new Date(n.getFullYear(), n.getMonth(), 1));
+              const d = new Date(n); d.setHours(0, 0, 0, 0);
+              setSelectedDate(d);
+            }}
+            className="text-[11px] font-bold px-3 py-2 rounded-lg bg-[hsl(var(--primary)/0.1)] text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.2)] transition-colors self-end font-bn whitespace-nowrap"
+          >
+            আজ / এই মাস
+          </button>
+        </div>
+      </div>
+
       {/* Stats Bento Grid — colorful */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
         <ColorStatCard
