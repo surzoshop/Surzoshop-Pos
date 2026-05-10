@@ -195,14 +195,19 @@ export default function Installments() {
   };
 
   const pay = async () => {
-    if (amount <= 0) return;
+    if (!paying) return;
+    // For staff: amount is fixed (remaining + late fee). Only admin can override.
+    const remaining = Math.max(0, Number(paying.amount) - Number(paying.paid_amount));
+    const fee = computeLateFee(paying, managing?.late_fee_pct ?? 0);
+    const fixedPayable = remaining + fee;
+    const finalAmount = isAdmin ? amount : fixedPayable;
+    if (finalAmount <= 0) return;
     const { error } = await supabase.from("installment_payments").insert({
-      installment_id: paying.id, amount, received_by: user!.id,
+      installment_id: paying.id, amount: finalAmount, received_by: user!.id,
     });
     if (error) return toast({ title: error.message, variant: "destructive" });
     setPaying(null); setAmount(0); await load();
     toast({ title: t("paid") });
-    // refresh managing plan
     if (managing) {
       const fresh = plans.find(p => p.sale_id === managing.sale_id);
       if (fresh) setManaging(fresh);
