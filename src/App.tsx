@@ -103,5 +103,5 @@ export default App;
 function DashboardSwitcher() {
   const { role } = useAuth();
   // Admin / super_admin → full dashboard. Everyone else (staff) → restricted view.
-  return role === "admin" ? <Dashboard /> : <StaffDashboard />;
+  return (role === "admin" || role === "super_admin") ? <Dashboard /> : <StaffDashboard />;
 }
