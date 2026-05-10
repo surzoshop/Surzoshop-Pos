@@ -251,9 +251,9 @@ export default function Staff() {
           const posLabel = POSITIONS.find(p => p.value === s.position)?.label ?? s.position;
           const initial = (s.name ?? "?").trim().charAt(0).toUpperCase();
           return (
-            <SurfaceCard
+            <div
               key={s.id}
-              className="p-5 transition-all hover:-translate-y-1 hover:shadow-lg cursor-pointer group"
+              className="bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-5 transition-all hover:-translate-y-1 hover:shadow-lg cursor-pointer group"
               onClick={() => nav(`/staff/${s.id}/history`)}
             >
               <div className="flex items-start justify-between mb-4">
@@ -278,7 +278,7 @@ export default function Staff() {
                 <span className="text-muted-foreground">{t("salary")}</span>
                 <span className="font-bold">{fmt(Number(s.salary))}</span>
               </div>
-            </SurfaceCard>
+            </div>
           );
         })}
       </div>
