@@ -146,7 +146,7 @@ export default function Ledger() {
       .order("entry_date", { ascending: false }).order("created_at", { ascending: false });
     if (currentShop) q = q.eq("shop_id", currentShop.id);
 
-    let sq = supabase.from("sales").select("created_at,total,paid,customers(name)").order("created_at", { ascending: false });
+    let sq = supabase.from("sales").select("id,created_at,total,paid,customers(name)").order("created_at", { ascending: false });
     if (currentShop) sq = sq.eq("shop_id", currentShop.id);
 
     let pq = supabase.from("purchases").select("created_at,total,paid,suppliers(name)").order("created_at", { ascending: false });
@@ -155,7 +155,9 @@ export default function Ledger() {
     let eq_ = supabase.from("expenses").select("expense_date,amount,title,payment_method").order("expense_date", { ascending: false });
     if (currentShop) eq_ = eq_.eq("shop_id", currentShop.id);
 
-    let ipq = supabase.from("installment_payments").select("paid_at,amount").order("paid_at", { ascending: false });
+    let ipq = supabase.from("installment_payments")
+      .select("paid_at,amount,installments!inner(sale_id)")
+      .order("paid_at", { ascending: false });
     if (currentShop) ipq = ipq.eq("shop_id", currentShop.id);
 
     // Profit calculation: sale_items joined with sales (date) and products (cost)
@@ -169,10 +171,18 @@ export default function Ledger() {
     const [{ data, error }, { data: sd }, { data: pd }, { data: ed }, { data: ipd }, { data: sid }, { data: pid }] = await Promise.all([q, sq, pq, eq_, ipq, siq, piq]);
     if (error) toast.error(error.message);
     setEntries((data ?? []) as any);
+    // Map: sale_id -> total installment_payments amount (these are added to sales.paid by trigger)
+    const instBySale = new Map<string, number>();
+    (ipd ?? []).forEach((p: any) => {
+      const sid_ = p.installments?.sale_id;
+      if (!sid_) return;
+      instBySale.set(sid_, (instBySale.get(sid_) ?? 0) + Number(p.amount || 0));
+    });
     setSalesAgg((sd ?? []).map((s: any) => ({
       date: String(s.created_at).slice(0, 10),
       total: Number(s.total || 0),
-      paid: Number(s.paid || 0),
+      // Initial cash received at sale time only — exclude installment payments (counted separately by paid_at)
+      paid: Math.max(0, Number(s.paid || 0) - (instBySale.get(s.id) ?? 0)),
       party: s.customers?.name ?? null,
     })));
     setPurchasesAgg((pd ?? []).map((p: any) => ({
@@ -274,8 +284,22 @@ export default function Ledger() {
       notes: null,
       created_at: x.date,
     }));
-    return [...entries, ...sales, ...purchases, ...expenseRows];
-  }, [entries, salesAgg, purchasesAgg, expensesAgg]);
+    const instRows: Entry[] = instPayAgg
+      .filter(p => p.amount > 0)
+      .map((p, i) => ({
+        id: `inst-${i}-${p.date}`,
+        entry_date: p.date,
+        entry_type: "deposit",
+        amount: p.amount,
+        category: "Installment / কিস্তি আদায়",
+        payment_method: "cash",
+        reference_no: null,
+        party_name: null,
+        notes: null,
+        created_at: p.date,
+      }));
+    return [...entries, ...sales, ...purchases, ...expenseRows, ...instRows];
+  }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg]);
 
   // Apply top range to compute summary cards
   const topRangeFiltered = useMemo(() => synthEntries.filter(e => {
