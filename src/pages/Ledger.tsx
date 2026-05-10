@@ -171,10 +171,18 @@ export default function Ledger() {
     const [{ data, error }, { data: sd }, { data: pd }, { data: ed }, { data: ipd }, { data: sid }, { data: pid }] = await Promise.all([q, sq, pq, eq_, ipq, siq, piq]);
     if (error) toast.error(error.message);
     setEntries((data ?? []) as any);
+    // Map: sale_id -> total installment_payments amount (these are added to sales.paid by trigger)
+    const instBySale = new Map<string, number>();
+    (ipd ?? []).forEach((p: any) => {
+      const sid_ = p.installments?.sale_id;
+      if (!sid_) return;
+      instBySale.set(sid_, (instBySale.get(sid_) ?? 0) + Number(p.amount || 0));
+    });
     setSalesAgg((sd ?? []).map((s: any) => ({
       date: String(s.created_at).slice(0, 10),
       total: Number(s.total || 0),
-      paid: Number(s.paid || 0),
+      // Initial cash received at sale time only — exclude installment payments (counted separately by paid_at)
+      paid: Math.max(0, Number(s.paid || 0) - (instBySale.get(s.id) ?? 0)),
       party: s.customers?.name ?? null,
     })));
     setPurchasesAgg((pd ?? []).map((p: any) => ({
