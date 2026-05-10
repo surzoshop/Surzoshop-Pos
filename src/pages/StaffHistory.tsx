@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   ArrowLeft, ShoppingCart, Receipt, ClipboardList, LogIn, Users, Package,
-  CalendarCheck, Activity, Phone, MapPin, Briefcase,
+  CalendarCheck, Activity, Phone, MapPin, Briefcase, Pencil, Clock,
 } from "lucide-react";
 
 const ACTION_META: Record<string, { label: string; icon: any; tone: string }> = {
@@ -65,8 +65,9 @@ export default function StaffHistory() {
     const total = logs.length;
     const sales = logs.filter(l => l.action === "sale.create").length;
     const expenses = logs.filter(l => l.action === "expense.create").length;
+    const logins = logs.filter(l => l.action.startsWith("auth.")).length;
     const lastAt = logs[0]?.created_at;
-    return { total, sales, expenses, lastAt };
+    return { total, sales, expenses, logins, lastAt };
   }, [logs]);
 
   if (!staff) {
