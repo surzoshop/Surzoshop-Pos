@@ -98,9 +98,11 @@ const ROW_FILTERS: { key: RowFilter; label: string }[] = [
 ];
 
 export default function Ledger() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const isAdmin = role === "admin" || role === "super_admin";
   const { currentShop } = useShop();
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [stockSellValue, setStockSellValue] = useState(0);
   const [salesAgg, setSalesAgg] = useState<{ date: string; total: number; paid: number; party: string | null }[]>([]);
   const [purchasesAgg, setPurchasesAgg] = useState<{ date: string; total: number; paid: number; party: string | null }[]>([]);
   const [expensesAgg, setExpensesAgg] = useState<{ date: string; total: number; title: string; method: string }[]>([]);
