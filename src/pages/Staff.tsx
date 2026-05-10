@@ -572,7 +572,7 @@ export default function Staff() {
             )}
           </div>
 
-          <div className="sticky bottom-0 bg-[hsl(var(--surface-container-lowest))] border-t border-[hsl(var(--border))] px-5 md:px-7 py-3 flex items-center justify-end gap-2">
+          <div className="shrink-0 bg-[hsl(var(--surface-container-lowest))] border-t border-[hsl(var(--border))] px-5 md:px-7 py-3 flex items-center justify-end gap-2">
             <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>{t("cancel")}</Button>
             <Button onClick={save} disabled={saving} className="gradient-primary text-primary-foreground">
               {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
