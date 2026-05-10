@@ -16,7 +16,6 @@ export default function Auth() {
   const { toast } = useToast();
   const nav = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
-  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("phone");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
