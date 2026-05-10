@@ -55,15 +55,20 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     else localStorage.removeItem("currentShopId");
   };
 
+  const [globalPerms, setGlobalPerms] = useState<Record<string, boolean>>({});
+
   const refresh = useCallback(async () => {
-    if (!user) { setShops([]); setMemberships([]); setLoading(false); return; }
+    if (!user) { setShops([]); setMemberships([]); setGlobalPerms({}); setLoading(false); return; }
     setLoading(true);
-    const [{ data: shopRows }, { data: memRows }] = await Promise.all([
+    const [{ data: shopRows }, { data: memRows }, { data: saRows }] = await Promise.all([
       supabase.from("shops").select("*").order("created_at", { ascending: true }),
       supabase.from("shop_users").select("shop_id, permissions").eq("user_id", user.id),
+      supabase.from("staff_access" as any).select("permissions, is_active").eq("user_id", user.id).maybeSingle(),
     ]);
     setShops((shopRows ?? []) as Shop[]);
     setMemberships((memRows ?? []).map((m: any) => ({ shop_id: m.shop_id, permissions: m.permissions ?? {} })));
+    const sa: any = saRows;
+    setGlobalPerms(sa && sa.is_active !== false ? (sa.permissions ?? {}) : {});
     setLoading(false);
   }, [user]);
 
