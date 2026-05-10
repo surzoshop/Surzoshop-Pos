@@ -342,6 +342,21 @@ export default function Staff() {
                 <Label className="text-xs font-bn">ঠিকানা</Label>
                 <Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} className="mt-1" />
               </div>
+              <div>
+                <Label className="text-xs font-bn">Shop নির্বাচন *</Label>
+                <Select value={form.shopId} onValueChange={(v) => setForm({ ...form, shopId: v })}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="একটি shop বেছে নিন" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[100] bg-popover">
+                    {shops.map(sh => (
+                      <SelectItem key={sh.id} value={sh.id}>
+                        <span className="inline-flex items-center gap-2"><StoreIcon className="h-3.5 w-3.5" />{sh.name}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </section>
 
             {/* Login provisioning */}
@@ -356,23 +371,18 @@ export default function Staff() {
               {form.createLogin && (
                 <>
                   <p className="text-[11px] text-muted-foreground font-bn">
-                    এই কর্মী এই Email ও Password দিয়ে App-এ login করতে পারবে। শুধুমাত্র নিচে দেওয়া access গুলো দেখতে পাবে।
+                    এই কর্মী নিচের <b>মোবাইল নম্বর</b> ও <b>Password</b> দিয়ে App-এ login করতে পারবে। শুধুমাত্র নিচে দেওয়া access গুলো দেখতে পাবে।
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-xs">Email</Label>
-                      <Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="staff@shop.com" className="mt-1" />
+                      <Label className="text-xs font-bn">মোবাইল নম্বর (Login)</Label>
+                      <Input type="tel" value={form.loginPhone} onChange={e => setForm({ ...form, loginPhone: e.target.value })} placeholder="01XXXXXXXXX" className="mt-1" />
                     </div>
                     <div>
                       <Label className="text-xs">Password</Label>
                       <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="কমপক্ষে ৬ অক্ষর" className="mt-1" />
                     </div>
                   </div>
-                  {!currentShop && (
-                    <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bn">
-                      ⚠️ Login তৈরির আগে একটি Shop নির্বাচন করুন।
-                    </p>
-                  )}
                 </>
               )}
             </section>
