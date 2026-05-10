@@ -478,6 +478,9 @@ export default function Dashboard() {
               </table>
             </div>
           </div>
+
+          {/* Cash Flow — placed right under Recent Transactions */}
+          <CashFlowChart />
         </div>
 
         {/* RIGHT: Daily comparison + Quick actions + Top selling */}
@@ -546,15 +549,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Cash Flow + Staff Performance */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-8">
-        <div className="lg:col-span-2">
-          <CashFlowChart />
-        </div>
-        <div>
-          <StaffPerformance />
-        </div>
-      </div>
+      {/* Staff Performance — full width below */}
+      <StaffPerformance />
 
       <AddProductSheet open={productSheet} onOpenChange={setProductSheet} onSaved={loadAll} />
       <AddCustomerSheet open={customerSheet} onOpenChange={setCustomerSheet} onSaved={loadAll} />
