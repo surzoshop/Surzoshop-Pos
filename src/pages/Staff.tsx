@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
-import { useShop, ALL_PAGES, PageKey } from "@/hooks/useShop";
+import { PageKey } from "@/hooks/useShop";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Plus, Trash2, UserCog, ShieldCheck, KeyRound, Loader2, History, Search, Phone, Store as StoreIcon,
+  Plus, Trash2, UserCog, ShieldCheck, KeyRound, Loader2, History, Search, Phone,
   LayoutDashboard, ShoppingCart, Receipt, RotateCcw, ShoppingBag, Package, Layers,
   Warehouse, ClipboardList, BookOpen, Wallet, Users, Truck, Contact, BarChart3,
   CalendarCheck, Store,
@@ -71,13 +71,12 @@ const PRESETS: Record<string, PageKey[]> = {
 
 const emptyForm = {
   name: "", phone: "", nid: "", address: "", position: "cashier", salary: 0,
-  loginPhone: "", password: "", createLogin: true, shopId: "" as string,
+  loginPhone: "", password: "", createLogin: true,
 };
 
 export default function Staff() {
   const { t, fmt } = useT();
   const { role } = useAuth();
-  const { currentShop, shops, refresh: refreshShops } = useShop();
   const { toast } = useToast();
   const nav = useNavigate();
   const isAdmin = role === "admin";
@@ -141,7 +140,7 @@ export default function Staff() {
   const clearAll = () => setPermissions({});
 
   const openSheet = () => {
-    setForm({ ...emptyForm, shopId: currentShop?.id ?? (shops[0]?.id ?? "") });
+    setForm({ ...emptyForm });
     applyPreset("cashier");
     setOpen(true);
   };
@@ -161,25 +160,13 @@ export default function Staff() {
 
     setSaving(true);
     try {
-      // Ensure we have a shop — auto-create a default one if user has none yet
-      let shopId = form.shopId || currentShop?.id || shops[0]?.id || "";
-      if (!shopId) {
-        const { data: newShop, error: shopErr } = await supabase
-          .from("shops")
-          .insert({ name: "আমার দোকান", is_active: true })
-          .select()
-          .single();
-        if (shopErr) throw new Error("Default shop তৈরি ব্যর্থ: " + shopErr.message);
-        shopId = newShop.id;
-      }
-
       // 1) Insert staff record
       const { data: staffRow, error: sErr } = await supabase.from("staff").insert({
         name: form.name,
         phone: form.phone || form.loginPhone,
         nid: form.nid, address: form.address,
         position: form.position, salary: form.salary,
-        shop_id: shopId,
+        shop_id: null,
       }).select().single();
       if (sErr) throw sErr;
 
@@ -193,7 +180,6 @@ export default function Staff() {
             phone: form.loginPhone,
             password: form.password,
             full_name: form.name,
-            shop_id: shopId,
             staff_id: staffRow.id,
             permissions: permsObj,
           },
@@ -207,7 +193,6 @@ export default function Staff() {
       setOpen(false);
       setForm({ ...emptyForm });
       load();
-      refreshShops();
     } catch (e: any) {
       toast({ title: e.message ?? "ত্রুটি", variant: "destructive" });
     } finally {
