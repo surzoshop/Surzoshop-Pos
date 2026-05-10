@@ -91,7 +91,10 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       return all;
     }
     const m = memberships.find(m => m.shop_id === currentShopId);
-    return (m?.permissions ?? {}) as Record<string, boolean>;
+    const shopPerms = (m?.permissions ?? {}) as Record<string, boolean>;
+    // Merge: shop-specific perms take priority; staff_access acts as base/fallback
+    // (so staff still has access even when no shop is selected or no shops exist).
+    return { ...globalPerms, ...shopPerms };
   })();
 
   const canAccess = (page: PageKey) => {
