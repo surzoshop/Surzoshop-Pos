@@ -546,6 +546,16 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Cash Flow + Staff Performance */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-8">
+        <div className="lg:col-span-2">
+          <CashFlowChart />
+        </div>
+        <div>
+          <StaffPerformance />
+        </div>
+      </div>
+
       <AddProductSheet open={productSheet} onOpenChange={setProductSheet} onSaved={loadAll} />
       <AddCustomerSheet open={customerSheet} onOpenChange={setCustomerSheet} onSaved={loadAll} />
     </div>
