@@ -331,7 +331,16 @@ export default function Staff() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs font-bn">ফোন নম্বর</Label>
-                  <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="mt-1" />
+                  <Input
+                    value={form.phone}
+                    onChange={e => setForm(f => ({
+                      ...f,
+                      phone: e.target.value,
+                      // auto-sync to login phone if user hasn't typed a different login phone yet
+                      loginPhone: (!f.loginPhone || f.loginPhone === f.phone) ? e.target.value : f.loginPhone,
+                    }))}
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Label className="text-xs font-bn">NID</Label>
