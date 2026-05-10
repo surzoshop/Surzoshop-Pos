@@ -510,6 +510,34 @@ export default function Installments() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit received payment (admin only) */}
+      <Dialog open={!!editPay} onOpenChange={o => !o && setEditPay(null)}>
+        <DialogContent className="bg-[hsl(var(--surface-container-lowest))]">
+          <DialogHeader>
+            <DialogTitle>{lang === "bn" ? "পরিশোধ সংশোধন" : "Edit Payment"}</DialogTitle>
+          </DialogHeader>
+          {editPay && (
+            <div className="space-y-3">
+              <div className="text-sm text-muted-foreground">
+                {lang === "bn" ? "মূল পরিমাণ" : "Original"}: <b>{fmt(Number(editPay.amount))}</b>
+                {" • "}{new Date(editPay.paid_at).toLocaleString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}
+              </div>
+              <div>
+                <Label>{lang === "bn" ? "নতুন পরিমাণ (৳)" : "New Amount (৳)"}</Label>
+                <Input type="number" value={editPayAmount} onChange={e => setEditPayAmount(+e.target.value)} />
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  {lang === "bn" ? "পার্থক্য স্বয়ংক্রিয়ভাবে কিস্তি ও বিক্রয়ে সমন্বয় হবে।" : "Difference auto-adjusts the installment & sale."}
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditPay(null)}>{t("cancel")}</Button>
+            <Button onClick={saveEditPay} className="gradient-primary">{t("save")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* New Installment Plan */}
       <Dialog open={openNew} onOpenChange={setOpenNew}>
         <DialogContent className="bg-[hsl(var(--surface-container-lowest))] max-w-3xl max-h-[92vh] overflow-y-auto">
