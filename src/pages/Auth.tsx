@@ -184,8 +184,8 @@ export default function Auth() {
                   <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="pl-10 h-11" placeholder="you@shop.com" />
                 </Field>
               ) : (
-                <Field label={lang === "bn" ? "মোবাইল নম্বর" : "Mobile Number"} icon={<Phone className="h-4 w-4" />}>
-                  <Input type="tel" value={phone} onChange={e => setPhone(e.target.value)} required className="pl-10 h-11" placeholder="01XXXXXXXXX" />
+                <Field label={lang === "bn" ? "মোবাইল / ইমেইল" : "Phone / Email"} icon={<Phone className="h-4 w-4" />}>
+                  <Input type="text" value={phone} onChange={e => setPhone(e.target.value)} required className="pl-10 h-11" placeholder={lang === "bn" ? "01XXXXXXXXX বা admin@gmail.com" : "01XXXXXXXXX or admin@gmail.com"} />
                 </Field>
               )}
               <Field label={t("password")} icon={<Lock className="h-4 w-4" />}>
