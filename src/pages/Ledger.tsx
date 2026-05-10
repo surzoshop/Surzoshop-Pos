@@ -98,9 +98,11 @@ const ROW_FILTERS: { key: RowFilter; label: string }[] = [
 ];
 
 export default function Ledger() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const isAdmin = role === "admin" || role === "super_admin";
   const { currentShop } = useShop();
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [stockSellValue, setStockSellValue] = useState(0);
   const [salesAgg, setSalesAgg] = useState<{ date: string; total: number; paid: number; party: string | null }[]>([]);
   const [purchasesAgg, setPurchasesAgg] = useState<{ date: string; total: number; paid: number; party: string | null }[]>([]);
   const [expensesAgg, setExpensesAgg] = useState<{ date: string; total: number; title: string; method: string }[]>([]);
@@ -236,6 +238,12 @@ export default function Ledger() {
     });
     setPurchaseCostAgg(Array.from(pcByDate.entries()).map(([date, total]) => ({ date, total })));
 
+    // স্টক বিক্রয়মূল্য (staff-friendly): stock × selling price
+    let prq = supabase.from("products").select("stock,price").eq("is_active", true);
+    if (currentShop) prq = prq.eq("shop_id", currentShop.id);
+    const { data: prData } = await prq;
+    setStockSellValue((prData ?? []).reduce((s: number, p: any) => s + Number(p.stock || 0) * Number(p.price || 0), 0));
+
     setLoading(false);
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [currentShop?.id]);
@@ -355,15 +363,26 @@ export default function Ledger() {
     // মোট আয় = বিক্রয় থেকে আসলে প্রাপ্ত নগদ = ডাউন পেমেন্ট + সম্পূর্ণ পরিশোধিত নগদ + কিস্তি আদায়
     const totalIncome = salesPaid + instPaid;
 
-    return [
+    const baseStats = [
       { key: "sales"    as TabKey, label: "নগদ আয়",              value: totalIncome,  icon: ArrowDownToLine, tone: "income",   hint: "বিক্রয় থেকে প্রাপ্ত নগদ = ডাউন পেমেন্ট + সম্পূর্ণ পরিশোধিত + কিস্তি আদায়" },
       { key: "expense"  as TabKey, label: "মোট খরচ",             value: expense,      icon: ArrowUpFromLine, tone: "expense",  hint: "শুধুমাত্র খরচ এন্ট্রি পেজ থেকে (জমা/উত্তোলনের কোনো প্রভাব নেই)" },
       { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",        value: cashBalance,  icon: Coins,           tone: "balance",  hint: "মোট আয় − মোট খরচ (স্টক ক্রয়মূল্য বাদ; খরচ না থাকলে পুরো আয়ই ব্যালেন্স)" },
-      { key: "income"   as TabKey, label: "বিক্রয় থেকে মোট লাভ", value: income,       icon: TrendingUp,      tone: "income",   hint: "প্রকৃত লাভ = বিক্রয়মূল্য (ছাড় বাদে) − পণ্যের ক্রয়মূল্য" },
-      { key: "purchase" as TabKey, label: "স্টক ক্রয়মূল্য",         value: stockBuy,     icon: ShoppingBag,     tone: "purchase", hint: "ক্রয় ইনভয়েসের মোট মূল্য (যত টাকার স্টক ক্রয় করেছেন)" },
-      { key: "sales"    as TabKey, label: "মোট বিক্রয় (ইনভয়েস)", value: salesTotal,   icon: Receipt,         tone: "sales",    hint: "বিক্রয় ইনভয়েসের মোট (বাকি সহ)" },
     ];
-  }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg, profitAgg, purchaseCostAgg, topFrom, topTo]);
+    if (isAdmin) {
+      baseStats.push(
+        { key: "income"   as TabKey, label: "বিক্রয় থেকে মোট লাভ", value: income,       icon: TrendingUp,      tone: "income",   hint: "প্রকৃত লাভ = বিক্রয়মূল্য (ছাড় বাদে) − পণ্যের ক্রয়মূল্য" },
+        { key: "purchase" as TabKey, label: "স্টক ক্রয়মূল্য",         value: stockBuy,     icon: ShoppingBag,     tone: "purchase", hint: "ক্রয় ইনভয়েসের মোট মূল্য (যত টাকার স্টক ক্রয় করেছেন)" },
+      );
+    } else {
+      baseStats.push(
+        { key: "sales" as TabKey, label: "স্টক বিক্রয়মূল্য", value: stockSellValue, icon: ShoppingBag, tone: "sales", hint: "বর্তমান স্টকের মোট বিক্রয়মূল্য (স্টক × বিক্রয়মূল্য)" },
+      );
+    }
+    baseStats.push(
+      { key: "sales"    as TabKey, label: "মোট বিক্রয় (ইনভয়েস)", value: salesTotal,   icon: Receipt,         tone: "sales",    hint: "বিক্রয় ইনভয়েসের মোট (বাকি সহ)" },
+    );
+    return baseStats;
+  }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg, profitAgg, purchaseCostAgg, topFrom, topTo, isAdmin, stockSellValue]);
 
   // 3 big totals (under account tabs) — based on lower range + tab + account filter
   const lowerFiltered = useMemo(() => synthEntries.filter(e => {
