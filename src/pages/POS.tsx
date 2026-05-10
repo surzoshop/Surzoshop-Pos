@@ -661,18 +661,20 @@ export default function POS() {
         )}
 
         <div className="space-y-4 pt-4 border-t border-[hsl(var(--surface-container-high))]">
-          <div className="flex gap-2">
-            <input
-              type="number"
-              value={discount || ""}
-              onChange={e => setDiscount(+e.target.value || 0)}
-              placeholder={t("discountCode")}
-              className="flex-1 h-10 px-4 rounded-lg bg-[hsl(var(--surface))] border-none text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50"
-            />
-            <button className="bg-secondary text-[hsl(var(--secondary-foreground))] px-4 rounded-lg font-bold text-sm hover:brightness-105 transition">
-              {t("apply")}
-            </button>
-          </div>
+          {isAdmin && (
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={discount || ""}
+                onChange={e => setDiscount(+e.target.value || 0)}
+                placeholder={t("discountCode")}
+                className="flex-1 h-10 px-4 rounded-lg bg-[hsl(var(--surface))] border-none text-sm focus:outline-none focus:ring-2 focus:ring-secondary/50"
+              />
+              <button className="bg-secondary text-[hsl(var(--secondary-foreground))] px-4 rounded-lg font-bold text-sm hover:brightness-105 transition">
+                {t("apply")}
+              </button>
+            </div>
+          )}
 
           <div className="space-y-2 text-sm">
             <div className="flex justify-between text-muted-foreground"><span>{t("subtotal")}:</span><span>{fmt(subtotal)}</span></div>
