@@ -30,8 +30,8 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const { phone, email: emailRaw, password, full_name, shop_id, permissions, staff_id } = body;
-    if ((!phone && !emailRaw) || !password || !shop_id) {
-      return new Response(JSON.stringify({ error: "phone, password, shop_id required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if ((!phone && !emailRaw) || !password) {
+      return new Response(JSON.stringify({ error: "phone & password required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const digits = phone ? String(phone).replace(/\D+/g, "") : "";
@@ -63,14 +63,18 @@ Deno.serve(async (req) => {
     // Ensure 'staff' role
     await admin.from("user_roles").upsert({ user_id: userId, role: "staff" }, { onConflict: "user_id,role" });
 
-    // Upsert shop_users — store phone in email column for backward compat display
-    const { error: suErr } = await admin.from("shop_users").upsert({
-      user_id: userId, shop_id, staff_id: staff_id ?? null,
-      display_name: full_name ?? phone ?? email,
-      email: phone ?? email,
-      permissions: permissions ?? {}, is_active: true,
-    }, { onConflict: "user_id,shop_id" });
-    if (suErr) throw suErr;
+    // Optionally link to a shop if shop_id provided. Otherwise the staff
+    // login is created without any shop binding (admin can attach later from
+    // Shop management).
+    if (shop_id) {
+      const { error: suErr } = await admin.from("shop_users").upsert({
+        user_id: userId, shop_id, staff_id: staff_id ?? null,
+        display_name: full_name ?? phone ?? email,
+        email: phone ?? email,
+        permissions: permissions ?? {}, is_active: true,
+      }, { onConflict: "user_id,shop_id" });
+      if (suErr) throw suErr;
+    }
 
     return new Response(JSON.stringify({ ok: true, user_id: userId, login_phone: digits }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
