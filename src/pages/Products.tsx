@@ -312,10 +312,12 @@ export default function Products() {
                     <span className="text-[10px] text-muted-foreground font-semibold">বিক্রয়</span>
                     <span className="font-bold text-primary text-sm">{fmt(p.price)}</span>
                   </div>
-                  <div className="flex flex-col items-end">
-                    <span className="text-[10px] text-muted-foreground font-semibold">ক্রয়</span>
-                    <span className="font-bold text-info text-sm">{fmt(p.cost)}</span>
-                  </div>
+                  {isAdmin && (
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] text-muted-foreground font-semibold">ক্রয়</span>
+                      <span className="font-bold text-info text-sm">{fmt(p.cost)}</span>
+                    </div>
+                  )}
                   {stockBadge(p)}
                 </div>
               </div>
@@ -333,7 +335,7 @@ export default function Products() {
                 <th className="pb-3 font-extrabold">{t("category")}</th>
                 <th className="pb-3 font-extrabold">{t("barcode")}</th>
                 <th className="pb-3 font-extrabold">বিক্রয় মূল্য</th>
-                <th className="pb-3 font-extrabold">ক্রয় মূল্য</th>
+                {isAdmin && <th className="pb-3 font-extrabold">ক্রয় মূল্য</th>}
                 <th className="pb-3 font-extrabold">{t("stock")}</th>
                 {isAdmin && <th className="pb-3 font-extrabold text-right">{t("actions")}</th>}
               </tr>
@@ -357,7 +359,7 @@ export default function Products() {
                   <td className="py-2 text-foreground/80 font-semibold">{catName(p.category_id)}</td>
                   <td className="py-2 text-foreground/70 font-mono text-xs font-bold">{p.barcode || "—"}</td>
                   <td className="py-2 font-extrabold text-primary">{fmt(p.price)}</td>
-                  <td className="py-2 font-extrabold text-info">{fmt(p.cost)}</td>
+                  {isAdmin && <td className="py-2 font-extrabold text-info">{fmt(p.cost)}</td>}
                   <td className="py-2">{stockBadge(p)}</td>
                   {isAdmin && (
                     <td className="py-2 text-right">
