@@ -8,7 +8,7 @@ import { useT } from "@/i18n/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, Store, Languages, Sun, ShieldCheck, BarChart3,
-  Wallet, ShoppingCart, Mail, Lock, User, ArrowRight,
+  Wallet, ShoppingCart, Mail, Lock, User, ArrowRight, Phone,
 } from "lucide-react";
 
 export default function Auth() {
@@ -16,7 +16,9 @@ export default function Auth() {
   const { toast } = useToast();
   const nav = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("phone");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,7 +36,11 @@ export default function Auth() {
         toast({ title: "Success", description: "Account created. You can now log in." });
         setMode("login");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const loginEmail =
+          loginMethod === "phone"
+            ? `${phone.replace(/\D+/g, "")}@staff.local`
+            : email;
+        const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
         if (error) throw error;
         nav("/");
       }
