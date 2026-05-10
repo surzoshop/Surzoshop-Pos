@@ -72,12 +72,13 @@ export default function Installments() {
   });
 
   const load = async () => {
-    const [{ data: insts }, { data: salesData }, c, p, g] = await Promise.all([
+    const [{ data: insts }, { data: salesData }, c, p, g, { data: pays }] = await Promise.all([
       supabase.from("installments").select("*, sales(invoice_no, customers(name, phone))").order("due_date"),
       supabase.from("sales").select("id, invoice_no, total, down_payment, tenure_months, late_fee_per_day, paid, due, created_at, customers(name, phone)").eq("payment_type", "installment" as any).order("created_at", { ascending: false }),
       supabase.from("customers").select("id,name,phone").order("name"),
       supabase.from("products").select("id,name,price,stock").order("name"),
       supabase.from("guarantors").select("id,name,phone").order("name"),
+      supabase.from("installment_payments").select("*").order("paid_at", { ascending: false }),
     ]);
     const today = todayBD();
     const enriched = (insts ?? []).map(i => ({
@@ -87,8 +88,29 @@ export default function Installments() {
     setItems(enriched);
     setSales(salesData ?? []);
     setCustomers(c.data ?? []); setProducts(p.data ?? []); setGuarantors(g.data ?? []);
+    const grouped: Record<string, any[]> = {};
+    for (const p of pays ?? []) (grouped[p.installment_id] ||= []).push(p);
+    setPaymentsByInst(grouped);
   };
   useEffect(() => { load(); }, []);
+
+  const saveEditPay = async () => {
+    if (!editPay || editPayAmount < 0) return;
+    const { error } = await supabase.from("installment_payments")
+      .update({ amount: editPayAmount }).eq("id", editPay.id);
+    if (error) return toast({ title: error.message, variant: "destructive" });
+    setEditPay(null); setEditPayAmount(0); await load();
+    toast({ title: lang === "bn" ? "পরিশোধ আপডেট হয়েছে ✓" : "Payment updated ✓" });
+  };
+
+  const deletePay = async (p: any) => {
+    if (!confirm(lang === "bn" ? `${fmt(Number(p.amount))} টাকার পরিশোধ মুছে ফেলবেন?` : `Delete payment of ${fmt(Number(p.amount))}?`)) return;
+    const { error } = await supabase.from("installment_payments").delete().eq("id", p.id);
+    if (error) return toast({ title: error.message, variant: "destructive" });
+    await load();
+    toast({ title: lang === "bn" ? "পরিশোধ মুছে ফেলা হয়েছে" : "Payment deleted" });
+  };
+
 
   // Build plans from sales + grouped installments
   const plans: Plan[] = useMemo(() => {
