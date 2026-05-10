@@ -35,10 +35,7 @@ export default function Auth() {
         toast({ title: "Success", description: "Account created. You can now log in." });
         setMode("login");
       } else {
-        const loginEmail =
-          loginMethod === "phone"
-            ? `${phone.replace(/\D+/g, "")}@staff.local`
-            : email;
+        const loginEmail = `${phone.replace(/\D+/g, "")}@staff.local`;
         const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
         if (error) throw error;
         nav("/");
