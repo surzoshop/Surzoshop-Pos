@@ -248,17 +248,21 @@ export default function Dashboard() {
         <ColorStatCard
           to="/sales" theme="emerald" icon={<Calendar />}
           chip={`${salesTrend >= 0 ? "+" : ""}${salesTrend}%`}
-          label={t("todaySales")} value={fmt(stats.todaySales)} sub={t("increaseFromYesterday")}
+          label={isToday ? t("todaySales") : "নির্বাচিত দিনের বিক্রয়"}
+          value={fmt(stats.todaySales)}
+          sub={isToday ? t("increaseFromYesterday") : selectedDate.toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB")}
         />
         <ColorStatCard
           to="/reports" theme="violet" icon={<Wallet />}
-          chip={t("monthTarget")}
-          label="মোট বিক্রয়" value={fmt(stats.monthSales)} sub="এই মাসের মোট বিক্রয়"
+          chip={isCurrentMonth ? t("monthTarget") : "নির্বাচিত মাস"}
+          label="মোট বিক্রয়" value={fmt(stats.monthSales)}
+          sub={`${selectedMonth.toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { month: "long", year: "numeric" })} এর মোট বিক্রয়`}
         />
         <ColorStatCard
           to="/sales" theme="sky" icon={<ShoppingBag />}
-          chip={`${stats.todayCount} আজ`}
-          label="মাসিক বিক্রয় সংখ্যা" value={`${stats.monthSalesCount}`} sub={`আজকের বিক্রয়: ${stats.deliveredToday}`}
+          chip={`${stats.todayCount} ${isToday ? "আজ" : "দিনে"}`}
+          label="মাসিক বিক্রয় সংখ্যা" value={`${stats.monthSalesCount}`}
+          sub={`${isToday ? "আজকের" : "নির্বাচিত দিনের"} বিক্রয়: ${stats.deliveredToday}`}
         />
         <ColorStatCard
           to="/products" theme="amber" icon={<AlertTriangle />}
