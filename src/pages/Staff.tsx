@@ -77,7 +77,7 @@ const emptyForm = {
 export default function Staff() {
   const { t, fmt } = useT();
   const { role } = useAuth();
-  const { currentShop, shops } = useShop();
+  const { currentShop, shops, refresh: refreshShops } = useShop();
   const { toast } = useToast();
   const nav = useNavigate();
   const isAdmin = role === "admin";
