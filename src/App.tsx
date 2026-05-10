@@ -12,6 +12,9 @@ import { PageGate } from "@/components/PageGate";
 import AppLayout from "@/components/AppLayout";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import StaffDashboard from "./pages/StaffDashboard";
+import StaffHistory from "./pages/StaffHistory";
+import { useAuth } from "@/hooks/useAuth";
 import POS from "./pages/POS";
 import Products from "./pages/Products";
 import BarcodePrint from "./pages/BarcodePrint";
@@ -54,7 +57,7 @@ const App = () => (
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
                   <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-                    <Route path="/" element={<PageGate page="dashboard"><Dashboard /></PageGate>} />
+                    <Route path="/" element={<PageGate page="dashboard"><DashboardSwitcher /></PageGate>} />
                     <Route path="/pos" element={<PageGate page="pos"><POS /></PageGate>} />
                     <Route path="/products" element={<PageGate page="products"><Products /></PageGate>} />
                     <Route path="/products/barcodes" element={<PageGate page="products"><BarcodePrint /></PageGate>} />
@@ -74,6 +77,7 @@ const App = () => (
                     <Route path="/expenses" element={<PageGate page="expenses"><Expenses /></PageGate>} />
                     <Route path="/stock-adjustments" element={<PageGate page="stock-adjustments"><StockAdjustments /></PageGate>} />
                     <Route path="/staff" element={<PageGate page="staff"><Staff /></PageGate>} />
+                    <Route path="/staff/:id/history" element={<PageGate page="staff"><StaffHistory /></PageGate>} />
                     <Route path="/attendance" element={<PageGate page="attendance"><Attendance /></PageGate>} />
                     <Route path="/contacts" element={<Contacts />} />
                     <Route path="/warranty" element={<Warranty />} />
@@ -93,3 +97,9 @@ const App = () => (
 );
 
 export default App;
+
+function DashboardSwitcher() {
+  const { role } = useAuth();
+  // Admin / super_admin → full dashboard. Everyone else (staff) → restricted view.
+  return role === "admin" ? <Dashboard /> : <StaffDashboard />;
+}
