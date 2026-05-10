@@ -439,6 +439,35 @@ export default function Installments() {
                             </Button>
                           </div>
                         )}
+                        {isAdmin && (paymentsByInst[i.id]?.length ?? 0) > 0 && (
+                          <div className="mt-3 pt-3 border-t border-[hsl(var(--surface-container-high))]/50">
+                            <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2">
+                              {lang === "bn" ? "নেওয়া পরিশোধসমূহ (অ্যাডমিন)" : "Received Payments (Admin)"}
+                            </div>
+                            <div className="space-y-1.5">
+                              {paymentsByInst[i.id].map((pay: any) => (
+                                <div key={pay.id} className="flex items-center justify-between bg-[hsl(var(--surface-container-lowest))] rounded-lg px-3 py-2 text-sm border border-[hsl(var(--surface-container-high))]/40">
+                                  <div className="min-w-0">
+                                    <div className="font-bold text-foreground">{fmt(Number(pay.amount))}</div>
+                                    <div className="text-[11px] text-muted-foreground">
+                                      {new Date(pay.paid_at).toLocaleString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button onClick={() => { setEditPay(pay); setEditPayAmount(Number(pay.amount)); }}
+                                      className="p-1.5 rounded-md hover:bg-primary/10 text-primary" title={lang === "bn" ? "এডিট" : "Edit"}>
+                                      <Settings2 className="h-4 w-4" />
+                                    </button>
+                                    <button onClick={() => deletePay(pay)}
+                                      className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive" title={lang === "bn" ? "ডিলিট" : "Delete"}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
