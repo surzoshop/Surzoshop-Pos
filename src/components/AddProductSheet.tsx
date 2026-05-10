@@ -193,6 +193,28 @@ export function AddProductSheet({ open, onOpenChange, onSaved, editing }: Props)
             </div>
           </section>
 
+          {/* Credit / Installment extra charge */}
+          <section className="space-y-3">
+            <h3 className="text-sm font-bold flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" /> বাকি / কিস্তিতে অতিরিক্ত চার্জ
+            </h3>
+            <p className="text-[11px] text-muted-foreground -mt-1">
+              বাকিতে বা কিস্তিতে বিক্রি করলে প্রতি ইউনিটে কত টাকা অতিরিক্ত নেওয়া হবে।
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>বাকিতে অতিরিক্ত (৳)</Label>
+                <Input type="number" inputMode="decimal" value={form.credit_extra}
+                  onChange={e => setForm({ ...form, credit_extra: e.target.value })} placeholder="0" />
+              </div>
+              <div>
+                <Label>কিস্তিতে অতিরিক্ত (৳)</Label>
+                <Input type="number" inputMode="decimal" value={form.installment_extra}
+                  onChange={e => setForm({ ...form, installment_extra: e.target.value })} placeholder="0" />
+              </div>
+            </div>
+          </section>
+
           {/* Stock */}
           <section className="space-y-3">
             <h3 className="text-sm font-bold flex items-center gap-2">
