@@ -214,23 +214,70 @@ export default function Staff() {
       <PageHeader title={t("staff")} subtitle={t("staffSubtitle")}
         actions={isAdmin ? <PrimaryButton onClick={openSheet}><Plus className="h-5 w-5" />{t("addStaff")}</PrimaryButton> : undefined} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {items.length === 0 && <div className="col-span-full text-center text-muted-foreground py-16">{t("noResults")}</div>}
-        {items.map(s => {
+      {/* Summary strip */}
+      <div className="grid grid-cols-3 gap-3 md:gap-4 mb-5">
+        <SurfaceCard className="p-4">
+          <p className="text-[11px] text-muted-foreground font-bn">মোট স্টাফ</p>
+          <p className="text-2xl font-black mt-1">{items.length}</p>
+        </SurfaceCard>
+        <SurfaceCard className="p-4">
+          <p className="text-[11px] text-muted-foreground font-bn">সক্রিয়</p>
+          <p className="text-2xl font-black mt-1 text-emerald-600">{activeCount}</p>
+        </SurfaceCard>
+        <SurfaceCard className="p-4">
+          <p className="text-[11px] text-muted-foreground font-bn">মাসিক বেতন</p>
+          <p className="text-2xl font-black mt-1">{fmt(totalSalary)}</p>
+        </SurfaceCard>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-5">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="নাম বা ফোন দিয়ে খুঁজুন" className="pl-9" />
+        </div>
+        <Select value={posFilter} onValueChange={setPosFilter}>
+          <SelectTrigger className="sm:w-56"><SelectValue /></SelectTrigger>
+          <SelectContent className="z-[100] bg-popover">
+            <SelectItem value="all">সব পদ</SelectItem>
+            {POSITIONS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {filteredItems.length === 0 && <div className="col-span-full text-center text-muted-foreground py-16">{t("noResults")}</div>}
+        {filteredItems.map(s => {
           const posLabel = POSITIONS.find(p => p.value === s.position)?.label ?? s.position;
+          const initial = (s.name ?? "?").trim().charAt(0).toUpperCase();
           return (
-            <SurfaceCard key={s.id} className="p-6 transition-all hover:-translate-y-1">
+            <SurfaceCard
+              key={s.id}
+              className="p-5 transition-all hover:-translate-y-1 hover:shadow-lg cursor-pointer group"
+              onClick={() => nav(`/staff/${s.id}/history`)}
+            >
               <div className="flex items-start justify-between mb-4">
-                <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center"><UserCog className="h-6 w-6" /></div>
-                {isAdmin && <Button size="icon" variant="ghost" className="text-destructive h-8 w-8" onClick={() => del(s.id)}><Trash2 className="h-4 w-4" /></Button>}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-pink-400 to-fuchsia-600 text-white flex items-center justify-center font-black text-lg shrink-0">
+                    {initial}
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-base truncate">{s.name}</h3>
+                    <span className="inline-block mt-0.5 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-primary/10 text-primary">{posLabel}</span>
+                  </div>
+                </div>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); nav(`/staff/${s.id}/history`); }} title="History">
+                    <History className="h-4 w-4" />
+                  </Button>
+                  {isAdmin && <Button size="icon" variant="ghost" className="text-destructive h-8 w-8" onClick={(e) => del(e, s.id)}><Trash2 className="h-4 w-4" /></Button>}
+                </div>
               </div>
-              <h3 className="font-bold text-lg">{s.name}</h3>
-              <p className="text-sm text-muted-foreground">{posLabel}</p>
+              {s.phone && <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Phone className="h-3 w-3" />{s.phone}</p>}
               <div className="mt-3 pt-3 border-t border-[hsl(var(--surface-container-high))] flex justify-between text-sm">
                 <span className="text-muted-foreground">{t("salary")}</span>
                 <span className="font-bold">{fmt(Number(s.salary))}</span>
               </div>
-              {s.phone && <p className="text-xs text-muted-foreground mt-2">{s.phone}</p>}
             </SurfaceCard>
           );
         })}
