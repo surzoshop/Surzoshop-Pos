@@ -9,6 +9,7 @@ import { useStandalone } from "@/hooks/useStandalone";
 import { Bell, Languages, Sun, Moon, Store, ChevronDown, Menu } from "lucide-react";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AppLayout() {
   const { t, lang, setLang } = useT();
@@ -17,7 +18,13 @@ export default function AppLayout() {
   const [shopOpen, setShopOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   useEffect(() => { document.documentElement.classList.toggle("dark", dark); }, [dark]);
+  useEffect(() => {
+    if (!user) { setAvatarUrl(null); return; }
+    supabase.from("profiles").select("avatar_url").eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => setAvatarUrl(data?.avatar_url ?? null));
+  }, [user]);
   useStandalone();
 
   const initial = (user?.email ?? "A").charAt(0).toUpperCase();
