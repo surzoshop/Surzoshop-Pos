@@ -347,14 +347,21 @@ export default function Dashboard() {
                   <TrendingUp className="h-5 w-5 text-[hsl(var(--primary))]" />
                 </div>
                 <div>
-                  <h3 className="text-base md:text-xl font-bold text-foreground">{t("weeklySalesAnalysis")}</h3>
-                  <p className="text-xs md:text-sm text-muted-foreground">{t("last7DaysReport")}</p>
+                  <h3 className="text-base md:text-xl font-bold text-foreground font-bn">সাপ্তাহিক বিক্রয় বিশ্লেষণ</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground font-bn">
+                    {weeklyMonth.toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { month: "long", year: "numeric" })} — সপ্তাহভিত্তিক
+                  </p>
                 </div>
               </div>
-              <select className="bg-[hsl(var(--surface-container-low))] border border-[hsl(var(--border))] rounded-lg text-[11px] md:text-xs font-semibold py-1.5 md:py-2 px-3 md:px-4 outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.3)] cursor-pointer">
-                <option>{t("thisWeek")}</option>
-                <option>{t("lastWeek")}</option>
-              </select>
+              <input
+                type="month"
+                value={toMonthInput(weeklyMonth)}
+                onChange={(e) => {
+                  const [y, m] = e.target.value.split("-").map(Number);
+                  if (y && m) setWeeklyMonth(new Date(y, m - 1, 1));
+                }}
+                className="bg-[hsl(var(--surface-container-low))] border border-[hsl(var(--border))] rounded-lg text-[11px] md:text-xs font-semibold py-1.5 md:py-2 px-3 md:px-4 outline-none focus:ring-2 focus:ring-[hsl(var(--primary)/0.3)] cursor-pointer"
+              />
             </div>
 
             <div className="relative h-44 md:h-64 flex items-end justify-between gap-2 md:gap-4">
