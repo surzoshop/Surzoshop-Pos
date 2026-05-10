@@ -90,19 +90,21 @@ export default function Dashboard() {
 
     setSalesTrend(yestTotal === 0 ? 100 : Math.round(((todayTotal - yestTotal) / yestTotal) * 100));
 
-    const days: Record<string, number> = {};
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(today); d.setDate(d.getDate() - i);
-      days[toBDDate(d)] = 0;
-    }
+    // Weekly chart: group sales of the selected weekly-month into weeks (W1..W5)
+    const weeksInMonth = (() => {
+      const last = new Date(wMonthEnd); last.setDate(last.getDate() - 1);
+      return Math.ceil((last.getDate() + ((wMonthStart.getDay() + 6) % 7)) / 7);
+    })();
+    const weekBuckets: number[] = Array.from({ length: weeksInMonth }, () => 0);
     (salesWeek.data ?? []).forEach(s => {
-      const k = toBDDate(s.created_at);
-      if (k in days) days[k] += Number(s.total);
+      const d = new Date(s.created_at as any);
+      const dayOfMonth = d.getDate();
+      const offset = (wMonthStart.getDay() + 6) % 7; // Mon-anchored offset
+      const wIdx = Math.min(weeksInMonth - 1, Math.floor((dayOfMonth - 1 + offset) / 7));
+      weekBuckets[wIdx] += Number(s.total);
     });
-    const dayNames = lang === "bn"
-      ? ["রবি","সোম","মঙ্গল","বুধ","বৃহঃ","শুক্র","শনি"]
-      : ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-    setWeekly(Object.entries(days).map(([date, total]) => ({ day: dayNames[new Date(date).getDay()], total })));
+    const wkLabel = lang === "bn" ? "সপ্তা" : "W";
+    setWeekly(weekBuckets.map((total, i) => ({ day: `${wkLabel}${lang === "bn" ? toBnNum(i + 1) : i + 1}`, total })));
 
     const map = new Map<string, { qty: number; revenue: number }>();
     (items30.data ?? []).forEach((i: any) => {
