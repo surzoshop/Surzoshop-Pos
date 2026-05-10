@@ -185,8 +185,15 @@ export default function POS() {
   };
 
   const subtotal = cart.reduce((a, i) => a + i.product.price * i.qty, 0);
+  // Extra charge for credit / installment sales (per-product configured in Stock entry)
+  const extraCharge = cart.reduce((a, i) => {
+    const p: any = i.product;
+    if (paymentType === "installment") return a + (Number(p.installment_extra) || 0) * i.qty;
+    if (paymentType === "due")         return a + (Number(p.credit_extra) || 0) * i.qty;
+    return a;
+  }, 0);
   const vat = subtotal * VAT_RATE;
-  const computedBase = Math.max(0, subtotal + vat - discount);
+  const computedBase = Math.max(0, subtotal + vat - discount + extraCharge);
   // Allow user to override grand total (for negotiation / round-off). Override applies before installment interest.
   const baseTotal = totalOverride !== null ? Math.max(0, totalOverride) : computedBase;
   // EMI calculation: simple interest over tenure (more transparent for retail)
