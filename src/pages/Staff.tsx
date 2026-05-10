@@ -71,17 +71,20 @@ const PRESETS: Record<string, PageKey[]> = {
 
 const emptyForm = {
   name: "", phone: "", nid: "", address: "", position: "cashier", salary: 0,
-  email: "", password: "", createLogin: true,
+  loginPhone: "", password: "", createLogin: true, shopId: "" as string,
 };
 
 export default function Staff() {
   const { t, fmt } = useT();
   const { role } = useAuth();
-  const { currentShop } = useShop();
+  const { currentShop, shops } = useShop();
   const { toast } = useToast();
+  const nav = useNavigate();
   const isAdmin = role === "admin";
   const [items, setItems] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [posFilter, setPosFilter] = useState<string>("all");
   const [form, setForm] = useState({ ...emptyForm });
   const [permissions, setPermissions] = useState<Record<string, boolean>>(() => {
     const m: Record<string, boolean> = {};
@@ -100,6 +103,20 @@ export default function Staff() {
     () => ACCESS_POINTS.filter(a => permissions[a.key]).length,
     [permissions]
   );
+
+  const filteredItems = useMemo(() => {
+    return items.filter(s => {
+      if (posFilter !== "all" && s.position !== posFilter) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        return (s.name ?? "").toLowerCase().includes(q) || (s.phone ?? "").toLowerCase().includes(q);
+      }
+      return true;
+    });
+  }, [items, search, posFilter]);
+
+  const totalSalary = useMemo(() => items.reduce((a, s) => a + Number(s.salary || 0), 0), [items]);
+  const activeCount = items.filter(s => s.is_active !== false).length;
 
   const applyPreset = (position: string) => {
     const next: Record<string, boolean> = {};
@@ -124,22 +141,22 @@ export default function Staff() {
   const clearAll = () => setPermissions({});
 
   const openSheet = () => {
-    setForm({ ...emptyForm });
+    setForm({ ...emptyForm, shopId: currentShop?.id ?? (shops[0]?.id ?? "") });
     applyPreset("cashier");
     setOpen(true);
   };
 
   const save = async () => {
     if (!form.name.trim()) return toast({ title: "নাম প্রয়োজন", variant: "destructive" });
+    if (!form.shopId) return toast({ title: "Shop নির্বাচন করুন", variant: "destructive" });
+
     if (form.createLogin) {
-      if (!form.email.trim() || !form.password.trim()) {
-        return toast({ title: "Login তৈরির জন্য Email ও Password প্রয়োজন", variant: "destructive" });
+      const digits = form.loginPhone.replace(/\D+/g, "");
+      if (!digits || digits.length < 6) {
+        return toast({ title: "Login-এর জন্য সঠিক মোবাইল নম্বর দিন", variant: "destructive" });
       }
       if (form.password.length < 6) {
         return toast({ title: "Password কমপক্ষে ৬ অক্ষর", variant: "destructive" });
-      }
-      if (!currentShop) {
-        return toast({ title: "প্রথমে একটি Shop নির্বাচন করুন", variant: "destructive" });
       }
     }
 
@@ -147,23 +164,25 @@ export default function Staff() {
     try {
       // 1) Insert staff record
       const { data: staffRow, error: sErr } = await supabase.from("staff").insert({
-        name: form.name, phone: form.phone, nid: form.nid, address: form.address,
+        name: form.name,
+        phone: form.phone || form.loginPhone,
+        nid: form.nid, address: form.address,
         position: form.position, salary: form.salary,
-        shop_id: currentShop?.id ?? null,
+        shop_id: form.shopId,
       }).select().single();
       if (sErr) throw sErr;
 
       // 2) Optionally create login + permissions via edge function
-      if (form.createLogin && currentShop) {
+      if (form.createLogin) {
         const permsObj: Record<string, boolean> = {};
         ACCESS_POINTS.forEach(a => { if (permissions[a.key]) permsObj[a.key] = true; });
 
         const { data, error: fnErr } = await supabase.functions.invoke("create-shop-user", {
           body: {
-            email: form.email.trim(),
+            phone: form.loginPhone,
             password: form.password,
             full_name: form.name,
-            shop_id: currentShop.id,
+            shop_id: form.shopId,
             staff_id: staffRow.id,
             permissions: permsObj,
           },
@@ -173,7 +192,7 @@ export default function Staff() {
         }
       }
 
-      toast({ title: "স্টাফ সংরক্ষিত", description: form.createLogin ? "Login সহ যোগ হয়েছে" : "Staff record তৈরি হয়েছে" });
+      toast({ title: "স্টাফ সংরক্ষিত", description: form.createLogin ? "মোবাইল নম্বর দিয়ে login করতে পারবে" : "Staff record তৈরি হয়েছে" });
       setOpen(false);
       setForm({ ...emptyForm });
       load();
@@ -184,7 +203,8 @@ export default function Staff() {
     }
   };
 
-  const del = async (id: string) => {
+  const del = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
     if (!confirm(t("confirmDelete"))) return;
     await supabase.from("staff").delete().eq("id", id); load();
   };
