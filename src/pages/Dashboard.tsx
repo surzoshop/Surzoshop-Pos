@@ -13,6 +13,7 @@ import { AddCustomerSheet } from "@/components/AddCustomerSheet";
 
 const toMonthInput = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 const toDateInput  = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const toBnNum = (n: number | string) => String(n).replace(/[0-9]/g, (d) => "০১২৩৪৫৬৭৮৯"[+d]);
 
 export default function Dashboard() {
   const { t, fmt, lang } = useT();
