@@ -351,21 +351,29 @@ export default function Staff() {
                 <Label className="text-xs font-bn">ঠিকানা</Label>
                 <Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} className="mt-1" />
               </div>
-              <div>
-                <Label className="text-xs font-bn">Shop নির্বাচন *</Label>
-                <Select value={form.shopId} onValueChange={(v) => setForm({ ...form, shopId: v })}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="একটি shop বেছে নিন" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[100] bg-popover">
-                    {shops.map(sh => (
-                      <SelectItem key={sh.id} value={sh.id}>
-                        <span className="inline-flex items-center gap-2"><StoreIcon className="h-3.5 w-3.5" />{sh.name}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {shops.length > 1 ? (
+                <div>
+                  <Label className="text-xs font-bn">Shop নির্বাচন *</Label>
+                  <Select value={form.shopId} onValueChange={(v) => setForm({ ...form, shopId: v })}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="একটি shop বেছে নিন" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[100] bg-popover">
+                      {shops.map(sh => (
+                        <SelectItem key={sh.id} value={sh.id}>
+                          <span className="inline-flex items-center gap-2"><StoreIcon className="h-3.5 w-3.5" />{sh.name}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : shops.length === 1 ? (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/5 border border-primary/20 text-xs">
+                  <StoreIcon className="h-4 w-4 text-primary" />
+                  <span className="font-bn">Shop:</span>
+                  <span className="font-bold">{shops[0].name}</span>
+                </div>
+              ) : null}
             </section>
 
             {/* Login provisioning */}
