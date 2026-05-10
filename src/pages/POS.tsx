@@ -36,7 +36,8 @@ const recoverBaseTotal = (sale: any) => {
 
 export default function POS() {
   const { t, fmt, lang } = useT();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const isAdmin = role === "admin" || role === "super_admin";
   const { currentShop } = useShop();
   const { toast } = useToast();
   const receiptRef = useRef<HTMLDivElement>(null);
