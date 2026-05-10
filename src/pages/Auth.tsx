@@ -35,9 +35,24 @@ export default function Auth() {
         toast({ title: "Success", description: "Account created. You can now log in." });
         setMode("login");
       } else {
-        const loginEmail = `${phone.replace(/\D+/g, "")}@staff.local`;
-        const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
-        if (error) throw error;
+        const raw = phone.trim();
+        const digits = raw.replace(/\D+/g, "");
+        // Try multiple identifier patterns so the same input field works for
+        // admin (email or phone) and for staff (phone).
+        const candidates: string[] = [];
+        if (raw.includes("@")) candidates.push(raw);
+        if (digits) {
+          candidates.push(`${digits}@admin.local`);
+          candidates.push(`${digits}@staff.local`);
+        }
+        let lastErr: any = null;
+        let success = false;
+        for (const loginEmail of candidates) {
+          const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+          if (!error) { success = true; break; }
+          lastErr = error;
+        }
+        if (!success) throw lastErr ?? new Error("Invalid credentials");
         nav("/");
       }
     } catch (err: any) {
@@ -169,8 +184,8 @@ export default function Auth() {
                   <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="pl-10 h-11" placeholder="you@shop.com" />
                 </Field>
               ) : (
-                <Field label={lang === "bn" ? "মোবাইল নম্বর" : "Mobile Number"} icon={<Phone className="h-4 w-4" />}>
-                  <Input type="tel" value={phone} onChange={e => setPhone(e.target.value)} required className="pl-10 h-11" placeholder="01XXXXXXXXX" />
+                <Field label={lang === "bn" ? "মোবাইল / ইমেইল" : "Phone / Email"} icon={<Phone className="h-4 w-4" />}>
+                  <Input type="text" value={phone} onChange={e => setPhone(e.target.value)} required className="pl-10 h-11" placeholder={lang === "bn" ? "01XXXXXXXXX বা admin@gmail.com" : "01XXXXXXXXX or admin@gmail.com"} />
                 </Field>
               )}
               <Field label={t("password")} icon={<Lock className="h-4 w-4" />}>

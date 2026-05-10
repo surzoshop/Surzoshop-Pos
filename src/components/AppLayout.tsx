@@ -1,4 +1,4 @@
-import { Outlet, NavLink } from "react-router-dom";
+import { Outlet, NavLink, Link } from "react-router-dom";
 import { AppSidebar } from "@/components/AppSidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { AppMobileHeader } from "@/components/AppMobileHeader";
@@ -9,6 +9,7 @@ import { useStandalone } from "@/hooks/useStandalone";
 import { Bell, Languages, Sun, Moon, Store, ChevronDown, Menu } from "lucide-react";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AppLayout() {
   const { t, lang, setLang } = useT();
@@ -17,7 +18,13 @@ export default function AppLayout() {
   const [shopOpen, setShopOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   useEffect(() => { document.documentElement.classList.toggle("dark", dark); }, [dark]);
+  useEffect(() => {
+    if (!user) { setAvatarUrl(null); return; }
+    supabase.from("profiles").select("avatar_url").eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => setAvatarUrl(data?.avatar_url ?? null));
+  }, [user]);
   useStandalone();
 
   const initial = (user?.email ?? "A").charAt(0).toUpperCase();
@@ -93,9 +100,13 @@ export default function AppLayout() {
             <Bell className="h-5 w-5" />
             <span className="absolute top-0 right-0 w-2 h-2 bg-destructive rounded-full" />
           </button>
-          <div className="h-9 w-9 rounded-full gradient-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
-            {initial}
-          </div>
+          <Link
+            to="/account"
+            title={lang === "bn" ? "অ্যাকাউন্ট" : "Account"}
+            className="h-9 w-9 rounded-full overflow-hidden gradient-primary text-primary-foreground flex items-center justify-center font-bold text-sm ring-2 ring-transparent hover:ring-primary/40 transition"
+          >
+            {avatarUrl ? <img src={avatarUrl} alt="profile" className="h-full w-full object-cover" /> : initial}
+          </Link>
         </div>
       </header>
 

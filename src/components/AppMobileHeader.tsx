@@ -4,6 +4,7 @@ import { useShop } from "@/hooks/useShop";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { Bell, Search, Sun, Moon, ChevronLeft, Store } from "lucide-react";
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const TITLES: Record<string, string> = {
   "/": "ড্যাশবোর্ড",
@@ -29,7 +30,13 @@ export function AppMobileHeader() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   useEffect(() => { document.documentElement.classList.toggle("dark", dark); }, [dark]);
+  useEffect(() => {
+    if (!user) { setAvatarUrl(null); return; }
+    supabase.from("profiles").select("avatar_url").eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => setAvatarUrl(data?.avatar_url ?? null));
+  }, [user]);
 
   const isHome = pathname === "/";
   const title = TITLES[pathname] ?? "সূর্য শপ";
@@ -72,9 +79,9 @@ export function AppMobileHeader() {
             <Bell className="h-5 w-5" />
             <span className="absolute top-2 right-2 w-2 h-2 bg-destructive rounded-full" />
           </button>
-          <div className="h-9 w-9 rounded-full gradient-primary text-primary-foreground flex items-center justify-center font-bold text-sm ml-1">
-            {initial}
-          </div>
+          <Link to="/account" aria-label="Account" className="h-9 w-9 rounded-full overflow-hidden gradient-primary text-primary-foreground flex items-center justify-center font-bold text-sm ml-1">
+            {avatarUrl ? <img src={avatarUrl} alt="profile" className="h-full w-full object-cover" /> : initial}
+          </Link>
         </div>
       </div>
     </header>
