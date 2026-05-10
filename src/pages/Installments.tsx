@@ -53,6 +53,9 @@ export default function Installments() {
   const [amount, setAmount] = useState(0);
   const [filter, setFilter] = useState<"all" | "active" | "overdue" | "completed">("all");
   const [managing, setManaging] = useState<Plan | null>(null);
+  const [paymentsByInst, setPaymentsByInst] = useState<Record<string, any[]>>({});
+  const [editPay, setEditPay] = useState<any>(null);
+  const [editPayAmount, setEditPayAmount] = useState(0);
 
   // ===== New Installment Plan Modal =====
   const [openNew, setOpenNew] = useState(false);
