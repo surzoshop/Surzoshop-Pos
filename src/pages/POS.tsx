@@ -687,6 +687,16 @@ export default function POS() {
             <div className="flex justify-between text-muted-foreground"><span>{t("subtotal")}:</span><span>{fmt(subtotal)}</span></div>
             <div className="flex justify-between text-muted-foreground"><span>{t("vat")} (0%):</span><span>{fmt(0)}</span></div>
             <div className="flex justify-between text-muted-foreground"><span>{t("discount")}:</span><span className="text-destructive">-{fmt(discount)}</span></div>
+            {extraCharge > 0 && (
+              <div className="flex justify-between items-center bg-amber-500/10 -mx-1 px-3 py-2 rounded-lg border border-amber-500/30">
+                <span className="font-bold text-amber-700 dark:text-amber-400">
+                  {paymentType === "installment"
+                    ? (lang === "bn" ? "কিস্তিতে অতিরিক্ত চার্জ" : "Installment Extra")
+                    : (lang === "bn" ? "বাকিতে অতিরিক্ত চার্জ" : "Credit Extra")}
+                </span>
+                <span className="font-extrabold text-amber-700 dark:text-amber-400">+{fmt(extraCharge)}</span>
+              </div>
+            )}
             {paymentType === "installment" && downPayment > 0 && (
               <div className="flex justify-between text-muted-foreground"><span>{lang === "bn" ? "ডাউন পেমেন্ট" : "Down Payment"}:</span><span className="text-success">-{fmt(downPayment)}</span></div>
             )}
