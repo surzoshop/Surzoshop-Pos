@@ -55,6 +55,7 @@ export default function Installments() {
   const [filter, setFilter] = useState<"all" | "active" | "overdue" | "completed">("all");
   const [managing, setManaging] = useState<Plan | null>(null);
   const [paymentsByInst, setPaymentsByInst] = useState<Record<string, any[]>>({});
+  const [extraBySale, setExtraBySale] = useState<Record<string, number>>({});
   const [editPay, setEditPay] = useState<any>(null);
   const [editPayAmount, setEditPayAmount] = useState(0);
 
