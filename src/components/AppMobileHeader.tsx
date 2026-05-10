@@ -30,7 +30,13 @@ export function AppMobileHeader() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   useEffect(() => { document.documentElement.classList.toggle("dark", dark); }, [dark]);
+  useEffect(() => {
+    if (!user) { setAvatarUrl(null); return; }
+    supabase.from("profiles").select("avatar_url").eq("user_id", user.id).maybeSingle()
+      .then(({ data }) => setAvatarUrl(data?.avatar_url ?? null));
+  }, [user]);
 
   const isHome = pathname === "/";
   const title = TITLES[pathname] ?? "সূর্য শপ";
