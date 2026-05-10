@@ -348,6 +348,13 @@ export default function POS() {
     }
     const { data: sale, error } = await supabase.from("sales").insert(salePayload).select().single();
     if (error) { toast({ title: error.message, variant: "destructive" }); return; }
+    logActivity({
+      action: "sale.create",
+      entity_type: "sale",
+      entity_id: sale.id,
+      shop_id: salePayload.shop_id ?? null,
+      meta: { invoice_no: sale.invoice_no, amount: Number(sale.total), payment_type: paymentType },
+    });
 
     const items = cart.map(i => {
       const p: any = i.product;
