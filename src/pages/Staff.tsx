@@ -427,7 +427,7 @@ export default function Staff() {
       <Sheet open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditingId(null); }}>
         <SheetContent
           side="right"
-          className="w-full sm:max-w-xl md:max-w-2xl bg-[hsl(var(--surface-container-lowest))] p-0 flex flex-col h-full"
+          className="w-full sm:max-w-xl md:max-w-2xl bg-[hsl(var(--surface-container-lowest))] p-0 flex flex-col h-screen max-h-screen overflow-hidden"
         >
           <div className="shrink-0 bg-[hsl(var(--surface-container-lowest))] border-b border-[hsl(var(--border))] px-5 md:px-7 py-4">
             <SheetHeader className="space-y-1 text-left">
