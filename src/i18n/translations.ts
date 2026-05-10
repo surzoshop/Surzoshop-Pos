@@ -24,7 +24,7 @@ const base = {
     dueDate: "নির্ধারিত তারিখ", amount: "পরিমাণ", status: "অবস্থা",
     pending: "অপেক্ষমান", overdue: "মেয়াদোত্তীর্ণ", completed: "সম্পন্ন", partial: "আংশিক",
     pay: "পরিশোধ", months: "মাস", numberOfInstallments: "কিস্তির সংখ্যা",
-    downPayment: "অগ্রিম", generateSchedule: "সময়সূচী তৈরি",
+    downPayment: "ডাউন পেমেন্ট", generateSchedule: "সময়সূচী তৈরি",
     confirmDelete: "আপনি কি নিশ্চিত?", actions: "অ্যাকশন",
     role: "ভূমিকা", admin: "অ্যাডমিন", cashier: "ক্যাশিয়ার",
     welcomeBack: "স্বাগতম", loginSubtitle: "আপনার অ্যাকাউন্টে লগইন করুন",

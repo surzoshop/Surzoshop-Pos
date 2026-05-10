@@ -435,7 +435,7 @@ export default function Installments() {
                             </div>
                             <Button size="sm" className="gradient-primary text-primary-foreground shadow-md hover:brightness-110"
                               onClick={() => { setPaying(i); setAmount(payable); }}>
-                              <Wallet className="h-4 w-4 mr-1" />{t("pay")}
+                              <Wallet className="h-4 w-4 mr-1" />{lang === "bn" ? "কিস্তি পরিশোধ করুন" : "Pay Installment"}
                             </Button>
                           </div>
                         )}

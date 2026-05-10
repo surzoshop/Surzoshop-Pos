@@ -160,11 +160,20 @@ export default function Staff() {
     setOpen(true);
   };
 
-  const openEdit = (e: React.MouseEvent, s: any) => {
+  const openEdit = async (e: React.MouseEvent, s: any) => {
     e.stopPropagation();
     setEditingId(s.id);
     const sus = shopUsersByStaff[s.id] ?? [];
     const firstSu = sus[0];
+
+    // Fetch staff_access as the source of truth (most recent)
+    const { data: sa } = await supabase
+      .from("staff_access" as any)
+      .select("*")
+      .eq("staff_id", s.id)
+      .maybeSingle();
+    const saRow = sa as any;
+
     setForm({
       name: s.name ?? "",
       phone: s.phone ?? "",
@@ -172,15 +181,17 @@ export default function Staff() {
       address: s.address ?? "",
       position: s.position ?? "cashier",
       salary: Number(s.salary ?? 0),
-      loginPhone: firstSu?.email ?? s.phone ?? "",
+      loginPhone: saRow?.login_identifier ?? firstSu?.email ?? s.phone ?? "",
       password: "",
-      createLogin: !!firstSu,
+      createLogin: !!(saRow || firstSu),
     });
-    // Load current permissions from existing shop_user
+
+    // Merge permissions: staff_access wins, fall back to shop_users
     const perms: Record<string, boolean> = {};
-    if (firstSu?.permissions) {
-      Object.entries(firstSu.permissions).forEach(([k, v]) => { if (v) perms[k] = true; });
-    }
+    const src = (saRow?.permissions && Object.keys(saRow.permissions).length)
+      ? saRow.permissions
+      : (firstSu?.permissions ?? {});
+    Object.entries(src).forEach(([k, v]) => { if (v) perms[k] = true; });
     setPermissions(perms);
     setOpen(true);
   };
@@ -416,7 +427,7 @@ export default function Staff() {
       <Sheet open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditingId(null); }}>
         <SheetContent
           side="right"
-          className="w-full sm:max-w-xl md:max-w-2xl bg-[hsl(var(--surface-container-lowest))] p-0 flex flex-col h-full"
+          className="w-full sm:max-w-xl md:max-w-2xl bg-[hsl(var(--surface-container-lowest))] p-0 flex flex-col h-screen max-h-screen overflow-hidden"
         >
           <div className="shrink-0 bg-[hsl(var(--surface-container-lowest))] border-b border-[hsl(var(--border))] px-5 md:px-7 py-4">
             <SheetHeader className="space-y-1 text-left">
