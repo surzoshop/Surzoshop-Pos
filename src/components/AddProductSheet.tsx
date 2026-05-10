@@ -47,6 +47,8 @@ const WARRANTY_TYPES = [
 
 export function AddProductSheet({ open, onOpenChange, onSaved, editing }: Props) {
   const { toast } = useToast();
+  const { role } = useAuth();
+  const isAdmin = role === "admin" || role === "super_admin";
   const [cats, setCats] = useState<any[]>([]);
   const empty = {
     name: "", category_id: "", price: "", cost: "", stock: "", unit: "pcs",
