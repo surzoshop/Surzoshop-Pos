@@ -100,9 +100,13 @@ export default function AppLayout() {
             <Bell className="h-5 w-5" />
             <span className="absolute top-0 right-0 w-2 h-2 bg-destructive rounded-full" />
           </button>
-          <div className="h-9 w-9 rounded-full gradient-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
-            {initial}
-          </div>
+          <Link
+            to="/account"
+            title={lang === "bn" ? "অ্যাকাউন্ট" : "Account"}
+            className="h-9 w-9 rounded-full overflow-hidden gradient-primary text-primary-foreground flex items-center justify-center font-bold text-sm ring-2 ring-transparent hover:ring-primary/40 transition"
+          >
+            {avatarUrl ? <img src={avatarUrl} alt="profile" className="h-full w-full object-cover" /> : initial}
+          </Link>
         </div>
       </header>
 
