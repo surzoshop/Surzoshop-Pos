@@ -17,10 +17,6 @@ import {
   Warehouse, ClipboardList, BookOpen, Wallet, Users, Truck, Contact, BarChart3,
   CalendarCheck, Store,
 } from "lucide-react";
-  LayoutDashboard, ShoppingCart, Receipt, RotateCcw, ShoppingBag, Package, Layers,
-  Warehouse, ClipboardList, BookOpen, Wallet, Users, Truck, Contact, BarChart3,
-  CalendarCheck, Store,
-} from "lucide-react";
 import { PageHeader, SurfaceCard, PrimaryButton } from "@/components/PageHeader";
 
 // Position categories
