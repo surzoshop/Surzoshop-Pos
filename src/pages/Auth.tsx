@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { logActivity } from "@/lib/activityLog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,6 +54,8 @@ export default function Auth() {
           lastErr = error;
         }
         if (!success) throw lastErr ?? new Error("Invalid credentials");
+        // Log the login activity (fire-and-forget) so admins can audit who logged in.
+        setTimeout(() => { void logActivity({ action: "auth.login", meta: { identifier: raw } }); }, 0);
         nav("/");
       }
     } catch (err: any) {

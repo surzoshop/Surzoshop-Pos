@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   ArrowLeft, ShoppingCart, Receipt, ClipboardList, LogIn, Users, Package,
-  CalendarCheck, Activity, Phone, MapPin, Briefcase,
+  CalendarCheck, Activity, Phone, MapPin, Briefcase, Pencil, Clock,
 } from "lucide-react";
 
 const ACTION_META: Record<string, { label: string; icon: any; tone: string }> = {
@@ -65,8 +65,9 @@ export default function StaffHistory() {
     const total = logs.length;
     const sales = logs.filter(l => l.action === "sale.create").length;
     const expenses = logs.filter(l => l.action === "expense.create").length;
+    const logins = logs.filter(l => l.action.startsWith("auth.")).length;
     const lastAt = logs[0]?.created_at;
-    return { total, sales, expenses, lastAt };
+    return { total, sales, expenses, logins, lastAt };
   }, [logs]);
 
   if (!staff) {
@@ -79,16 +80,20 @@ export default function StaffHistory() {
 
   return (
     <div>
-      <Button variant="ghost" onClick={() => nav("/staff")} className="mb-3 -ml-2">
-        <ArrowLeft className="h-4 w-4 mr-1" /> স্টাফ তালিকায় ফিরুন
-      </Button>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <Button variant="ghost" onClick={() => nav("/staff")} className="-ml-2">
+          <ArrowLeft className="h-4 w-4 mr-1" /> স্টাফ তালিকায় ফিরুন
+        </Button>
+        <Button onClick={() => nav("/staff")} size="sm" className="gradient-primary text-primary-foreground">
+          <Pencil className="h-3.5 w-3.5 mr-1.5" /> Password / Access সম্পাদনা
+        </Button>
+      </div>
 
-      <PageHeader title="স্টাফ History" subtitle="সমস্ত activity track করুন" />
+      <PageHeader title="স্টাফ Activity History" subtitle="বিক্রয় • খরচ • Login সহ সব activity এক জায়গায়" />
 
-      {/* Profile card */}
-      <SurfaceCard className="p-5 mb-5">
+      <SurfaceCard className="p-5 mb-5 bg-gradient-to-br from-[hsl(var(--surface-container-lowest))] to-[hsl(var(--surface-container-low))]">
         <div className="flex flex-wrap items-start gap-4">
-          <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-pink-400 to-fuchsia-600 text-white flex items-center justify-center font-black text-2xl shrink-0">
+          <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-pink-400 to-fuchsia-600 text-white flex items-center justify-center font-black text-2xl shrink-0 shadow-lg shadow-fuchsia-500/30">
             {initial}
           </div>
           <div className="flex-1 min-w-0">
@@ -99,14 +104,17 @@ export default function StaffHistory() {
               {staff.address && <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />{staff.address}</span>}
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3 w-full sm:w-auto">
+          <div className="grid grid-cols-4 gap-2 w-full sm:w-auto">
             <MiniBox label="মোট" value={String(stats.total)} />
-            <MiniBox label="বিক্রয়" value={String(stats.sales)} />
-            <MiniBox label="খরচ" value={String(stats.expenses)} />
+            <MiniBox label="বিক্রয়" value={String(stats.sales)} tone="text-emerald-600" />
+            <MiniBox label="খরচ" value={String(stats.expenses)} tone="text-amber-600" />
+            <MiniBox label="Login" value={String(stats.logins)} tone="text-sky-600" />
           </div>
         </div>
         {stats.lastAt && (
-          <p className="text-[11px] text-muted-foreground mt-3">শেষ activity: {new Date(stats.lastAt).toLocaleString()}</p>
+          <p className="text-[11px] text-muted-foreground mt-3 flex items-center gap-1.5">
+            <Clock className="h-3 w-3" /> শেষ activity: {new Date(stats.lastAt).toLocaleString()}
+          </p>
         )}
       </SurfaceCard>
 
@@ -164,11 +172,11 @@ export default function StaffHistory() {
   );
 }
 
-function MiniBox({ label, value }: { label: string; value: string }) {
+function MiniBox({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
     <div className="bg-[hsl(var(--surface-container-high))] rounded-xl px-3 py-2 text-center">
       <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</p>
-      <p className="text-lg font-black mt-0.5">{value}</p>
+      <p className={`text-lg font-black mt-0.5 ${tone ?? ""}`}>{value}</p>
     </div>
   );
 }
