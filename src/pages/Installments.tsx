@@ -44,7 +44,8 @@ const addMonthsToDateStr = (dateStr: string, monthsToAdd: number) => {
 
 export default function Installments() {
   const { t, fmt, lang } = useT();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const isAdmin = role === "admin" || role === "super_admin";
   const { toast } = useToast();
   const [items, setItems] = useState<Inst[]>([]);
   const [sales, setSales] = useState<any[]>([]);
