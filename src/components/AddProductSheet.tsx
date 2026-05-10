@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ImageUpload } from "@/components/ImageUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Package, Tag, DollarSign, Layers, ShieldCheck, TrendingUp } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Package, Tag, DollarSign, Layers, ShieldCheck, TrendingUp, Lock } from "lucide-react";
 
 function namePrefix(name: string): string {
   const ascii = (name || "").replace(/[^A-Za-z]/g, "");
