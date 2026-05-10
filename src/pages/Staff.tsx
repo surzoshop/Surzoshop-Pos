@@ -148,7 +148,6 @@ export default function Staff() {
 
   const save = async () => {
     if (!form.name.trim()) return toast({ title: "নাম প্রয়োজন", variant: "destructive" });
-    if (!form.shopId) return toast({ title: "Shop নির্বাচন করুন", variant: "destructive" });
 
     if (form.createLogin) {
       const digits = form.loginPhone.replace(/\D+/g, "");
@@ -162,13 +161,25 @@ export default function Staff() {
 
     setSaving(true);
     try {
+      // Ensure we have a shop — auto-create a default one if user has none yet
+      let shopId = form.shopId || currentShop?.id || shops[0]?.id || "";
+      if (!shopId) {
+        const { data: newShop, error: shopErr } = await supabase
+          .from("shops")
+          .insert({ name: "আমার দোকান", is_active: true })
+          .select()
+          .single();
+        if (shopErr) throw new Error("Default shop তৈরি ব্যর্থ: " + shopErr.message);
+        shopId = newShop.id;
+      }
+
       // 1) Insert staff record
       const { data: staffRow, error: sErr } = await supabase.from("staff").insert({
         name: form.name,
         phone: form.phone || form.loginPhone,
         nid: form.nid, address: form.address,
         position: form.position, salary: form.salary,
-        shop_id: form.shopId,
+        shop_id: shopId,
       }).select().single();
       if (sErr) throw sErr;
 
