@@ -416,9 +416,9 @@ export default function Staff() {
       <Sheet open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditingId(null); }}>
         <SheetContent
           side="right"
-          className="w-full sm:max-w-xl md:max-w-2xl overflow-y-auto bg-[hsl(var(--surface-container-lowest))] p-0"
+          className="w-full sm:max-w-xl md:max-w-2xl bg-[hsl(var(--surface-container-lowest))] p-0 flex flex-col h-full"
         >
-          <div className="sticky top-0 z-10 bg-[hsl(var(--surface-container-lowest))] border-b border-[hsl(var(--border))] px-5 md:px-7 py-4">
+          <div className="shrink-0 bg-[hsl(var(--surface-container-lowest))] border-b border-[hsl(var(--border))] px-5 md:px-7 py-4">
             <SheetHeader className="space-y-1 text-left">
               <SheetTitle className="text-xl font-extrabold flex items-center gap-2 font-bn">
                 <span className="h-9 w-9 rounded-xl bg-gradient-to-br from-pink-400 to-fuchsia-600 text-white flex items-center justify-center shadow shadow-pink-500/30">
@@ -432,7 +432,7 @@ export default function Staff() {
             </SheetHeader>
           </div>
 
-          <div className="px-5 md:px-7 py-5 space-y-6">
+          <div className="flex-1 overflow-y-auto px-5 md:px-7 py-5 space-y-6 min-h-0">
             {/* Basic info */}
             <section className="space-y-3">
               <h4 className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground font-bn">মূল তথ্য</h4>
