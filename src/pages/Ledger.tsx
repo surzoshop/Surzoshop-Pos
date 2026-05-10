@@ -238,6 +238,12 @@ export default function Ledger() {
     });
     setPurchaseCostAgg(Array.from(pcByDate.entries()).map(([date, total]) => ({ date, total })));
 
+    // স্টক বিক্রয়মূল্য (staff-friendly): stock × selling price
+    let prq = supabase.from("products").select("stock,price").eq("is_active", true);
+    if (currentShop) prq = prq.eq("shop_id", currentShop.id);
+    const { data: prData } = await prq;
+    setStockSellValue((prData ?? []).reduce((s: number, p: any) => s + Number(p.stock || 0) * Number(p.price || 0), 0));
+
     setLoading(false);
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [currentShop?.id]);
