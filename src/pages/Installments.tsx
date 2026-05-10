@@ -44,7 +44,8 @@ const addMonthsToDateStr = (dateStr: string, monthsToAdd: number) => {
 
 export default function Installments() {
   const { t, fmt, lang } = useT();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const isAdmin = role === "admin" || role === "super_admin";
   const { toast } = useToast();
   const [items, setItems] = useState<Inst[]>([]);
   const [sales, setSales] = useState<any[]>([]);
@@ -194,14 +195,19 @@ export default function Installments() {
   };
 
   const pay = async () => {
-    if (amount <= 0) return;
+    if (!paying) return;
+    // For staff: amount is fixed (remaining + late fee). Only admin can override.
+    const remaining = Math.max(0, Number(paying.amount) - Number(paying.paid_amount));
+    const fee = computeLateFee(paying, managing?.late_fee_pct ?? 0);
+    const fixedPayable = remaining + fee;
+    const finalAmount = isAdmin ? amount : fixedPayable;
+    if (finalAmount <= 0) return;
     const { error } = await supabase.from("installment_payments").insert({
-      installment_id: paying.id, amount, received_by: user!.id,
+      installment_id: paying.id, amount: finalAmount, received_by: user!.id,
     });
     if (error) return toast({ title: error.message, variant: "destructive" });
     setPaying(null); setAmount(0); await load();
     toast({ title: t("paid") });
-    // refresh managing plan
     if (managing) {
       const fresh = plans.find(p => p.sale_id === managing.sale_id);
       if (fresh) setManaging(fresh);
@@ -425,7 +431,22 @@ export default function Installments() {
           {paying && (
             <div className="space-y-3">
               <div className="text-sm text-muted-foreground">{paying.sales?.invoice_no} • {t("amount")}: {fmt(Number(paying.amount))}</div>
-              <div><Label>{t("amount")}</Label><Input type="number" value={amount} onChange={e => setAmount(+e.target.value)} /></div>
+              <div>
+                <Label>{t("amount")}</Label>
+                <Input
+                  type="number"
+                  value={amount}
+                  onChange={e => isAdmin && setAmount(+e.target.value)}
+                  readOnly={!isAdmin}
+                  disabled={!isAdmin}
+                  className={!isAdmin ? "bg-[hsl(var(--surface-container))] cursor-not-allowed font-bold text-foreground opacity-100" : ""}
+                />
+                {!isAdmin && (
+                  <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                    🔒 {lang === "bn" ? "পরিমাণ নির্ধারিত — শুধু অ্যাডমিন পরিবর্তন করতে পারবেন।" : "Amount is fixed — only admin can edit."}
+                  </p>
+                )}
+              </div>
             </div>
           )}
           <DialogFooter>
