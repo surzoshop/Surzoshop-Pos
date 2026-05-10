@@ -336,6 +336,15 @@ export default function Installments() {
                     {t("startDate")}: {p.start_date ? new Date(p.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" }) : "—"}
                   </div>
 
+                  {(p.extra_charge ?? 0) > 0 && (
+                    <div className="flex items-center justify-between bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2 mb-2 text-xs">
+                      <span className="font-bold text-amber-700 dark:text-amber-400">
+                        {lang === "bn" ? "কিস্তিতে অতিরিক্ত চার্জ" : "Installment Extra Charge"}
+                      </span>
+                      <span className="font-extrabold text-amber-700 dark:text-amber-400">+{fmt(p.extra_charge ?? 0)}</span>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between bg-gradient-to-r from-[hsl(var(--surface-container-low))] to-[hsl(var(--surface-container))] rounded-xl p-3 text-sm border border-[hsl(var(--surface-container-high))]/40">
                     <div>
                       <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{t("paid")}</div>
