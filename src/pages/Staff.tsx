@@ -207,6 +207,7 @@ export default function Staff() {
       setOpen(false);
       setForm({ ...emptyForm });
       load();
+      refreshShops();
     } catch (e: any) {
       toast({ title: e.message ?? "ত্রুটি", variant: "destructive" });
     } finally {
