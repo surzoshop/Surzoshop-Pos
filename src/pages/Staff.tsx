@@ -261,7 +261,7 @@ export default function Staff() {
           userId = existing?.user_id ?? null;
         }
 
-        // Attach to all shops with these permissions
+        // Attach to all shops with these permissions (also handled by trigger via staff_access).
         if (userId && shopList.length) {
           const rows = shopList.map(s => ({
             user_id: userId!,
@@ -274,6 +274,19 @@ export default function Staff() {
           }));
           const { error: suErr } = await supabase.from("shop_users").upsert(rows, { onConflict: "user_id,shop_id" });
           if (suErr) throw suErr;
+        }
+
+        // Persist shop-independent staff access so the user can log in even
+        // when no shops exist yet, and so future shops automatically attach.
+        if (userId) {
+          const { error: saErr } = await supabase.from("staff_access" as any).upsert({
+            user_id: userId,
+            staff_id: staffId,
+            login_identifier: form.loginPhone || form.phone,
+            permissions: permsObj,
+            is_active: true,
+          }, { onConflict: "user_id" });
+          if (saErr) throw saErr;
         }
       }
 
