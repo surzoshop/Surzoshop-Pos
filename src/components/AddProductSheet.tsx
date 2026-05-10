@@ -97,6 +97,8 @@ export function AddProductSheet({ open, onOpenChange, onSaved, editing }: Props)
       unit: form.unit || "pcs",
       category_id: form.category_id || null,
       image_url: form.image_url || null,
+      credit_extra: Number(form.credit_extra) || 0,
+      installment_extra: Number(form.installment_extra) || 0,
       has_warranty: !!form.has_warranty,
       warranty_months: form.has_warranty ? Number(form.warranty_months) : null,
     };
