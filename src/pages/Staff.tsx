@@ -34,8 +34,8 @@ const POSITIONS: { value: string; label: string }[] = [
 
 // All access points with friendly labels + icons
 const ACCESS_POINTS: { key: PageKey; label: string; icon: any }[] = [
-  { key: "dashboard", label: "ড্যাশবোর্ড / হোম", icon: LayoutDashboard },
-  { key: "pos", label: "বিক্রি (POS)", icon: ShoppingCart },
+  { key: "dashboard", label: "ড্যাশবোর্ড", icon: LayoutDashboard },
+  { key: "pos", label: "বিক্রি করুন (POS)", icon: ShoppingCart },
   { key: "sales", label: "বিক্রয় তালিকা", icon: Receipt },
   { key: "sales-returns", label: "বিক্রয় ফেরত", icon: RotateCcw },
   { key: "purchases", label: "ক্রয় / স্টক এন্ট্রি", icon: ShoppingBag },
@@ -43,9 +43,10 @@ const ACCESS_POINTS: { key: PageKey; label: string; icon: any }[] = [
   { key: "stock-ledger", label: "স্টক ম্যানেজমেন্ট", icon: Layers },
   { key: "stock-adjustments", label: "স্টক সমন্বয়", icon: Warehouse },
   { key: "expenses", label: "খরচ এন্ট্রি", icon: ClipboardList },
+  { key: "ledger", label: "হিসাব ব্যবস্থাপনা", icon: BookOpen },
   { key: "installments", label: "কিস্তি ম্যানেজমেন্ট", icon: Wallet },
-  { key: "warranty", label: "ওয়ারেন্টি", icon: ShieldCheck },
-  { key: "customers", label: "কাস্টমার", icon: Users },
+  { key: "warranty", label: "ওয়ারেন্টি ম্যানেজমেন্ট", icon: ShieldCheck },
+  { key: "customers", label: "কাস্টমার ম্যানেজমেন্ট", icon: Users },
   { key: "customer-ledger", label: "বাকি ম্যানেজমেন্ট", icon: BookOpen },
   { key: "suppliers", label: "সরবরাহকারী", icon: Truck },
   { key: "supplier-ledger", label: "সরবরাহকারী লেজার", icon: BookOpen },
@@ -53,13 +54,13 @@ const ACCESS_POINTS: { key: PageKey; label: string; icon: any }[] = [
   { key: "reports", label: "রিপোর্ট", icon: BarChart3 },
   { key: "staff", label: "স্টাফ", icon: UserCog },
   { key: "attendance", label: "হাজিরা", icon: CalendarCheck },
-  { key: "shops", label: "শপ ম্যানেজমেন্ট", icon: Store },
+  { key: "shops", label: "Multiple Shops", icon: Store },
 ];
 
 // Presets per position
 const PRESETS: Record<string, PageKey[]> = {
   cashier: ["dashboard", "pos", "sales", "customers"],
-  accountant: ["dashboard", "expenses", "customer-ledger", "supplier-ledger", "reports"],
+  accountant: ["dashboard", "expenses", "ledger", "customer-ledger", "supplier-ledger", "reports"],
   manager: [...ACCESS_POINTS.map(a => a.key)].filter(k => k !== "shops" && k !== "staff") as PageKey[],
   salesman: ["dashboard", "pos", "customers", "products"],
   stock_keeper: ["dashboard", "products", "stock-ledger", "stock-adjustments", "purchases"],
