@@ -690,52 +690,61 @@ export default function POS() {
               </div>
             )}
 
-            {/* Editable Grand Total — always-visible editor with -/+ buttons */}
+            {/* Editable Grand Total — admin-only edit; staff sees read-only total */}
             <div className="pt-3 border-t border-dashed border-[hsl(var(--surface-container-highest))]">
               <div className="flex items-center justify-between gap-2 mb-1.5">
                 <span className="text-base font-extrabold">{t("grandTotal")}:</span>
-                {totalOverride !== null && (
+                {isAdmin && totalOverride !== null && (
                   <button onClick={() => setTotalOverride(null)} className="text-[11px] text-muted-foreground hover:text-primary underline">
                     মূল ({fmt(computedBase)}) এ ফিরুন
                   </button>
                 )}
               </div>
-              <div className={`flex items-stretch rounded-xl border-2 ${totalOverride !== null ? "border-primary/60 bg-primary/5" : "border-primary/30 bg-[hsl(var(--surface-container-low))]"} shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-primary/40 transition-all`}>
-                <button
-                  type="button"
-                  onClick={() => setTotalOverride(Math.max(0, Math.round((total - 10) * 100) / 100))}
-                  className="px-3 sm:px-4 bg-[hsl(var(--surface-container))] hover:bg-[hsl(var(--surface-container-high))] text-primary font-bold flex items-center justify-center active:scale-95 transition-all border-r border-primary/20"
-                  aria-label="কমান"
-                  title="১০ টাকা কমান"
-                >
-                  <Minus className="h-5 w-5" />
-                </button>
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={Number.isFinite(total) ? total : 0}
-                  onChange={(e) => {
-                    const v = +e.target.value;
-                    setTotalOverride(Number.isFinite(v) ? v : 0);
-                  }}
-                  className="flex-1 min-w-0 text-center bg-transparent text-xl sm:text-2xl font-black text-primary px-2 py-2.5 focus:outline-none tabular-nums"
-                  title="সরাসরি লিখে edit করুন"
-                />
-                <button
-                  type="button"
-                  onClick={() => setTotalOverride(Math.round((total + 10) * 100) / 100)}
-                  className="px-3 sm:px-4 bg-[hsl(var(--surface-container))] hover:bg-[hsl(var(--surface-container-high))] text-primary font-bold flex items-center justify-center active:scale-95 transition-all border-l border-primary/20"
-                  aria-label="বাড়ান"
-                  title="১০ টাকা বাড়ান"
-                >
-                  <Plus className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="flex justify-between items-center mt-1.5 text-[10px] text-muted-foreground">
-                <span>{totalOverride !== null ? "✎ custom মোট সেট করা" : "ক্লিক বা +/- চাপুন — custom মোট দিতে পারেন"}</span>
-                <span>−/+ = ৳১০</span>
-              </div>
+              {isAdmin ? (
+                <>
+                  <div className={`flex items-stretch rounded-xl border-2 ${totalOverride !== null ? "border-primary/60 bg-primary/5" : "border-primary/30 bg-[hsl(var(--surface-container-low))]"} shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-primary/40 transition-all`}>
+                    <button
+                      type="button"
+                      onClick={() => setTotalOverride(Math.max(0, Math.round((total - 10) * 100) / 100))}
+                      className="px-3 sm:px-4 bg-[hsl(var(--surface-container))] hover:bg-[hsl(var(--surface-container-high))] text-primary font-bold flex items-center justify-center active:scale-95 transition-all border-r border-primary/20"
+                      aria-label="কমান"
+                      title="১০ টাকা কমান"
+                    >
+                      <Minus className="h-5 w-5" />
+                    </button>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={Number.isFinite(total) ? total : 0}
+                      onChange={(e) => {
+                        const v = +e.target.value;
+                        setTotalOverride(Number.isFinite(v) ? v : 0);
+                      }}
+                      className="flex-1 min-w-0 text-center bg-transparent text-xl sm:text-2xl font-black text-primary px-2 py-2.5 focus:outline-none tabular-nums"
+                      title="সরাসরি লিখে edit করুন"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setTotalOverride(Math.round((total + 10) * 100) / 100)}
+                      className="px-3 sm:px-4 bg-[hsl(var(--surface-container))] hover:bg-[hsl(var(--surface-container-high))] text-primary font-bold flex items-center justify-center active:scale-95 transition-all border-l border-primary/20"
+                      aria-label="বাড়ান"
+                      title="১০ টাকা বাড়ান"
+                    >
+                      <Plus className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <div className="flex justify-between items-center mt-1.5 text-[10px] text-muted-foreground">
+                    <span>{totalOverride !== null ? "✎ custom মোট সেট করা" : "ক্লিক বা +/- চাপুন — custom মোট দিতে পারেন"}</span>
+                    <span>−/+ = ৳১০</span>
+                  </div>
+                </>
+              ) : (
+                <div className="rounded-xl border-2 border-primary/30 bg-[hsl(var(--surface-container-low))] px-4 py-3 text-center">
+                  <div className="text-2xl font-black text-primary tabular-nums">{fmt(total)}</div>
+                  <div className="text-[10px] text-muted-foreground mt-1">🔒 মোট পরিমাণ পরিবর্তনের অনুমতি নেই — শুধুমাত্র admin</div>
+                </div>
+              )}
             </div>
           </div>
 
