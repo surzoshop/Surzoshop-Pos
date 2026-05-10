@@ -79,7 +79,7 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
           <div className="min-w-0">
             <h1 className="text-lg font-black text-foreground leading-tight truncate">{t("appName")}</h1>
             <p className="text-[9px] text-muted-foreground tracking-[0.2em] uppercase leading-tight">
-              {isSuperAdmin ? "Super Admin" : "Staff Terminal"}
+              {isSuperAdmin ? "Super Admin Panel" : "স্টাফ প্যানেল • Staff Panel"}
             </p>
           </div>
         </div>
