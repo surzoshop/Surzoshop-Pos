@@ -4,6 +4,7 @@ import { useShop } from "@/hooks/useShop";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { Bell, Search, Sun, Moon, ChevronLeft, Store } from "lucide-react";
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const TITLES: Record<string, string> = {
   "/": "ড্যাশবোর্ড",
