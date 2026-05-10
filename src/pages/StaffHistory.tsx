@@ -84,9 +84,6 @@ export default function StaffHistory() {
         <Button variant="ghost" onClick={() => nav("/staff")} className="-ml-2">
           <ArrowLeft className="h-4 w-4 mr-1" /> স্টাফ তালিকায় ফিরুন
         </Button>
-        <Button onClick={() => nav("/staff")} size="sm" className="gradient-primary text-primary-foreground">
-          <Pencil className="h-3.5 w-3.5 mr-1.5" /> Password / Access সম্পাদনা
-        </Button>
       </div>
 
       <PageHeader title="স্টাফ Activity History" subtitle="বিক্রয় • খরচ • Login সহ সব activity এক জায়গায়" />
