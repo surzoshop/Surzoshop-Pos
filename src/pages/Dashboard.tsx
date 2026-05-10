@@ -308,7 +308,7 @@ export default function Dashboard() {
         <MiniStat
           to="/reports" theme="violet" icon={<TrendingUp className="h-4 w-4" />}
           label="মাসিক লাভ" value={fmt(stats.monthProfit)}
-          hint="এ মাসে: বিক্রয় − ক্রয়মূল্য"
+          hint={`${selectedMonth.toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { month: "long" })}: বিক্রয় − ক্রয়মূল্য`}
         />
         <MiniStat
           to="/ledger" theme="amber" icon={<AlertTriangle className="h-4 w-4" />}
