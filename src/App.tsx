@@ -40,6 +40,7 @@ import InstallApp from "./pages/InstallApp";
 import ScannerCompanion from "./pages/ScannerCompanion";
 import Contacts from "./pages/Contacts";
 import Warranty from "./pages/Warranty";
+import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
