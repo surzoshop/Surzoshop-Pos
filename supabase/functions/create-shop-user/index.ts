@@ -63,9 +63,18 @@ Deno.serve(async (req) => {
     // Ensure 'staff' role
     await admin.from("user_roles").upsert({ user_id: userId, role: "staff" }, { onConflict: "user_id,role" });
 
-    // Optionally link to a shop if shop_id provided. Otherwise the staff
-    // login is created without any shop binding (admin can attach later from
-    // Shop management).
+    // Store shop-independent staff access. Trigger will fan out to shop_users
+    // for every existing active shop, and any future shop will pick this up.
+    const { error: saErr } = await admin.from("staff_access").upsert({
+      user_id: userId,
+      staff_id: staff_id ?? null,
+      login_identifier: phone ?? email,
+      permissions: permissions ?? {},
+      is_active: true,
+    }, { onConflict: "user_id" });
+    if (saErr) throw saErr;
+
+    // Optionally also link directly to a specific shop if provided.
     if (shop_id) {
       const { error: suErr } = await admin.from("shop_users").upsert({
         user_id: userId, shop_id, staff_id: staff_id ?? null,
