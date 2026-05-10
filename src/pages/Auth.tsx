@@ -8,7 +8,7 @@ import { useT } from "@/i18n/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, Store, Languages, Sun, ShieldCheck, BarChart3,
-  Wallet, ShoppingCart, Mail, Lock, User, ArrowRight,
+  Wallet, ShoppingCart, Mail, Lock, User, ArrowRight, Phone,
 } from "lucide-react";
 
 export default function Auth() {
@@ -16,7 +16,9 @@ export default function Auth() {
   const { toast } = useToast();
   const nav = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [loginMethod, setLoginMethod] = useState<"email" | "phone">("phone");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,7 +36,11 @@ export default function Auth() {
         toast({ title: "Success", description: "Account created. You can now log in." });
         setMode("login");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const loginEmail =
+          loginMethod === "phone"
+            ? `${phone.replace(/\D+/g, "")}@staff.local`
+            : email;
+        const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
         if (error) throw error;
         nav("/");
       }
@@ -161,9 +167,29 @@ export default function Auth() {
                   <Input value={fullName} onChange={e => setFullName(e.target.value)} required className="pl-10 h-11" placeholder={lang === "bn" ? "আপনার নাম" : "Your name"} />
                 </Field>
               )}
-              <Field label={t("email")} icon={<Mail className="h-4 w-4" />}>
-                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="pl-10 h-11" placeholder="you@shop.com" />
-              </Field>
+
+              {mode === "login" && (
+                <div className="grid grid-cols-2 gap-1 bg-muted/60 rounded-lg p-1">
+                  <button type="button" onClick={() => setLoginMethod("phone")}
+                    className={`py-1.5 text-xs font-bold rounded-md transition-all ${loginMethod === "phone" ? "bg-background shadow text-foreground" : "text-muted-foreground"}`}>
+                    {lang === "bn" ? "মোবাইল দিয়ে" : "By Mobile"}
+                  </button>
+                  <button type="button" onClick={() => setLoginMethod("email")}
+                    className={`py-1.5 text-xs font-bold rounded-md transition-all ${loginMethod === "email" ? "bg-background shadow text-foreground" : "text-muted-foreground"}`}>
+                    {lang === "bn" ? "Email দিয়ে" : "By Email"}
+                  </button>
+                </div>
+              )}
+
+              {(mode === "signup" || loginMethod === "email") ? (
+                <Field label={t("email")} icon={<Mail className="h-4 w-4" />}>
+                  <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="pl-10 h-11" placeholder="you@shop.com" />
+                </Field>
+              ) : (
+                <Field label={lang === "bn" ? "মোবাইল নম্বর" : "Mobile Number"} icon={<Phone className="h-4 w-4" />}>
+                  <Input type="tel" value={phone} onChange={e => setPhone(e.target.value)} required className="pl-10 h-11" placeholder="01XXXXXXXXX" />
+                </Field>
+              )}
               <Field label={t("password")} icon={<Lock className="h-4 w-4" />}>
                 <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} className="pl-10 h-11" placeholder="••••••••" />
               </Field>

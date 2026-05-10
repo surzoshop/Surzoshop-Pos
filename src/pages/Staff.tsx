@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,7 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Plus, Trash2, UserCog, ShieldCheck, KeyRound, Loader2,
+  Plus, Trash2, UserCog, ShieldCheck, KeyRound, Loader2, History, Search, Phone, Store as StoreIcon,
   LayoutDashboard, ShoppingCart, Receipt, RotateCcw, ShoppingBag, Package, Layers,
   Warehouse, ClipboardList, BookOpen, Wallet, Users, Truck, Contact, BarChart3,
   CalendarCheck, Store,
@@ -70,17 +71,20 @@ const PRESETS: Record<string, PageKey[]> = {
 
 const emptyForm = {
   name: "", phone: "", nid: "", address: "", position: "cashier", salary: 0,
-  email: "", password: "", createLogin: true,
+  loginPhone: "", password: "", createLogin: true, shopId: "" as string,
 };
 
 export default function Staff() {
   const { t, fmt } = useT();
   const { role } = useAuth();
-  const { currentShop } = useShop();
+  const { currentShop, shops } = useShop();
   const { toast } = useToast();
+  const nav = useNavigate();
   const isAdmin = role === "admin";
   const [items, setItems] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [posFilter, setPosFilter] = useState<string>("all");
   const [form, setForm] = useState({ ...emptyForm });
   const [permissions, setPermissions] = useState<Record<string, boolean>>(() => {
     const m: Record<string, boolean> = {};
@@ -99,6 +103,20 @@ export default function Staff() {
     () => ACCESS_POINTS.filter(a => permissions[a.key]).length,
     [permissions]
   );
+
+  const filteredItems = useMemo(() => {
+    return items.filter(s => {
+      if (posFilter !== "all" && s.position !== posFilter) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        return (s.name ?? "").toLowerCase().includes(q) || (s.phone ?? "").toLowerCase().includes(q);
+      }
+      return true;
+    });
+  }, [items, search, posFilter]);
+
+  const totalSalary = useMemo(() => items.reduce((a, s) => a + Number(s.salary || 0), 0), [items]);
+  const activeCount = items.filter(s => s.is_active !== false).length;
 
   const applyPreset = (position: string) => {
     const next: Record<string, boolean> = {};
@@ -123,22 +141,22 @@ export default function Staff() {
   const clearAll = () => setPermissions({});
 
   const openSheet = () => {
-    setForm({ ...emptyForm });
+    setForm({ ...emptyForm, shopId: currentShop?.id ?? (shops[0]?.id ?? "") });
     applyPreset("cashier");
     setOpen(true);
   };
 
   const save = async () => {
     if (!form.name.trim()) return toast({ title: "নাম প্রয়োজন", variant: "destructive" });
+    if (!form.shopId) return toast({ title: "Shop নির্বাচন করুন", variant: "destructive" });
+
     if (form.createLogin) {
-      if (!form.email.trim() || !form.password.trim()) {
-        return toast({ title: "Login তৈরির জন্য Email ও Password প্রয়োজন", variant: "destructive" });
+      const digits = form.loginPhone.replace(/\D+/g, "");
+      if (!digits || digits.length < 6) {
+        return toast({ title: "Login-এর জন্য সঠিক মোবাইল নম্বর দিন", variant: "destructive" });
       }
       if (form.password.length < 6) {
         return toast({ title: "Password কমপক্ষে ৬ অক্ষর", variant: "destructive" });
-      }
-      if (!currentShop) {
-        return toast({ title: "প্রথমে একটি Shop নির্বাচন করুন", variant: "destructive" });
       }
     }
 
@@ -146,23 +164,25 @@ export default function Staff() {
     try {
       // 1) Insert staff record
       const { data: staffRow, error: sErr } = await supabase.from("staff").insert({
-        name: form.name, phone: form.phone, nid: form.nid, address: form.address,
+        name: form.name,
+        phone: form.phone || form.loginPhone,
+        nid: form.nid, address: form.address,
         position: form.position, salary: form.salary,
-        shop_id: currentShop?.id ?? null,
+        shop_id: form.shopId,
       }).select().single();
       if (sErr) throw sErr;
 
       // 2) Optionally create login + permissions via edge function
-      if (form.createLogin && currentShop) {
+      if (form.createLogin) {
         const permsObj: Record<string, boolean> = {};
         ACCESS_POINTS.forEach(a => { if (permissions[a.key]) permsObj[a.key] = true; });
 
         const { data, error: fnErr } = await supabase.functions.invoke("create-shop-user", {
           body: {
-            email: form.email.trim(),
+            phone: form.loginPhone,
             password: form.password,
             full_name: form.name,
-            shop_id: currentShop.id,
+            shop_id: form.shopId,
             staff_id: staffRow.id,
             permissions: permsObj,
           },
@@ -172,7 +192,7 @@ export default function Staff() {
         }
       }
 
-      toast({ title: "স্টাফ সংরক্ষিত", description: form.createLogin ? "Login সহ যোগ হয়েছে" : "Staff record তৈরি হয়েছে" });
+      toast({ title: "স্টাফ সংরক্ষিত", description: form.createLogin ? "মোবাইল নম্বর দিয়ে login করতে পারবে" : "Staff record তৈরি হয়েছে" });
       setOpen(false);
       setForm({ ...emptyForm });
       load();
@@ -183,7 +203,8 @@ export default function Staff() {
     }
   };
 
-  const del = async (id: string) => {
+  const del = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
     if (!confirm(t("confirmDelete"))) return;
     await supabase.from("staff").delete().eq("id", id); load();
   };
@@ -193,24 +214,71 @@ export default function Staff() {
       <PageHeader title={t("staff")} subtitle={t("staffSubtitle")}
         actions={isAdmin ? <PrimaryButton onClick={openSheet}><Plus className="h-5 w-5" />{t("addStaff")}</PrimaryButton> : undefined} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {items.length === 0 && <div className="col-span-full text-center text-muted-foreground py-16">{t("noResults")}</div>}
-        {items.map(s => {
+      {/* Summary strip */}
+      <div className="grid grid-cols-3 gap-3 md:gap-4 mb-5">
+        <SurfaceCard className="p-4">
+          <p className="text-[11px] text-muted-foreground font-bn">মোট স্টাফ</p>
+          <p className="text-2xl font-black mt-1">{items.length}</p>
+        </SurfaceCard>
+        <SurfaceCard className="p-4">
+          <p className="text-[11px] text-muted-foreground font-bn">সক্রিয়</p>
+          <p className="text-2xl font-black mt-1 text-emerald-600">{activeCount}</p>
+        </SurfaceCard>
+        <SurfaceCard className="p-4">
+          <p className="text-[11px] text-muted-foreground font-bn">মাসিক বেতন</p>
+          <p className="text-2xl font-black mt-1">{fmt(totalSalary)}</p>
+        </SurfaceCard>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-5">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="নাম বা ফোন দিয়ে খুঁজুন" className="pl-9" />
+        </div>
+        <Select value={posFilter} onValueChange={setPosFilter}>
+          <SelectTrigger className="sm:w-56"><SelectValue /></SelectTrigger>
+          <SelectContent className="z-[100] bg-popover">
+            <SelectItem value="all">সব পদ</SelectItem>
+            {POSITIONS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {filteredItems.length === 0 && <div className="col-span-full text-center text-muted-foreground py-16">{t("noResults")}</div>}
+        {filteredItems.map(s => {
           const posLabel = POSITIONS.find(p => p.value === s.position)?.label ?? s.position;
+          const initial = (s.name ?? "?").trim().charAt(0).toUpperCase();
           return (
-            <SurfaceCard key={s.id} className="p-6 transition-all hover:-translate-y-1">
+            <div
+              key={s.id}
+              className="bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-5 transition-all hover:-translate-y-1 hover:shadow-lg cursor-pointer group"
+              onClick={() => nav(`/staff/${s.id}/history`)}
+            >
               <div className="flex items-start justify-between mb-4">
-                <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center"><UserCog className="h-6 w-6" /></div>
-                {isAdmin && <Button size="icon" variant="ghost" className="text-destructive h-8 w-8" onClick={() => del(s.id)}><Trash2 className="h-4 w-4" /></Button>}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-pink-400 to-fuchsia-600 text-white flex items-center justify-center font-black text-lg shrink-0">
+                    {initial}
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-base truncate">{s.name}</h3>
+                    <span className="inline-block mt-0.5 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-primary/10 text-primary">{posLabel}</span>
+                  </div>
+                </div>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); nav(`/staff/${s.id}/history`); }} title="History">
+                    <History className="h-4 w-4" />
+                  </Button>
+                  {isAdmin && <Button size="icon" variant="ghost" className="text-destructive h-8 w-8" onClick={(e) => del(e, s.id)}><Trash2 className="h-4 w-4" /></Button>}
+                </div>
               </div>
-              <h3 className="font-bold text-lg">{s.name}</h3>
-              <p className="text-sm text-muted-foreground">{posLabel}</p>
+              {s.phone && <p className="text-xs text-muted-foreground flex items-center gap-1.5"><Phone className="h-3 w-3" />{s.phone}</p>}
               <div className="mt-3 pt-3 border-t border-[hsl(var(--surface-container-high))] flex justify-between text-sm">
                 <span className="text-muted-foreground">{t("salary")}</span>
                 <span className="font-bold">{fmt(Number(s.salary))}</span>
               </div>
-              {s.phone && <p className="text-xs text-muted-foreground mt-2">{s.phone}</p>}
-            </SurfaceCard>
+            </div>
           );
         })}
       </div>
@@ -274,6 +342,21 @@ export default function Staff() {
                 <Label className="text-xs font-bn">ঠিকানা</Label>
                 <Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} className="mt-1" />
               </div>
+              <div>
+                <Label className="text-xs font-bn">Shop নির্বাচন *</Label>
+                <Select value={form.shopId} onValueChange={(v) => setForm({ ...form, shopId: v })}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="একটি shop বেছে নিন" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[100] bg-popover">
+                    {shops.map(sh => (
+                      <SelectItem key={sh.id} value={sh.id}>
+                        <span className="inline-flex items-center gap-2"><StoreIcon className="h-3.5 w-3.5" />{sh.name}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </section>
 
             {/* Login provisioning */}
@@ -288,23 +371,18 @@ export default function Staff() {
               {form.createLogin && (
                 <>
                   <p className="text-[11px] text-muted-foreground font-bn">
-                    এই কর্মী এই Email ও Password দিয়ে App-এ login করতে পারবে। শুধুমাত্র নিচে দেওয়া access গুলো দেখতে পাবে।
+                    এই কর্মী নিচের <b>মোবাইল নম্বর</b> ও <b>Password</b> দিয়ে App-এ login করতে পারবে। শুধুমাত্র নিচে দেওয়া access গুলো দেখতে পাবে।
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-xs">Email</Label>
-                      <Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="staff@shop.com" className="mt-1" />
+                      <Label className="text-xs font-bn">মোবাইল নম্বর (Login)</Label>
+                      <Input type="tel" value={form.loginPhone} onChange={e => setForm({ ...form, loginPhone: e.target.value })} placeholder="01XXXXXXXXX" className="mt-1" />
                     </div>
                     <div>
                       <Label className="text-xs">Password</Label>
                       <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="কমপক্ষে ৬ অক্ষর" className="mt-1" />
                     </div>
                   </div>
-                  {!currentShop && (
-                    <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bn">
-                      ⚠️ Login তৈরির আগে একটি Shop নির্বাচন করুন।
-                    </p>
-                  )}
                 </>
               )}
             </section>

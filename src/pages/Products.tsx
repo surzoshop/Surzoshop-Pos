@@ -215,8 +215,10 @@ export default function Products() {
           label={t("totalProducts")} value={items.length.toString()} />
         <MiniStat icon={<Package className="h-5 w-5 md:h-6 md:w-6 text-info" />} bg="bg-info/10"
           label="মোট স্টক বিক্রয় মূল্য" value={fmt(totalValue)} />
-        <MiniStat icon={<Package className="h-5 w-5 md:h-6 md:w-6 text-[hsl(var(--secondary-foreground))]" />} bg="bg-secondary/30"
-          label="মোট স্টক ক্রয় মূল্য" value={fmt(totalCostValue)} />
+        {isAdmin && (
+          <MiniStat icon={<Package className="h-5 w-5 md:h-6 md:w-6 text-[hsl(var(--secondary-foreground))]" />} bg="bg-secondary/30"
+            label="মোট স্টক ক্রয় মূল্য" value={fmt(totalCostValue)} />
+        )}
       </div>
 
       <SurfaceCard className="p-3 md:p-6">
@@ -312,10 +314,12 @@ export default function Products() {
                     <span className="text-[10px] text-muted-foreground font-semibold">বিক্রয়</span>
                     <span className="font-bold text-primary text-sm">{fmt(p.price)}</span>
                   </div>
-                  <div className="flex flex-col items-end">
-                    <span className="text-[10px] text-muted-foreground font-semibold">ক্রয়</span>
-                    <span className="font-bold text-info text-sm">{fmt(p.cost)}</span>
-                  </div>
+                  {isAdmin && (
+                    <div className="flex flex-col items-end">
+                      <span className="text-[10px] text-muted-foreground font-semibold">ক্রয়</span>
+                      <span className="font-bold text-info text-sm">{fmt(p.cost)}</span>
+                    </div>
+                  )}
                   {stockBadge(p)}
                 </div>
               </div>
@@ -333,7 +337,7 @@ export default function Products() {
                 <th className="pb-3 font-extrabold">{t("category")}</th>
                 <th className="pb-3 font-extrabold">{t("barcode")}</th>
                 <th className="pb-3 font-extrabold">বিক্রয় মূল্য</th>
-                <th className="pb-3 font-extrabold">ক্রয় মূল্য</th>
+                {isAdmin && <th className="pb-3 font-extrabold">ক্রয় মূল্য</th>}
                 <th className="pb-3 font-extrabold">{t("stock")}</th>
                 {isAdmin && <th className="pb-3 font-extrabold text-right">{t("actions")}</th>}
               </tr>
@@ -357,7 +361,7 @@ export default function Products() {
                   <td className="py-2 text-foreground/80 font-semibold">{catName(p.category_id)}</td>
                   <td className="py-2 text-foreground/70 font-mono text-xs font-bold">{p.barcode || "—"}</td>
                   <td className="py-2 font-extrabold text-primary">{fmt(p.price)}</td>
-                  <td className="py-2 font-extrabold text-info">{fmt(p.cost)}</td>
+                  {isAdmin && <td className="py-2 font-extrabold text-info">{fmt(p.cost)}</td>}
                   <td className="py-2">{stockBadge(p)}</td>
                   {isAdmin && (
                     <td className="py-2 text-right">

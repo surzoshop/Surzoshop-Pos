@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toBDDate } from "@/lib/datetime";
 import { supabase } from "@/integrations/supabase/client";
+import { logActivity } from "@/lib/activityLog";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -121,6 +122,13 @@ export default function Expenses() {
       ? await supabase.from("expenses").update(payload).eq("id", editing.id)
       : await supabase.from("expenses").insert({ ...payload, created_by: user!.id });
     if (error) return toast({ title: error.message, variant: "destructive" });
+    if (!editing) {
+      logActivity({
+        action: "expense.create",
+        entity_type: "expense",
+        meta: { title: payload.title, amount: Number(payload.amount), payment_method: payload.payment_method },
+      });
+    }
     toast({ title: editing ? "খরচ আপডেট হয়েছে" : "খরচ যোগ হয়েছে" });
     setEditing(null); setForm(empty); setOpen(false); load();
   };
