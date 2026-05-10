@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ImageUpload } from "@/components/ImageUpload";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Package, Tag, DollarSign, Layers, ShieldCheck, TrendingUp } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Package, Tag, DollarSign, Layers, ShieldCheck, TrendingUp, Lock } from "lucide-react";
 
 function namePrefix(name: string): string {
   const ascii = (name || "").replace(/[^A-Za-z]/g, "");
@@ -46,6 +47,8 @@ const WARRANTY_TYPES = [
 
 export function AddProductSheet({ open, onOpenChange, onSaved, editing }: Props) {
   const { toast } = useToast();
+  const { role } = useAuth();
+  const isAdmin = role === "admin" || role === "super_admin";
   const [cats, setCats] = useState<any[]>([]);
   const empty = {
     name: "", category_id: "", price: "", cost: "", stock: "", unit: "pcs",
@@ -97,8 +100,10 @@ export function AddProductSheet({ open, onOpenChange, onSaved, editing }: Props)
       unit: form.unit || "pcs",
       category_id: form.category_id || null,
       image_url: form.image_url || null,
-      credit_extra: Number(form.credit_extra) || 0,
-      installment_extra: Number(form.installment_extra) || 0,
+      ...(isAdmin ? {
+        credit_extra: Number(form.credit_extra) || 0,
+        installment_extra: Number(form.installment_extra) || 0,
+      } : {}),
       has_warranty: !!form.has_warranty,
       warranty_months: form.has_warranty ? Number(form.warranty_months) : null,
     };
@@ -193,24 +198,31 @@ export function AddProductSheet({ open, onOpenChange, onSaved, editing }: Props)
             </div>
           </section>
 
-          {/* Credit / Installment extra charge */}
+          {/* Credit / Installment extra charge — admin only */}
           <section className="space-y-3">
             <h3 className="text-sm font-bold flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-primary" /> বাকি / কিস্তিতে অতিরিক্ত চার্জ
+              {!isAdmin && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
             </h3>
             <p className="text-[11px] text-muted-foreground -mt-1">
-              বাকিতে বা কিস্তিতে বিক্রি করলে প্রতি ইউনিটে কত টাকা অতিরিক্ত নেওয়া হবে।
+              {isAdmin
+                ? "বাকিতে বা কিস্তিতে বিক্রি করলে প্রতি ইউনিটে কত টাকা অতিরিক্ত নেওয়া হবে।"
+                : "শুধুমাত্র Admin এই মান নির্ধারণ/পরিবর্তন করতে পারবেন।"}
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>বাকিতে অতিরিক্ত (৳)</Label>
                 <Input type="number" inputMode="decimal" value={form.credit_extra}
-                  onChange={e => setForm({ ...form, credit_extra: e.target.value })} placeholder="0" />
+                  onChange={e => setForm({ ...form, credit_extra: e.target.value })}
+                  placeholder="0" disabled={!isAdmin}
+                  className={!isAdmin ? "opacity-60 cursor-not-allowed" : ""} />
               </div>
               <div>
                 <Label>কিস্তিতে অতিরিক্ত (৳)</Label>
                 <Input type="number" inputMode="decimal" value={form.installment_extra}
-                  onChange={e => setForm({ ...form, installment_extra: e.target.value })} placeholder="0" />
+                  onChange={e => setForm({ ...form, installment_extra: e.target.value })}
+                  placeholder="0" disabled={!isAdmin}
+                  className={!isAdmin ? "opacity-60 cursor-not-allowed" : ""} />
               </div>
             </div>
           </section>
