@@ -35,9 +35,24 @@ export default function Auth() {
         toast({ title: "Success", description: "Account created. You can now log in." });
         setMode("login");
       } else {
-        const loginEmail = `${phone.replace(/\D+/g, "")}@staff.local`;
-        const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
-        if (error) throw error;
+        const raw = phone.trim();
+        const digits = raw.replace(/\D+/g, "");
+        // Try multiple identifier patterns so the same input field works for
+        // admin (email or phone) and for staff (phone).
+        const candidates: string[] = [];
+        if (raw.includes("@")) candidates.push(raw);
+        if (digits) {
+          candidates.push(`${digits}@admin.local`);
+          candidates.push(`${digits}@staff.local`);
+        }
+        let lastErr: any = null;
+        let success = false;
+        for (const loginEmail of candidates) {
+          const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+          if (!error) { success = true; break; }
+          lastErr = error;
+        }
+        if (!success) throw lastErr ?? new Error("Invalid credentials");
         nav("/");
       }
     } catch (err: any) {
