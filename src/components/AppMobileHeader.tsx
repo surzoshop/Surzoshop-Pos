@@ -79,9 +79,9 @@ export function AppMobileHeader() {
             <Bell className="h-5 w-5" />
             <span className="absolute top-2 right-2 w-2 h-2 bg-destructive rounded-full" />
           </button>
-          <div className="h-9 w-9 rounded-full gradient-primary text-primary-foreground flex items-center justify-center font-bold text-sm ml-1">
-            {initial}
-          </div>
+          <Link to="/account" aria-label="Account" className="h-9 w-9 rounded-full overflow-hidden gradient-primary text-primary-foreground flex items-center justify-center font-bold text-sm ml-1">
+            {avatarUrl ? <img src={avatarUrl} alt="profile" className="h-full w-full object-cover" /> : initial}
+          </Link>
         </div>
       </div>
     </header>
