@@ -16,14 +16,25 @@ export async function logActivity(params: {
     if (!user) return;
 
     // Try to resolve staff_id via shop_users mapping (if any)
+    // A user can be linked to many shops — pick any row that has a staff_id.
     let staff_id: string | null = null;
     try {
       const { data } = await supabase
         .from("shop_users")
         .select("staff_id")
         .eq("user_id", user.id)
-        .maybeSingle();
-      staff_id = (data as any)?.staff_id ?? null;
+        .not("staff_id", "is", null)
+        .limit(1);
+      staff_id = (data as any)?.[0]?.staff_id ?? null;
+      if (!staff_id) {
+        // Fallback to staff_access mapping
+        const { data: sa } = await supabase
+          .from("staff_access" as any)
+          .select("staff_id")
+          .eq("user_id", user.id)
+          .limit(1);
+        staff_id = (sa as any)?.[0]?.staff_id ?? null;
+      }
     } catch { /* ignore */ }
 
     await supabase.from("staff_activity_logs" as any).insert({
