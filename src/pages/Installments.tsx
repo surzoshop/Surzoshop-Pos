@@ -53,6 +53,9 @@ export default function Installments() {
   const [amount, setAmount] = useState(0);
   const [filter, setFilter] = useState<"all" | "active" | "overdue" | "completed">("all");
   const [managing, setManaging] = useState<Plan | null>(null);
+  const [paymentsByInst, setPaymentsByInst] = useState<Record<string, any[]>>({});
+  const [editPay, setEditPay] = useState<any>(null);
+  const [editPayAmount, setEditPayAmount] = useState(0);
 
   // ===== New Installment Plan Modal =====
   const [openNew, setOpenNew] = useState(false);
@@ -69,12 +72,13 @@ export default function Installments() {
   });
 
   const load = async () => {
-    const [{ data: insts }, { data: salesData }, c, p, g] = await Promise.all([
+    const [{ data: insts }, { data: salesData }, c, p, g, { data: pays }] = await Promise.all([
       supabase.from("installments").select("*, sales(invoice_no, customers(name, phone))").order("due_date"),
       supabase.from("sales").select("id, invoice_no, total, down_payment, tenure_months, late_fee_per_day, paid, due, created_at, customers(name, phone)").eq("payment_type", "installment" as any).order("created_at", { ascending: false }),
       supabase.from("customers").select("id,name,phone").order("name"),
       supabase.from("products").select("id,name,price,stock").order("name"),
       supabase.from("guarantors").select("id,name,phone").order("name"),
+      supabase.from("installment_payments").select("*").order("paid_at", { ascending: false }),
     ]);
     const today = todayBD();
     const enriched = (insts ?? []).map(i => ({
@@ -84,8 +88,29 @@ export default function Installments() {
     setItems(enriched);
     setSales(salesData ?? []);
     setCustomers(c.data ?? []); setProducts(p.data ?? []); setGuarantors(g.data ?? []);
+    const grouped: Record<string, any[]> = {};
+    for (const p of pays ?? []) (grouped[p.installment_id] ||= []).push(p);
+    setPaymentsByInst(grouped);
   };
   useEffect(() => { load(); }, []);
+
+  const saveEditPay = async () => {
+    if (!editPay || editPayAmount < 0) return;
+    const { error } = await supabase.from("installment_payments")
+      .update({ amount: editPayAmount }).eq("id", editPay.id);
+    if (error) return toast({ title: error.message, variant: "destructive" });
+    setEditPay(null); setEditPayAmount(0); await load();
+    toast({ title: lang === "bn" ? "পরিশোধ আপডেট হয়েছে ✓" : "Payment updated ✓" });
+  };
+
+  const deletePay = async (p: any) => {
+    if (!confirm(lang === "bn" ? `${fmt(Number(p.amount))} টাকার পরিশোধ মুছে ফেলবেন?` : `Delete payment of ${fmt(Number(p.amount))}?`)) return;
+    const { error } = await supabase.from("installment_payments").delete().eq("id", p.id);
+    if (error) return toast({ title: error.message, variant: "destructive" });
+    await load();
+    toast({ title: lang === "bn" ? "পরিশোধ মুছে ফেলা হয়েছে" : "Payment deleted" });
+  };
+
 
   // Build plans from sales + grouped installments
   const plans: Plan[] = useMemo(() => {
@@ -414,6 +439,35 @@ export default function Installments() {
                             </Button>
                           </div>
                         )}
+                        {isAdmin && (paymentsByInst[i.id]?.length ?? 0) > 0 && (
+                          <div className="mt-3 pt-3 border-t border-[hsl(var(--surface-container-high))]/50">
+                            <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2">
+                              {lang === "bn" ? "নেওয়া পরিশোধসমূহ (অ্যাডমিন)" : "Received Payments (Admin)"}
+                            </div>
+                            <div className="space-y-1.5">
+                              {paymentsByInst[i.id].map((pay: any) => (
+                                <div key={pay.id} className="flex items-center justify-between bg-[hsl(var(--surface-container-lowest))] rounded-lg px-3 py-2 text-sm border border-[hsl(var(--surface-container-high))]/40">
+                                  <div className="min-w-0">
+                                    <div className="font-bold text-foreground">{fmt(Number(pay.amount))}</div>
+                                    <div className="text-[11px] text-muted-foreground">
+                                      {new Date(pay.paid_at).toLocaleString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button onClick={() => { setEditPay(pay); setEditPayAmount(Number(pay.amount)); }}
+                                      className="p-1.5 rounded-md hover:bg-primary/10 text-primary" title={lang === "bn" ? "এডিট" : "Edit"}>
+                                      <Settings2 className="h-4 w-4" />
+                                    </button>
+                                    <button onClick={() => deletePay(pay)}
+                                      className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive" title={lang === "bn" ? "ডিলিট" : "Delete"}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -452,6 +506,34 @@ export default function Installments() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setPaying(null)}>{t("cancel")}</Button>
             <Button onClick={pay} className="gradient-primary">{t("pay")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit received payment (admin only) */}
+      <Dialog open={!!editPay} onOpenChange={o => !o && setEditPay(null)}>
+        <DialogContent className="bg-[hsl(var(--surface-container-lowest))]">
+          <DialogHeader>
+            <DialogTitle>{lang === "bn" ? "পরিশোধ সংশোধন" : "Edit Payment"}</DialogTitle>
+          </DialogHeader>
+          {editPay && (
+            <div className="space-y-3">
+              <div className="text-sm text-muted-foreground">
+                {lang === "bn" ? "মূল পরিমাণ" : "Original"}: <b>{fmt(Number(editPay.amount))}</b>
+                {" • "}{new Date(editPay.paid_at).toLocaleString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}
+              </div>
+              <div>
+                <Label>{lang === "bn" ? "নতুন পরিমাণ (৳)" : "New Amount (৳)"}</Label>
+                <Input type="number" value={editPayAmount} onChange={e => setEditPayAmount(+e.target.value)} />
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  {lang === "bn" ? "পার্থক্য স্বয়ংক্রিয়ভাবে কিস্তি ও বিক্রয়ে সমন্বয় হবে।" : "Difference auto-adjusts the installment & sale."}
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditPay(null)}>{t("cancel")}</Button>
+            <Button onClick={saveEditPay} className="gradient-primary">{t("save")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
