@@ -74,13 +74,14 @@ export default function Installments() {
   });
 
   const load = async () => {
-    const [{ data: insts }, { data: salesData }, c, p, g, { data: pays }] = await Promise.all([
+    const [{ data: insts }, { data: salesData }, c, p, g, { data: pays }, { data: siExtras }] = await Promise.all([
       supabase.from("installments").select("*, sales(invoice_no, customers(name, phone))").order("due_date"),
       supabase.from("sales").select("id, invoice_no, total, down_payment, tenure_months, late_fee_per_day, paid, due, created_at, customers(name, phone)").eq("payment_type", "installment" as any).order("created_at", { ascending: false }),
       supabase.from("customers").select("id,name,phone").order("name"),
-      supabase.from("products").select("id,name,price,stock").order("name"),
+      supabase.from("products").select("id,name,price,stock,credit_extra,installment_extra").order("name"),
       supabase.from("guarantors").select("id,name,phone").order("name"),
       supabase.from("installment_payments").select("*").order("paid_at", { ascending: false }),
+      supabase.from("sale_items").select("sale_id,qty,products(installment_extra)"),
     ]);
     const today = todayBD();
     const enriched = (insts ?? []).map(i => ({
@@ -93,6 +94,12 @@ export default function Installments() {
     const grouped: Record<string, any[]> = {};
     for (const p of pays ?? []) (grouped[p.installment_id] ||= []).push(p);
     setPaymentsByInst(grouped);
+    const extras: Record<string, number> = {};
+    for (const r of (siExtras ?? []) as any[]) {
+      const x = Number(r.products?.installment_extra ?? 0) * Number(r.qty ?? 0);
+      if (x) extras[r.sale_id] = (extras[r.sale_id] ?? 0) + x;
+    }
+    setExtraBySale(extras);
   };
   useEffect(() => { load(); }, []);
 
