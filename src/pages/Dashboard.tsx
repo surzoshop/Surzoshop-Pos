@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { todayBD, toBDDate } from "@/lib/datetime";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,10 +6,13 @@ import { useT } from "@/i18n/LanguageContext";
 import {
   Calendar, Wallet, ShoppingBag, AlertTriangle, PlusCircle, ScanLine,
   UserPlus, TrendingUp, Headset, Package, Users, Boxes, CircleDollarSign,
-  ArrowUpRight, ArrowDownRight, Archive, PackageCheck,
+  ArrowUpRight, ArrowDownRight, Archive, PackageCheck, CalendarRange,
 } from "lucide-react";
 import { AddProductSheet } from "@/components/AddProductSheet";
 import { AddCustomerSheet } from "@/components/AddCustomerSheet";
+
+const toMonthInput = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+const toDateInput  = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 export default function Dashboard() {
   const { t, fmt, lang } = useT();
@@ -29,30 +32,54 @@ export default function Dashboard() {
   const [productSheet, setProductSheet] = useState(false);
   const [customerSheet, setCustomerSheet] = useState(false);
 
-  useEffect(() => { void loadAll(); }, []);
+  // Period filters
+  const [selectedMonth, setSelectedMonth] = useState<Date>(() => {
+    const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    const d = new Date(); d.setHours(0, 0, 0, 0); return d;
+  });
+  const [weeklyMonth, setWeeklyMonth] = useState<Date>(() => {
+    const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+
+  const isCurrentMonth = useMemo(() => {
+    const n = new Date();
+    return selectedMonth.getFullYear() === n.getFullYear() && selectedMonth.getMonth() === n.getMonth();
+  }, [selectedMonth]);
+  const isToday = useMemo(() => {
+    const n = new Date(); n.setHours(0, 0, 0, 0);
+    return selectedDate.getTime() === n.getTime();
+  }, [selectedDate]);
+
+  useEffect(() => { void loadAll(); }, [selectedMonth, selectedDate, weeklyMonth]);
 
   const loadAll = async () => {
-    const now = new Date();
-    const today = new Date(now); today.setHours(0,0,0,0);
-    const yest = new Date(today); yest.setDate(yest.getDate() - 1);
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const weekStart = new Date(today); weekStart.setDate(weekStart.getDate() - 6);
+    const dayStart = new Date(selectedDate); dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
+    const prevDay = new Date(dayStart); prevDay.setDate(prevDay.getDate() - 1);
+
+    const monthStart = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+    const monthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 1);
+
+    const wMonthStart = new Date(weeklyMonth.getFullYear(), weeklyMonth.getMonth(), 1);
+    const wMonthEnd = new Date(weeklyMonth.getFullYear(), weeklyMonth.getMonth() + 1, 1);
 
     const [salesToday, salesYest, salesMonth, salesWeek, itemsMonth, items30, lowStockData, recentSales, productsAll, customersCount, duesData, soldTodayData, soldYestData, purchasedTodayData, purchasesAllData] = await Promise.all([
-      supabase.from("sales").select("total,due").gte("created_at", today.toISOString()),
-      supabase.from("sales").select("total").gte("created_at", yest.toISOString()).lt("created_at", today.toISOString()),
-      supabase.from("sales").select("total").gte("created_at", monthStart.toISOString()),
-      supabase.from("sales").select("total,created_at").gte("created_at", weekStart.toISOString()),
-      supabase.from("sale_items").select("qty,unit_price,products(cost),sales!inner(created_at)").gte("sales.created_at", monthStart.toISOString()),
-      supabase.from("sale_items").select("product_name,qty,subtotal,sales!inner(created_at)").gte("sales.created_at", weekStart.toISOString()),
+      supabase.from("sales").select("total,due").gte("created_at", dayStart.toISOString()).lt("created_at", dayEnd.toISOString()),
+      supabase.from("sales").select("total").gte("created_at", prevDay.toISOString()).lt("created_at", dayStart.toISOString()),
+      supabase.from("sales").select("total").gte("created_at", monthStart.toISOString()).lt("created_at", monthEnd.toISOString()),
+      supabase.from("sales").select("total,created_at").gte("created_at", wMonthStart.toISOString()).lt("created_at", wMonthEnd.toISOString()),
+      supabase.from("sale_items").select("qty,unit_price,products(cost),sales!inner(created_at)").gte("sales.created_at", monthStart.toISOString()).lt("sales.created_at", monthEnd.toISOString()),
+      supabase.from("sale_items").select("product_name,qty,subtotal,sales!inner(created_at)").gte("sales.created_at", monthStart.toISOString()).lt("sales.created_at", monthEnd.toISOString()),
       supabase.from("products").select("id", { count: "exact", head: true }).lte("stock", 5),
       supabase.from("sales").select("id,invoice_no,total,due,created_at,customers(name)").order("created_at", { ascending: false }).limit(4),
       supabase.from("products").select("stock,cost,price", { count: "exact" }).eq("is_active", true),
       supabase.from("customers").select("id", { count: "exact", head: true }),
       supabase.from("sales").select("due").gt("due", 0),
-      supabase.from("sale_items").select("qty,sales!inner(created_at)").gte("sales.created_at", today.toISOString()),
-      supabase.from("sale_items").select("qty,sales!inner(created_at)").gte("sales.created_at", yest.toISOString()).lt("sales.created_at", today.toISOString()),
-      supabase.from("purchase_items").select("qty,purchases!inner(created_at)").gte("purchases.created_at", today.toISOString()),
+      supabase.from("sale_items").select("qty,sales!inner(created_at)").gte("sales.created_at", dayStart.toISOString()).lt("sales.created_at", dayEnd.toISOString()),
+      supabase.from("sale_items").select("qty,sales!inner(created_at)").gte("sales.created_at", prevDay.toISOString()).lt("sales.created_at", dayStart.toISOString()),
+      supabase.from("purchase_items").select("qty,purchases!inner(created_at)").gte("purchases.created_at", dayStart.toISOString()).lt("purchases.created_at", dayEnd.toISOString()),
       supabase.from("purchases").select("total"),
     ]);
 
