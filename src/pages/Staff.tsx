@@ -268,9 +268,21 @@ export default function Staff() {
           }
           userId = (data as any)?.user_id ?? null;
         } else {
-          // Editing without password change: pull user_id from existing shop_users row
+          // Editing without password change: pull user_id from existing shop_users row,
+          // fall back to staff_access (works even when no shops exist).
           const existing = shopUsersByStaff[staffId!]?.[0];
           userId = existing?.user_id ?? null;
+          if (!userId) {
+            const { data: saLookup } = await supabase
+              .from("staff_access" as any)
+              .select("user_id")
+              .eq("staff_id", staffId)
+              .maybeSingle();
+            userId = (saLookup as any)?.user_id ?? null;
+          }
+          if (!userId) {
+            throw new Error("এই স্টাফের জন্য কোনো লগইন অ্যাকাউন্ট পাওয়া যায়নি। নতুন পাসওয়ার্ড দিয়ে আবার চেষ্টা করুন।");
+          }
         }
 
         // Attach to all shops with these permissions (also handled by trigger via staff_access).
