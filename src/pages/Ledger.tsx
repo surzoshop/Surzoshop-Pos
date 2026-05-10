@@ -146,7 +146,7 @@ export default function Ledger() {
       .order("entry_date", { ascending: false }).order("created_at", { ascending: false });
     if (currentShop) q = q.eq("shop_id", currentShop.id);
 
-    let sq = supabase.from("sales").select("created_at,total,paid,customers(name)").order("created_at", { ascending: false });
+    let sq = supabase.from("sales").select("id,created_at,total,paid,customers(name)").order("created_at", { ascending: false });
     if (currentShop) sq = sq.eq("shop_id", currentShop.id);
 
     let pq = supabase.from("purchases").select("created_at,total,paid,suppliers(name)").order("created_at", { ascending: false });
@@ -155,7 +155,9 @@ export default function Ledger() {
     let eq_ = supabase.from("expenses").select("expense_date,amount,title,payment_method").order("expense_date", { ascending: false });
     if (currentShop) eq_ = eq_.eq("shop_id", currentShop.id);
 
-    let ipq = supabase.from("installment_payments").select("paid_at,amount").order("paid_at", { ascending: false });
+    let ipq = supabase.from("installment_payments")
+      .select("paid_at,amount,installments!inner(sale_id)")
+      .order("paid_at", { ascending: false });
     if (currentShop) ipq = ipq.eq("shop_id", currentShop.id);
 
     // Profit calculation: sale_items joined with sales (date) and products (cost)
