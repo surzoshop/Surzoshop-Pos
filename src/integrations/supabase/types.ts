@@ -396,9 +396,11 @@ export type Database = {
           category_id: string | null
           cost: number
           created_at: string
+          credit_extra: number
           has_warranty: boolean
           id: string
           image_url: string | null
+          installment_extra: number
           is_active: boolean
           low_stock_threshold: number
           name: string
@@ -415,9 +417,11 @@ export type Database = {
           category_id?: string | null
           cost?: number
           created_at?: string
+          credit_extra?: number
           has_warranty?: boolean
           id?: string
           image_url?: string | null
+          installment_extra?: number
           is_active?: boolean
           low_stock_threshold?: number
           name: string
@@ -434,9 +438,11 @@ export type Database = {
           category_id?: string | null
           cost?: number
           created_at?: string
+          credit_extra?: number
           has_warranty?: boolean
           id?: string
           image_url?: string | null
+          installment_extra?: number
           is_active?: boolean
           low_stock_threshold?: number
           name?: string

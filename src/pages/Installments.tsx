@@ -27,6 +27,7 @@ type Plan = {
   paid: number;
   due: number;
   installments: Inst[];
+  extra_charge?: number;
 };
 
 const DAY = 1000 * 60 * 60 * 24;
@@ -54,6 +55,7 @@ export default function Installments() {
   const [filter, setFilter] = useState<"all" | "active" | "overdue" | "completed">("all");
   const [managing, setManaging] = useState<Plan | null>(null);
   const [paymentsByInst, setPaymentsByInst] = useState<Record<string, any[]>>({});
+  const [extraBySale, setExtraBySale] = useState<Record<string, number>>({});
   const [editPay, setEditPay] = useState<any>(null);
   const [editPayAmount, setEditPayAmount] = useState(0);
 
@@ -72,13 +74,14 @@ export default function Installments() {
   });
 
   const load = async () => {
-    const [{ data: insts }, { data: salesData }, c, p, g, { data: pays }] = await Promise.all([
+    const [{ data: insts }, { data: salesData }, c, p, g, { data: pays }, { data: siExtras }] = await Promise.all([
       supabase.from("installments").select("*, sales(invoice_no, customers(name, phone))").order("due_date"),
       supabase.from("sales").select("id, invoice_no, total, down_payment, tenure_months, late_fee_per_day, paid, due, created_at, customers(name, phone)").eq("payment_type", "installment" as any).order("created_at", { ascending: false }),
       supabase.from("customers").select("id,name,phone").order("name"),
-      supabase.from("products").select("id,name,price,stock").order("name"),
+      supabase.from("products").select("id,name,price,stock,credit_extra,installment_extra").order("name"),
       supabase.from("guarantors").select("id,name,phone").order("name"),
       supabase.from("installment_payments").select("*").order("paid_at", { ascending: false }),
+      supabase.from("sale_items").select("sale_id,qty,products(installment_extra)"),
     ]);
     const today = todayBD();
     const enriched = (insts ?? []).map(i => ({
@@ -91,6 +94,12 @@ export default function Installments() {
     const grouped: Record<string, any[]> = {};
     for (const p of pays ?? []) (grouped[p.installment_id] ||= []).push(p);
     setPaymentsByInst(grouped);
+    const extras: Record<string, number> = {};
+    for (const r of (siExtras ?? []) as any[]) {
+      const x = Number(r.products?.installment_extra ?? 0) * Number(r.qty ?? 0);
+      if (x) extras[r.sale_id] = (extras[r.sale_id] ?? 0) + x;
+    }
+    setExtraBySale(extras);
   };
   useEffect(() => { load(); }, []);
 
@@ -131,9 +140,10 @@ export default function Installments() {
         paid: Number(s.paid),
         due: Number(s.due),
         installments: sched,
+        extra_charge: extraBySale[s.id] ?? 0,
       };
     });
-  }, [items, sales]);
+  }, [items, sales, extraBySale]);
 
   const filteredPlans = useMemo(() => {
     if (filter === "all") return plans;
@@ -325,6 +335,15 @@ export default function Installments() {
                   <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2">
                     {t("startDate")}: {p.start_date ? new Date(p.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" }) : "—"}
                   </div>
+
+                  {(p.extra_charge ?? 0) > 0 && (
+                    <div className="flex items-center justify-between bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2 mb-2 text-xs">
+                      <span className="font-bold text-amber-700 dark:text-amber-400">
+                        {lang === "bn" ? "কিস্তিতে অতিরিক্ত চার্জ" : "Installment Extra Charge"}
+                      </span>
+                      <span className="font-extrabold text-amber-700 dark:text-amber-400">+{fmt(p.extra_charge ?? 0)}</span>
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between bg-gradient-to-r from-[hsl(var(--surface-container-low))] to-[hsl(var(--surface-container))] rounded-xl p-3 text-sm border border-[hsl(var(--surface-container-high))]/40">
                     <div>

@@ -185,8 +185,15 @@ export default function POS() {
   };
 
   const subtotal = cart.reduce((a, i) => a + i.product.price * i.qty, 0);
+  // Extra charge for credit / installment sales (per-product configured in Stock entry)
+  const extraCharge = cart.reduce((a, i) => {
+    const p: any = i.product;
+    if (paymentType === "installment") return a + (Number(p.installment_extra) || 0) * i.qty;
+    if (paymentType === "due")         return a + (Number(p.credit_extra) || 0) * i.qty;
+    return a;
+  }, 0);
   const vat = subtotal * VAT_RATE;
-  const computedBase = Math.max(0, subtotal + vat - discount);
+  const computedBase = Math.max(0, subtotal + vat - discount + extraCharge);
   // Allow user to override grand total (for negotiation / round-off). Override applies before installment interest.
   const baseTotal = totalOverride !== null ? Math.max(0, totalOverride) : computedBase;
   // EMI calculation: simple interest over tenure (more transparent for retail)
@@ -680,6 +687,16 @@ export default function POS() {
             <div className="flex justify-between text-muted-foreground"><span>{t("subtotal")}:</span><span>{fmt(subtotal)}</span></div>
             <div className="flex justify-between text-muted-foreground"><span>{t("vat")} (0%):</span><span>{fmt(0)}</span></div>
             <div className="flex justify-between text-muted-foreground"><span>{t("discount")}:</span><span className="text-destructive">-{fmt(discount)}</span></div>
+            {extraCharge > 0 && (
+              <div className="flex justify-between items-center bg-amber-500/10 -mx-1 px-3 py-2 rounded-lg border border-amber-500/30">
+                <span className="font-bold text-amber-700 dark:text-amber-400">
+                  {paymentType === "installment"
+                    ? (lang === "bn" ? "কিস্তিতে অতিরিক্ত চার্জ" : "Installment Extra")
+                    : (lang === "bn" ? "বাকিতে অতিরিক্ত চার্জ" : "Credit Extra")}
+                </span>
+                <span className="font-extrabold text-amber-700 dark:text-amber-400">+{fmt(extraCharge)}</span>
+              </div>
+            )}
             {paymentType === "installment" && downPayment > 0 && (
               <div className="flex justify-between text-muted-foreground"><span>{lang === "bn" ? "ডাউন পেমেন্ট" : "Down Payment"}:</span><span className="text-success">-{fmt(downPayment)}</span></div>
             )}
