@@ -431,7 +431,22 @@ export default function Installments() {
           {paying && (
             <div className="space-y-3">
               <div className="text-sm text-muted-foreground">{paying.sales?.invoice_no} • {t("amount")}: {fmt(Number(paying.amount))}</div>
-              <div><Label>{t("amount")}</Label><Input type="number" value={amount} onChange={e => setAmount(+e.target.value)} /></div>
+              <div>
+                <Label>{t("amount")}</Label>
+                <Input
+                  type="number"
+                  value={amount}
+                  onChange={e => isAdmin && setAmount(+e.target.value)}
+                  readOnly={!isAdmin}
+                  disabled={!isAdmin}
+                  className={!isAdmin ? "bg-[hsl(var(--surface-container))] cursor-not-allowed font-bold text-foreground opacity-100" : ""}
+                />
+                {!isAdmin && (
+                  <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                    🔒 {lang === "bn" ? "পরিমাণ নির্ধারিত — শুধু অ্যাডমিন পরিবর্তন করতে পারবেন।" : "Amount is fixed — only admin can edit."}
+                  </p>
+                )}
+              </div>
             </div>
           )}
           <DialogFooter>
