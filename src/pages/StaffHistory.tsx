@@ -172,11 +172,11 @@ export default function StaffHistory() {
   );
 }
 
-function MiniBox({ label, value }: { label: string; value: string }) {
+function MiniBox({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
     <div className="bg-[hsl(var(--surface-container-high))] rounded-xl px-3 py-2 text-center">
       <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</p>
-      <p className="text-lg font-black mt-0.5">{value}</p>
+      <p className={`text-lg font-black mt-0.5 ${tone ?? ""}`}>{value}</p>
     </div>
   );
 }
