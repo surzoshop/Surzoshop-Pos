@@ -41,7 +41,7 @@ export default function Purchases() {
   const [billDate, setBillDate] = useState(todayBD());
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<any[]>([
-    { product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "", has_warranty: false, warranty_months: 12, warranty_type: "ম্যানুফ্যাকচারার" },
+    { product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "", has_warranty: false, warranty_months: 12, warranty_type: "ম্যানুফ্যাকচারার", credit_extra: 0, installment_extra: 0 },
   ]);
   const [discount, setDiscount] = useState(0);
   const [delivery, setDelivery] = useState(0);
