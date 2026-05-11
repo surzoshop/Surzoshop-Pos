@@ -34,7 +34,10 @@ type Entry = {
   party_name: string | null;
   notes: string | null;
   created_at: string;
+  created_by?: string | null;
 };
+
+type CreatorInfo = { name: string; source: "admin" | "staff"; staffCode?: string | null };
 
 type TabKey = "ledger" | "income" | "expense" | "cash" | "sales" | "purchase";
 type AccountKey = "account" | "customer" | "supplier" | "owner";
@@ -103,12 +106,13 @@ export default function Ledger() {
   const { currentShop } = useShop();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [stockSellValue, setStockSellValue] = useState(0);
-  const [salesAgg, setSalesAgg] = useState<{ date: string; at: string; total: number; paid: number; party: string | null }[]>([]);
-  const [purchasesAgg, setPurchasesAgg] = useState<{ date: string; at: string; total: number; paid: number; party: string | null }[]>([]);
-  const [expensesAgg, setExpensesAgg] = useState<{ date: string; at: string; total: number; title: string; method: string }[]>([]);
-  const [instPayAgg, setInstPayAgg] = useState<{ date: string; at: string; amount: number }[]>([]);
+  const [salesAgg, setSalesAgg] = useState<{ date: string; at: string; total: number; paid: number; party: string | null; created_by?: string | null }[]>([]);
+  const [purchasesAgg, setPurchasesAgg] = useState<{ date: string; at: string; total: number; paid: number; party: string | null; created_by?: string | null }[]>([]);
+  const [expensesAgg, setExpensesAgg] = useState<{ date: string; at: string; total: number; title: string; method: string; created_by?: string | null }[]>([]);
+  const [instPayAgg, setInstPayAgg] = useState<{ date: string; at: string; amount: number; created_by?: string | null }[]>([]);
   const [profitAgg, setProfitAgg] = useState<{ date: string; profit: number }[]>([]);
   const [purchaseCostAgg, setPurchaseCostAgg] = useState<{ date: string; total: number }[]>([]);
+  const [creators, setCreators] = useState<Record<string, CreatorInfo>>({});
   const [loading, setLoading] = useState(true);
 
   // Top section state
@@ -148,17 +152,17 @@ export default function Ledger() {
       .order("entry_date", { ascending: false }).order("created_at", { ascending: false });
     if (currentShop) q = q.eq("shop_id", currentShop.id);
 
-    let sq = supabase.from("sales").select("id,created_at,total,paid,customers(name)").order("created_at", { ascending: false });
+    let sq = supabase.from("sales").select("id,created_at,total,paid,created_by,customers(name)").order("created_at", { ascending: false });
     if (currentShop) sq = sq.eq("shop_id", currentShop.id);
 
-    let pq = supabase.from("purchases").select("created_at,total,paid,suppliers(name)").order("created_at", { ascending: false });
+    let pq = supabase.from("purchases").select("created_at,total,paid,created_by,suppliers(name)").order("created_at", { ascending: false });
     if (currentShop) pq = pq.eq("shop_id", currentShop.id);
 
-    let eq_ = supabase.from("expenses").select("expense_date,amount,title,payment_method").order("expense_date", { ascending: false });
+    let eq_ = supabase.from("expenses").select("expense_date,amount,title,payment_method,created_by").order("expense_date", { ascending: false });
     if (currentShop) eq_ = eq_.eq("shop_id", currentShop.id);
 
     let ipq = supabase.from("installment_payments")
-      .select("paid_at,amount,installments!inner(sale_id)")
+      .select("paid_at,amount,received_by,installments!inner(sale_id)")
       .order("paid_at", { ascending: false });
     if (currentShop) ipq = ipq.eq("shop_id", currentShop.id);
 
@@ -211,6 +215,7 @@ export default function Ledger() {
         total: Number(s.total || 0),
         paid: basePaid,
         party: custName,
+        created_by: s.created_by ?? null,
       };
     }));
     setPurchasesAgg((pd ?? []).map((p: any) => ({
@@ -219,6 +224,7 @@ export default function Ledger() {
       total: Number(p.total || 0),
       paid: Number(p.paid || 0),
       party: p.suppliers?.name ?? null,
+      created_by: p.created_by ?? null,
     })));
     setExpensesAgg((ed ?? []).map((e: any) => ({
       date: String(e.expense_date).slice(0, 10),
@@ -226,12 +232,52 @@ export default function Ledger() {
       total: Number(e.amount || 0),
       title: e.title ?? "খরচ",
       method: e.payment_method ?? "cash",
+      created_by: e.created_by ?? null,
     })));
     setInstPayAgg((ipd ?? []).map((p: any) => ({
       date: String(p.paid_at).slice(0, 10),
       at: String(p.paid_at),
       amount: Number(p.amount || 0),
+      created_by: p.received_by ?? null,
     })));
+
+    // Fetch creator info for all distinct created_by ids
+    const creatorIds = new Set<string>();
+    (allEntries as any[]).forEach(r => r.created_by && creatorIds.add(r.created_by));
+    (sd ?? []).forEach((r: any) => r.created_by && creatorIds.add(r.created_by));
+    (pd ?? []).forEach((r: any) => r.created_by && creatorIds.add(r.created_by));
+    (ed ?? []).forEach((r: any) => r.created_by && creatorIds.add(r.created_by));
+    (ipd ?? []).forEach((r: any) => r.received_by && creatorIds.add(r.received_by));
+    const ids = Array.from(creatorIds);
+    if (ids.length) {
+      const [{ data: profs }, { data: roles }, { data: staffAcc }] = await Promise.all([
+        supabase.from("profiles").select("user_id, full_name").in("user_id", ids),
+        supabase.from("user_roles").select("user_id, role").in("user_id", ids),
+        supabase.from("staff_access" as any).select("user_id, login_identifier, staff_id").in("user_id", ids),
+      ]);
+      const nameMap: Record<string, string> = {};
+      const codeMap: Record<string, string | null> = {};
+      (profs ?? []).forEach((p: any) => { if (p.full_name) nameMap[p.user_id] = p.full_name; });
+      (staffAcc ?? []).forEach((s: any) => {
+        if (!nameMap[s.user_id] && s.login_identifier) nameMap[s.user_id] = s.login_identifier;
+        codeMap[s.user_id] = s.staff_id ? String(s.staff_id).slice(0, 6).toUpperCase() : (s.login_identifier ?? null);
+      });
+      const adminSet = new Set<string>();
+      (roles ?? []).forEach((r: any) => {
+        if (r.role === "admin" || r.role === "super_admin") adminSet.add(r.user_id);
+      });
+      const cmap: Record<string, CreatorInfo> = {};
+      ids.forEach(id => {
+        cmap[id] = {
+          name: nameMap[id] ?? "অজানা",
+          source: adminSet.has(id) ? "admin" : "staff",
+          staffCode: adminSet.has(id) ? null : (codeMap[id] ?? null),
+        };
+      });
+      setCreators(cmap);
+    } else {
+      setCreators({});
+    }
 
     // Aggregate profit per sale, then bucket by date
     const perSale = new Map<string, { date: string; revenue: number; cost: number; discount: number; total: number }>();
@@ -293,6 +339,7 @@ export default function Ledger() {
         party_name: s.party,
         notes: null,
         created_at: s.at,
+        created_by: s.created_by ?? null,
       }));
     const purchases: Entry[] = purchasesAgg
       .filter(p => p.paid > 0)
@@ -307,6 +354,7 @@ export default function Ledger() {
         party_name: p.party,
         notes: null,
         created_at: p.at,
+        created_by: p.created_by ?? null,
       }));
     const expenseRows: Entry[] = expensesAgg.map((x, i) => ({
       id: `exp-${i}-${x.date}`,
@@ -319,6 +367,7 @@ export default function Ledger() {
       party_name: null,
       notes: null,
       created_at: x.at,
+      created_by: x.created_by ?? null,
     }));
     const instRows: Entry[] = instPayAgg
       .filter(p => p.amount > 0)
@@ -333,6 +382,7 @@ export default function Ledger() {
         party_name: null,
         notes: null,
         created_at: p.at,
+        created_by: p.created_by ?? null,
       }));
     return [...entries, ...sales, ...purchases, ...expenseRows, ...instRows];
   }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg]);
@@ -683,6 +733,21 @@ export default function Ledger() {
                       <div className="min-w-0">
                         <div className="font-bold text-sm truncate">{e.category ?? "-"}</div>
                         <div className="text-[11px] text-muted-foreground truncate">{fmtDateTimeBD(e.created_at || e.entry_date)}{e.party_name ? ` • ${e.party_name}` : ""}</div>
+                        {(() => {
+                          const c = e.created_by ? creators[e.created_by] : null;
+                          const src = c?.source ?? "admin";
+                          return (
+                            <div className="mt-1 inline-flex items-center gap-1 flex-wrap">
+                              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold border ${src === "admin" ? "bg-primary/10 text-primary border-primary/30" : "bg-amber-500/10 text-amber-600 border-amber-500/30"}`}>
+                                {src === "admin" ? "অ্যাডমিন" : "এমপ্লয়ি"}
+                              </span>
+                              {c?.name && <span className="text-[10px] text-muted-foreground">{c.name}</span>}
+                              {src === "staff" && c?.staffCode && (
+                                <span className="text-[10px] font-mono text-muted-foreground">#{c.staffCode}</span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                     <div className="text-right shrink-0">
@@ -721,6 +786,7 @@ export default function Ledger() {
                     <th className="text-left p-3">তারিখ</th>
                     <th className="text-left p-3">ধরন</th>
                     <th className="text-left p-3">বিবরণ</th>
+                    <th className="text-left p-3">পরিশোধকারী</th>
                     <th className="text-right p-3">ডেবিট (-)</th>
                     <th className="text-right p-3">ক্রেডিট (+)</th>
                     <th className="text-right p-3">ব্যালেন্স</th>
@@ -728,10 +794,13 @@ export default function Ledger() {
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">লোড হচ্ছে...</td></tr>
+                    <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">লোড হচ্ছে...</td></tr>
                   ) : detailedRows.length === 0 ? (
-                    <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">কোনো লেনদেন নেই</td></tr>
-                  ) : detailedRows.map(({ e, cr, dr, balance }) => (
+                    <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">কোনো লেনদেন নেই</td></tr>
+                  ) : detailedRows.map(({ e, cr, dr, balance }) => {
+                    const c = e.created_by ? creators[e.created_by] : null;
+                    const src = c?.source ?? "admin";
+                    return (
                     <tr key={e.id} className="border-t border-border/40 hover:bg-muted/30">
                       <td className="p-3 whitespace-nowrap">{fmtDateTimeBD(e.created_at || e.entry_date)}</td>
                       <td className="p-3">
@@ -745,11 +814,23 @@ export default function Ledger() {
                           <div className="text-xs text-muted-foreground">{[e.party_name, e.notes].filter(Boolean).join(" • ")}</div>
                         )}
                       </td>
+                      <td className="p-3">
+                        <div className="flex flex-col gap-0.5">
+                          <span className={`inline-flex w-fit items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold border ${src === "admin" ? "bg-primary/10 text-primary border-primary/30" : "bg-amber-500/10 text-amber-600 border-amber-500/30"}`}>
+                            {src === "admin" ? "অ্যাডমিন প্যানেল" : "এমপ্লয়ি প্যানেল"}
+                          </span>
+                          {c?.name && <span className="text-[11px] text-foreground/80">{c.name}</span>}
+                          {src === "staff" && c?.staffCode && (
+                            <span className="text-[10px] font-mono text-muted-foreground">ID: {c.staffCode}</span>
+                          )}
+                        </div>
+                      </td>
                       <td className="p-3 text-right font-bold text-rose-600">{dr > 0 ? fmt(dr) : "-"}</td>
                       <td className="p-3 text-right font-bold text-emerald-600">{cr > 0 ? fmt(cr) : "-"}</td>
                       <td className="p-3 text-right font-bold">{fmt(balance)}</td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             ) : (
