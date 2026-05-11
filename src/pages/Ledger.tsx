@@ -198,13 +198,27 @@ export default function Ledger() {
       if (!sid_) return;
       instBySale.set(sid_, (instBySale.get(sid_) ?? 0) + Number(p.amount || 0));
     });
-    setSalesAgg((sd ?? []).map((s: any) => ({
-      date: String(s.created_at).slice(0, 10),
-      total: Number(s.total || 0),
-      // Initial cash received at sale time only — exclude installment payments (counted separately by paid_at)
-      paid: Math.max(0, Number(s.paid || 0) - (instBySale.get(s.id) ?? 0)),
-      party: s.customers?.name ?? null,
-    })));
+    // Track customers we've already deducted credit-paid from (only deduct once total per customer)
+    const creditConsumed = new Map<string, number>();
+    setSalesAgg((sd ?? []).map((s: any) => {
+      const custName = s.customers?.name ?? null;
+      const inst = instBySale.get(s.id) ?? 0;
+      let basePaid = Math.max(0, Number(s.paid || 0) - inst);
+      if (custName && creditPaidByCustomer.has(custName)) {
+        const remaining = (creditPaidByCustomer.get(custName) ?? 0) - (creditConsumed.get(custName) ?? 0);
+        const sub = Math.min(basePaid, remaining);
+        if (sub > 0) {
+          basePaid -= sub;
+          creditConsumed.set(custName, (creditConsumed.get(custName) ?? 0) + sub);
+        }
+      }
+      return {
+        date: String(s.created_at).slice(0, 10),
+        total: Number(s.total || 0),
+        paid: basePaid,
+        party: custName,
+      };
+    }));
     setPurchasesAgg((pd ?? []).map((p: any) => ({
       date: String(p.created_at).slice(0, 10),
       total: Number(p.total || 0),
