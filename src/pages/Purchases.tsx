@@ -207,20 +207,8 @@ export default function Purchases() {
     const { error: e2 } = await supabase.from("purchase_items").insert(rows);
     if (e2) return toast({ title: e2.message, variant: "destructive" });
 
-    // Step 4: Cash book entry for paid amount (so it shows up in Ledger) — only on new
-    if (!editingId && paid > 0) {
-      await supabase.from("cash_book").insert({
-        entry_type: "out",
-        amount: paid,
-        category: "ক্রয়",
-        payment_method: paymentMethod,
-        party_name: suppliers.find(s => s.id === supplierId)?.name ?? null,
-        reference_no: purchaseRow.bill_no,
-        notes: `ক্রয় বিল ${purchaseRow.bill_no}`,
-        created_by: user!.id,
-        shop_id: currentShop?.id ?? null,
-      });
-    }
+    // NOTE: ক্রয় পরিশোধ আলাদা cash_book এন্ট্রি করি না — Ledger ইতিমধ্যে purchases.paid
+    // থেকে নগদ খরচ গণনা করে। দুবার insert করলে হিসাব double-count হবে।
 
     toast({ title: editingId ? "ক্রয় আপডেট হয়েছে ✓" : "ক্রয় সংরক্ষিত ✓ স্টক ও পণ্য তালিকা আপডেট হয়েছে" });
     if (alsoPrint) {
