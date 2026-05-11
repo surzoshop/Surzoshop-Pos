@@ -34,7 +34,10 @@ type Entry = {
   party_name: string | null;
   notes: string | null;
   created_at: string;
+  created_by?: string | null;
 };
+
+type CreatorInfo = { name: string; source: "admin" | "staff"; staffCode?: string | null };
 
 type TabKey = "ledger" | "income" | "expense" | "cash" | "sales" | "purchase";
 type AccountKey = "account" | "customer" | "supplier" | "owner";
