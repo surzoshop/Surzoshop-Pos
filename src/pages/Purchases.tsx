@@ -773,6 +773,33 @@ export default function Purchases() {
                             );
                           })()}
 
+                          {/* Credit / Installment extra — admin only */}
+                          {isAdmin && (
+                            <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2.5">
+                              <div className="flex items-center gap-2 text-xs font-bold">
+                                <DollarSign className="h-3.5 w-3.5 text-primary" />
+                                বাকি / কিস্তিতে অতিরিক্ত চার্জ
+                              </div>
+                              <p className="text-[10px] text-muted-foreground -mt-1">
+                                বাকিতে বা কিস্তিতে বিক্রি করলে প্রতি ইউনিটে কত টাকা অতিরিক্ত নেওয়া হবে।
+                              </p>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <Label className="text-[10px] mb-1 block text-muted-foreground">বাকিতে অতিরিক্ত (৳)</Label>
+                                  <Input type="number" inputMode="decimal" value={it.credit_extra || ""}
+                                    onChange={e => updateItem(idx, { credit_extra: +e.target.value })}
+                                    placeholder="0" className="h-9 bg-background text-xs" />
+                                </div>
+                                <div>
+                                  <Label className="text-[10px] mb-1 block text-muted-foreground">কিস্তিতে অতিরিক্ত (৳)</Label>
+                                  <Input type="number" inputMode="decimal" value={it.installment_extra || ""}
+                                    onChange={e => updateItem(idx, { installment_extra: +e.target.value })}
+                                    placeholder="0" className="h-9 bg-background text-xs" />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
                           {/* Warranty section */}
                           <div className="rounded-xl border border-info/20 bg-info/5 p-3 space-y-2.5">
                             <div className="flex items-center justify-between flex-wrap gap-2">
