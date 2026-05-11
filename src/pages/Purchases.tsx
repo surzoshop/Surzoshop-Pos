@@ -96,6 +96,8 @@ export default function Purchases() {
     unit: p.unit ?? "pcs", category_id: p.category_id ?? "",
     image_url: p.image_url ?? "",
     has_warranty: !!p.has_warranty, warranty_months: p.warranty_months || 12,
+    credit_extra: Number(p.credit_extra) || 0,
+    installment_extra: Number(p.installment_extra) || 0,
   });
 
   const resetForm = () => {
