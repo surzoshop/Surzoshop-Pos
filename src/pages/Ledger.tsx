@@ -292,9 +292,8 @@ export default function Ledger() {
         reference_no: null,
         party_name: s.party,
         notes: null,
-        created_at: s.date,
+        created_at: s.at,
       }));
-    // ক্রয়ে আসলে যত নগদ পরিশোধিত (paid) — বাকি অংশ খরচ হিসেবে গণ্য নয়
     const purchases: Entry[] = purchasesAgg
       .filter(p => p.paid > 0)
       .map((p, i) => ({
@@ -307,7 +306,7 @@ export default function Ledger() {
         reference_no: null,
         party_name: p.party,
         notes: null,
-        created_at: p.date,
+        created_at: p.at,
       }));
     const expenseRows: Entry[] = expensesAgg.map((x, i) => ({
       id: `exp-${i}-${x.date}`,
@@ -319,7 +318,7 @@ export default function Ledger() {
       reference_no: null,
       party_name: null,
       notes: null,
-      created_at: x.date,
+      created_at: x.at,
     }));
     const instRows: Entry[] = instPayAgg
       .filter(p => p.amount > 0)
@@ -333,7 +332,7 @@ export default function Ledger() {
         reference_no: null,
         party_name: null,
         notes: null,
-        created_at: p.date,
+        created_at: p.at,
       }));
     return [...entries, ...sales, ...purchases, ...expenseRows, ...instRows];
   }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg]);
