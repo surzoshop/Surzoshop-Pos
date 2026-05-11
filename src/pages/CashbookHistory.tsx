@@ -24,7 +24,10 @@ type Entry = {
   party_name: string | null;
   notes: string | null;
   created_at: string;
+  created_by: string | null;
 };
+
+type CreatorInfo = { name: string; source: "admin" | "staff" };
 
 type RangeKey = "today" | "7d" | "30d" | "thisMonth" | "lastMonth" | "lifetime";
 type FilterKey = "all" | "deposit" | "withdraw";
@@ -72,6 +75,8 @@ export default function CashbookHistory() {
     setTo(r.from === "2000-01-01" ? "" : r.to);
   }, [range]);
 
+  const [creators, setCreators] = useState<Record<string, CreatorInfo>>({});
+
   const load = async () => {
     setLoading(true);
     let q = supabase.from("cash_book" as any).select("*")
@@ -79,7 +84,35 @@ export default function CashbookHistory() {
     if (currentShop) q = q.eq("shop_id", currentShop.id);
     const { data, error } = await q;
     if (error) toast.error(error.message);
-    setEntries((data ?? []) as any);
+    const rows = (data ?? []) as any as Entry[];
+    setEntries(rows);
+
+    // Fetch creator info (name + role/source)
+    const ids = Array.from(new Set(rows.map(r => r.created_by).filter(Boolean))) as string[];
+    if (ids.length) {
+      const [{ data: profs }, { data: roles }, { data: staffAcc }] = await Promise.all([
+        supabase.from("profiles").select("user_id, full_name").in("user_id", ids),
+        supabase.from("user_roles").select("user_id, role").in("user_id", ids),
+        supabase.from("staff_access" as any).select("user_id, login_identifier, staff_id").in("user_id", ids),
+      ]);
+      const nameMap: Record<string, string> = {};
+      (profs ?? []).forEach((p: any) => { if (p.full_name) nameMap[p.user_id] = p.full_name; });
+      (staffAcc ?? []).forEach((s: any) => { if (!nameMap[s.user_id] && s.login_identifier) nameMap[s.user_id] = s.login_identifier; });
+      const adminSet = new Set<string>();
+      (roles ?? []).forEach((r: any) => {
+        if (r.role === "admin" || r.role === "super_admin") adminSet.add(r.user_id);
+      });
+      const map: Record<string, CreatorInfo> = {};
+      ids.forEach(id => {
+        map[id] = {
+          name: nameMap[id] ?? "অজানা",
+          source: adminSet.has(id) ? "admin" : "staff",
+        };
+      });
+      setCreators(map);
+    } else {
+      setCreators({});
+    }
     setLoading(false);
   };
 
@@ -254,6 +287,18 @@ export default function CashbookHistory() {
                           </div>
                           {e.reference_no && <div className="text-[11px] text-muted-foreground">রেফ: {e.reference_no}</div>}
                           {e.notes && <div className="text-[11px] text-muted-foreground line-clamp-2">{e.notes}</div>}
+                          {(() => {
+                            const c = e.created_by ? creators[e.created_by] : null;
+                            const src = c?.source ?? "admin";
+                            return (
+                              <div className="mt-1 inline-flex items-center gap-1">
+                                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold border ${src === "admin" ? "bg-primary/10 text-primary border-primary/30" : "bg-amber-500/10 text-amber-600 border-amber-500/30"}`}>
+                                  {src === "admin" ? "অ্যাডমিন প্যানেল" : "স্টাফ প্যানেল"}
+                                </span>
+                                {c?.name && <span className="text-[10px] text-muted-foreground truncate">• {c.name}</span>}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                       <div className="text-right shrink-0">
@@ -274,6 +319,7 @@ export default function CashbookHistory() {
                       <th className="p-3">তারিখ</th>
                       <th className="p-3">ধরন</th>
                       <th className="p-3">ক্যাটাগরি</th>
+                      <th className="p-3">উৎস</th>
                       <th className="p-3">পার্টি</th>
                       <th className="p-3">পেমেন্ট</th>
                       <th className="p-3">রেফ</th>
@@ -283,7 +329,10 @@ export default function CashbookHistory() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map(e => (
+                    {filtered.map(e => {
+                      const c = e.created_by ? creators[e.created_by] : null;
+                      const src = c?.source ?? "admin";
+                      return (
                       <tr key={e.id} className="border-t border-border/40 hover:bg-muted/20">
                         <td className="p-3 whitespace-nowrap">{fmtDateTimeBD(e.created_at || e.entry_date)}</td>
                         <td className="p-3">
@@ -293,6 +342,14 @@ export default function CashbookHistory() {
                           </span>
                         </td>
                         <td className="p-3">{e.category ?? "-"}</td>
+                        <td className="p-3">
+                          <div className="flex flex-col gap-0.5">
+                            <span className={`inline-flex w-fit items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold border ${src === "admin" ? "bg-primary/10 text-primary border-primary/30" : "bg-amber-500/10 text-amber-600 border-amber-500/30"}`}>
+                              {src === "admin" ? "অ্যাডমিন প্যানেল" : "স্টাফ প্যানেল"}
+                            </span>
+                            {c?.name && <span className="text-[10px] text-muted-foreground">{c.name}</span>}
+                          </div>
+                        </td>
                         <td className="p-3">{e.party_name ?? "-"}</td>
                         <td className="p-3">{e.payment_method ?? "cash"}</td>
                         <td className="p-3">{e.reference_no ?? "-"}</td>
@@ -302,7 +359,8 @@ export default function CashbookHistory() {
                           <button onClick={() => remove(e.id)} className="text-rose-500 hover:text-rose-700"><Trash2 className="h-4 w-4" /></button>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
