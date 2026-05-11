@@ -87,7 +87,7 @@ export default function Purchases() {
       return next;
     }));
   };
-  const addItemRow = () => setItems([...items, { product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "", has_warranty: false, warranty_months: 12, warranty_type: "ম্যানুফ্যাকচারার" }]);
+  const addItemRow = () => setItems([...items, { product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "", has_warranty: false, warranty_months: 12, warranty_type: "ম্যানুফ্যাকচারার", credit_extra: 0, installment_extra: 0 }]);
   const removeItemRow = (idx: number) => setItems(items.length === 1 ? items : items.filter((_, i) => i !== idx));
 
   const pickProduct = (idx: number, p: any) => updateItem(idx, {
