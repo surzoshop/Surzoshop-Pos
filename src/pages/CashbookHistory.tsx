@@ -11,7 +11,7 @@ import {
   ArrowDownCircle, ArrowUpCircle, ArrowLeft, Search, Trash2,
   ArrowDownToLine, ArrowUpFromLine, BookOpen, Download,
 } from "lucide-react";
-import { todayBD, addDaysBDStr, firstOfMonthBD, prevMonthRangeBD } from "@/lib/datetime";
+import { todayBD, addDaysBDStr, firstOfMonthBD, prevMonthRangeBD, fmtDateTimeBD } from "@/lib/datetime";
 
 type Entry = {
   id: string;
