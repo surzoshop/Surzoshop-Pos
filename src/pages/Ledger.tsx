@@ -388,8 +388,8 @@ export default function Ledger() {
     const cashBalance = cashIn - cashOut;
     const cashTxnTotal = cashIn + cashOut;
 
-    // মোট আয় = বিক্রয় থেকে আসলে প্রাপ্ত নগদ = ডাউন পেমেন্ট + সম্পূর্ণ পরিশোধিত নগদ + কিস্তি আদায়
-    const totalIncome = salesPaid + instPaid;
+    // মোট আয় = বিক্রয় থেকে প্রাপ্ত নগদ + কিস্তি আদায় + ম্যানুয়াল নগদ জমা (বাকি পরিশোধ সহ)
+    const totalIncome = salesPaid + instPaid + cashbookIn;
 
     const baseStats = [
       { key: "sales"    as TabKey, label: "নগদ আয়",              value: totalIncome,  icon: ArrowDownToLine, tone: "income",   hint: "বিক্রয় থেকে প্রাপ্ত নগদ = ডাউন পেমেন্ট + সম্পূর্ণ পরিশোধিত + কিস্তি আদায়" },
