@@ -682,7 +682,7 @@ export default function Ledger() {
                       </span>
                       <div className="min-w-0">
                         <div className="font-bold text-sm truncate">{e.category ?? "-"}</div>
-                        <div className="text-[11px] text-muted-foreground truncate">{e.entry_date}{e.party_name ? ` • ${e.party_name}` : ""}</div>
+                        <div className="text-[11px] text-muted-foreground truncate">{fmtDateTimeBD(e.created_at || e.entry_date)}{e.party_name ? ` • ${e.party_name}` : ""}</div>
                       </div>
                     </div>
                     <div className="text-right shrink-0">
