@@ -9,10 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Search, Package, Tag, Printer } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Tag, Printer, FileSpreadsheet } from "lucide-react";
 import { PageHeader, StatusPill, SurfaceCard, PrimaryButton } from "@/components/PageHeader";
 import { ImageUpload } from "@/components/ImageUpload";
 import { AddProductSheet } from "@/components/AddProductSheet";
+import { exportProductsToExcel } from "@/lib/exportProducts";
+import { useShop } from "@/hooks/useShop";
 
 // Build prefix from product name: first 2 letters (A-Z), uppercase
 function namePrefix(name: string): string {
@@ -30,6 +32,7 @@ async function generateBarcode(name: string): Promise<string> {
 export default function Products() {
   const { t, fmt } = useT();
   const { role } = useAuth();
+  const { currentShop } = useShop();
   const { toast } = useToast();
   const [items, setItems] = useState<any[]>([]);
   const [cats, setCats] = useState<any[]>([]);
@@ -190,21 +193,50 @@ export default function Products() {
       <PageHeader
         title={t("productsInventory")}
         subtitle={t("productsSubtitle")}
-        actions={isAdmin && (
+        actions={(
           <div className="flex flex-wrap gap-2">
-            <Link
-              to="/products/barcodes"
-              className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-2.5 rounded-xl text-sm font-bold hover:brightness-105 active:scale-95 transition-all"
-            >
-              <Printer className="h-4 w-4" /> বারকোড প্রিন্ট
-            </Link>
             <button
-              onClick={() => setCatOpen(true)}
-              className="inline-flex items-center gap-2 bg-info/10 text-info px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-info/15 active:scale-95 transition-all"
+              onClick={async () => {
+                try {
+                  await exportProductsToExcel(
+                    filtered.map(p => ({
+                      name: p.name,
+                      category: catName(p.category_id),
+                      barcode: p.barcode,
+                      sku: p.sku,
+                      cost: Number(p.cost || 0),
+                      price: Number(p.price || 0),
+                      stock: Number(p.stock || 0),
+                      unit: p.unit,
+                    })),
+                    { shopName: currentShop?.name, isAdmin },
+                  );
+                  toast({ title: "Excel ফাইল ডাউনলোড হয়েছে ✓" });
+                } catch (e: any) {
+                  toast({ title: e?.message ?? "Export failed", variant: "destructive" });
+                }
+              }}
+              className="inline-flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:brightness-110 active:scale-95 transition-all shadow-sm"
             >
-              <Tag className="h-4 w-4" /> ক্যাটাগরি যোগ করুন
+              <FileSpreadsheet className="h-4 w-4" /> Excel প্রিন্ট
             </button>
-            <PrimaryButton onClick={startNew}><Plus className="h-5 w-5" />{t("addProduct")}</PrimaryButton>
+            {isAdmin && (
+              <>
+                <Link
+                  to="/products/barcodes"
+                  className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-2.5 rounded-xl text-sm font-bold hover:brightness-105 active:scale-95 transition-all"
+                >
+                  <Printer className="h-4 w-4" /> বারকোড প্রিন্ট
+                </Link>
+                <button
+                  onClick={() => setCatOpen(true)}
+                  className="inline-flex items-center gap-2 bg-info/10 text-info px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-info/15 active:scale-95 transition-all"
+                >
+                  <Tag className="h-4 w-4" /> ক্যাটাগরি যোগ করুন
+                </button>
+                <PrimaryButton onClick={startNew}><Plus className="h-5 w-5" />{t("addProduct")}</PrimaryButton>
+              </>
+            )}
           </div>
         )}
       />
