@@ -786,6 +786,7 @@ export default function Ledger() {
                     <th className="text-left p-3">তারিখ</th>
                     <th className="text-left p-3">ধরন</th>
                     <th className="text-left p-3">বিবরণ</th>
+                    <th className="text-left p-3">পরিশোধকারী</th>
                     <th className="text-right p-3">ডেবিট (-)</th>
                     <th className="text-right p-3">ক্রেডিট (+)</th>
                     <th className="text-right p-3">ব্যালেন্স</th>
@@ -793,10 +794,13 @@ export default function Ledger() {
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">লোড হচ্ছে...</td></tr>
+                    <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">লোড হচ্ছে...</td></tr>
                   ) : detailedRows.length === 0 ? (
-                    <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">কোনো লেনদেন নেই</td></tr>
-                  ) : detailedRows.map(({ e, cr, dr, balance }) => (
+                    <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">কোনো লেনদেন নেই</td></tr>
+                  ) : detailedRows.map(({ e, cr, dr, balance }) => {
+                    const c = e.created_by ? creators[e.created_by] : null;
+                    const src = c?.source ?? "admin";
+                    return (
                     <tr key={e.id} className="border-t border-border/40 hover:bg-muted/30">
                       <td className="p-3 whitespace-nowrap">{fmtDateTimeBD(e.created_at || e.entry_date)}</td>
                       <td className="p-3">
@@ -810,11 +814,23 @@ export default function Ledger() {
                           <div className="text-xs text-muted-foreground">{[e.party_name, e.notes].filter(Boolean).join(" • ")}</div>
                         )}
                       </td>
+                      <td className="p-3">
+                        <div className="flex flex-col gap-0.5">
+                          <span className={`inline-flex w-fit items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold border ${src === "admin" ? "bg-primary/10 text-primary border-primary/30" : "bg-amber-500/10 text-amber-600 border-amber-500/30"}`}>
+                            {src === "admin" ? "অ্যাডমিন প্যানেল" : "এমপ্লয়ি প্যানেল"}
+                          </span>
+                          {c?.name && <span className="text-[11px] text-foreground/80">{c.name}</span>}
+                          {src === "staff" && c?.staffCode && (
+                            <span className="text-[10px] font-mono text-muted-foreground">ID: {c.staffCode}</span>
+                          )}
+                        </div>
+                      </td>
                       <td className="p-3 text-right font-bold text-rose-600">{dr > 0 ? fmt(dr) : "-"}</td>
                       <td className="p-3 text-right font-bold text-emerald-600">{cr > 0 ? fmt(cr) : "-"}</td>
                       <td className="p-3 text-right font-bold">{fmt(balance)}</td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             ) : (
