@@ -75,6 +75,8 @@ export default function CashbookHistory() {
     setTo(r.from === "2000-01-01" ? "" : r.to);
   }, [range]);
 
+  const [creators, setCreators] = useState<Record<string, CreatorInfo>>({});
+
   const load = async () => {
     setLoading(true);
     let q = supabase.from("cash_book" as any).select("*")
@@ -82,7 +84,35 @@ export default function CashbookHistory() {
     if (currentShop) q = q.eq("shop_id", currentShop.id);
     const { data, error } = await q;
     if (error) toast.error(error.message);
-    setEntries((data ?? []) as any);
+    const rows = (data ?? []) as any as Entry[];
+    setEntries(rows);
+
+    // Fetch creator info (name + role/source)
+    const ids = Array.from(new Set(rows.map(r => r.created_by).filter(Boolean))) as string[];
+    if (ids.length) {
+      const [{ data: profs }, { data: roles }, { data: staffAcc }] = await Promise.all([
+        supabase.from("profiles").select("user_id, full_name").in("user_id", ids),
+        supabase.from("user_roles").select("user_id, role").in("user_id", ids),
+        supabase.from("staff_access" as any).select("user_id, login_identifier, staff_id").in("user_id", ids),
+      ]);
+      const nameMap: Record<string, string> = {};
+      (profs ?? []).forEach((p: any) => { if (p.full_name) nameMap[p.user_id] = p.full_name; });
+      (staffAcc ?? []).forEach((s: any) => { if (!nameMap[s.user_id] && s.login_identifier) nameMap[s.user_id] = s.login_identifier; });
+      const adminSet = new Set<string>();
+      (roles ?? []).forEach((r: any) => {
+        if (r.role === "admin" || r.role === "super_admin") adminSet.add(r.user_id);
+      });
+      const map: Record<string, CreatorInfo> = {};
+      ids.forEach(id => {
+        map[id] = {
+          name: nameMap[id] ?? "অজানা",
+          source: adminSet.has(id) ? "admin" : "staff",
+        };
+      });
+      setCreators(map);
+    } else {
+      setCreators({});
+    }
     setLoading(false);
   };
 
