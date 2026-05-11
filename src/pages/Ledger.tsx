@@ -215,6 +215,7 @@ export default function Ledger() {
         total: Number(s.total || 0),
         paid: basePaid,
         party: custName,
+        created_by: s.created_by ?? null,
       };
     }));
     setPurchasesAgg((pd ?? []).map((p: any) => ({
@@ -223,6 +224,7 @@ export default function Ledger() {
       total: Number(p.total || 0),
       paid: Number(p.paid || 0),
       party: p.suppliers?.name ?? null,
+      created_by: p.created_by ?? null,
     })));
     setExpensesAgg((ed ?? []).map((e: any) => ({
       date: String(e.expense_date).slice(0, 10),
@@ -230,12 +232,52 @@ export default function Ledger() {
       total: Number(e.amount || 0),
       title: e.title ?? "খরচ",
       method: e.payment_method ?? "cash",
+      created_by: e.created_by ?? null,
     })));
     setInstPayAgg((ipd ?? []).map((p: any) => ({
       date: String(p.paid_at).slice(0, 10),
       at: String(p.paid_at),
       amount: Number(p.amount || 0),
+      created_by: p.received_by ?? null,
     })));
+
+    // Fetch creator info for all distinct created_by ids
+    const creatorIds = new Set<string>();
+    (allEntries as any[]).forEach(r => r.created_by && creatorIds.add(r.created_by));
+    (sd ?? []).forEach((r: any) => r.created_by && creatorIds.add(r.created_by));
+    (pd ?? []).forEach((r: any) => r.created_by && creatorIds.add(r.created_by));
+    (ed ?? []).forEach((r: any) => r.created_by && creatorIds.add(r.created_by));
+    (ipd ?? []).forEach((r: any) => r.received_by && creatorIds.add(r.received_by));
+    const ids = Array.from(creatorIds);
+    if (ids.length) {
+      const [{ data: profs }, { data: roles }, { data: staffAcc }] = await Promise.all([
+        supabase.from("profiles").select("user_id, full_name").in("user_id", ids),
+        supabase.from("user_roles").select("user_id, role").in("user_id", ids),
+        supabase.from("staff_access" as any).select("user_id, login_identifier, staff_id").in("user_id", ids),
+      ]);
+      const nameMap: Record<string, string> = {};
+      const codeMap: Record<string, string | null> = {};
+      (profs ?? []).forEach((p: any) => { if (p.full_name) nameMap[p.user_id] = p.full_name; });
+      (staffAcc ?? []).forEach((s: any) => {
+        if (!nameMap[s.user_id] && s.login_identifier) nameMap[s.user_id] = s.login_identifier;
+        codeMap[s.user_id] = s.staff_id ? String(s.staff_id).slice(0, 6).toUpperCase() : (s.login_identifier ?? null);
+      });
+      const adminSet = new Set<string>();
+      (roles ?? []).forEach((r: any) => {
+        if (r.role === "admin" || r.role === "super_admin") adminSet.add(r.user_id);
+      });
+      const cmap: Record<string, CreatorInfo> = {};
+      ids.forEach(id => {
+        cmap[id] = {
+          name: nameMap[id] ?? "অজানা",
+          source: adminSet.has(id) ? "admin" : "staff",
+          staffCode: adminSet.has(id) ? null : (codeMap[id] ?? null),
+        };
+      });
+      setCreators(cmap);
+    } else {
+      setCreators({});
+    }
 
     // Aggregate profit per sale, then bucket by date
     const perSale = new Map<string, { date: string; revenue: number; cost: number; discount: number; total: number }>();
