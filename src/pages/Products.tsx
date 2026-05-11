@@ -9,10 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Search, Package, Tag, Printer } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Tag, Printer, FileSpreadsheet } from "lucide-react";
 import { PageHeader, StatusPill, SurfaceCard, PrimaryButton } from "@/components/PageHeader";
 import { ImageUpload } from "@/components/ImageUpload";
 import { AddProductSheet } from "@/components/AddProductSheet";
+import { exportProductsToExcel } from "@/lib/exportProducts";
+import { useShop } from "@/hooks/useShop";
 
 // Build prefix from product name: first 2 letters (A-Z), uppercase
 function namePrefix(name: string): string {
