@@ -191,13 +191,6 @@ export default function Ledger() {
         creditPaidByCustomer.set(e.party_name, (creditPaidByCustomer.get(e.party_name) ?? 0) + Number(e.amount || 0));
       }
     });
-    // Map: sale_id -> total installment_payments amount (these are added to sales.paid by trigger)
-    const instBySale = new Map<string, number>();
-    (ipd ?? []).forEach((p: any) => {
-      const sid_ = p.installments?.sale_id;
-      if (!sid_) return;
-      instBySale.set(sid_, (instBySale.get(sid_) ?? 0) + Number(p.amount || 0));
-    });
     // Track customers we've already deducted credit-paid from (only deduct once total per customer)
     const creditConsumed = new Map<string, number>();
     setSalesAgg((sd ?? []).map((s: any) => {
