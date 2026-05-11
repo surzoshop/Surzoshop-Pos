@@ -392,7 +392,7 @@ export default function Ledger() {
     const totalIncome = salesPaid + instPaid + cashbookIn;
 
     const baseStats = [
-      { key: "sales"    as TabKey, label: "নগদ আয়",              value: totalIncome,  icon: ArrowDownToLine, tone: "income",   hint: "বিক্রয় থেকে প্রাপ্ত নগদ = ডাউন পেমেন্ট + সম্পূর্ণ পরিশোধিত + কিস্তি আদায়" },
+      { key: "sales"    as TabKey, label: "নগদ আয়",              value: totalIncome,  icon: ArrowDownToLine, tone: "income",   hint: "বিক্রয় থেকে প্রাপ্ত নগদ + কিস্তি আদায় + বাকি পরিশোধ + ম্যানুয়াল নগদ জমা" },
       { key: "expense"  as TabKey, label: "মোট খরচ",             value: expense,      icon: ArrowUpFromLine, tone: "expense",  hint: "শুধুমাত্র খরচ এন্ট্রি পেজ থেকে (জমা/উত্তোলনের কোনো প্রভাব নেই)" },
       { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",        value: cashBalance,  icon: Coins,           tone: "balance",  hint: "মোট আয় − মোট খরচ (স্টক ক্রয়মূল্য বাদ; খরচ না থাকলে পুরো আয়ই ব্যালেন্স)" },
     ];
