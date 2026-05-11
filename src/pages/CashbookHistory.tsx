@@ -285,7 +285,7 @@ export default function CashbookHistory() {
                   <tbody>
                     {filtered.map(e => (
                       <tr key={e.id} className="border-t border-border/40 hover:bg-muted/20">
-                        <td className="p-3 whitespace-nowrap">{e.entry_date}</td>
+                        <td className="p-3 whitespace-nowrap">{fmtDateTimeBD(e.created_at || e.entry_date)}</td>
                         <td className="p-3">
                           <span className={`inline-flex items-center gap-1 text-xs font-bold ${e.entry_type === "deposit" ? "text-emerald-600" : "text-rose-600"}`}>
                             {e.entry_type === "deposit" ? <ArrowDownCircle className="h-3.5 w-3.5" /> : <ArrowUpCircle className="h-3.5 w-3.5" />}
