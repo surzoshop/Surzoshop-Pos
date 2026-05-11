@@ -96,32 +96,33 @@ export default function Categories() {
       <SurfaceCard className="p-4 md:p-6">
         {/* Add / Edit form */}
         {isAdmin && (
-          <div className="mb-4 flex gap-2">
-            {editing ? (
-              <>
-                <Input
-                  autoFocus
-                  value={editing.name}
-                  onChange={e => setEditing({ ...editing, name: e.target.value })}
-                  placeholder="ক্যাটাগরির নতুন নাম"
-                  onKeyDown={e => e.key === "Enter" && save()}
-                  className="h-11"
-                />
-                <PrimaryButton onClick={save}>সংরক্ষণ</PrimaryButton>
-                <Button variant="ghost" onClick={() => setEditing(null)}>বাতিল</Button>
-              </>
-            ) : (
-              <>
-                <Input
-                  value={newCat}
-                  onChange={e => setNewCat(e.target.value)}
-                  placeholder="নতুন ক্যাটাগরির নাম..."
-                  onKeyDown={e => e.key === "Enter" && save()}
-                  className="h-11"
-                />
-                <PrimaryButton onClick={save}><Plus className="h-4 w-4" /> যোগ করুন</PrimaryButton>
-              </>
-            )}
+          <div className="mb-4 rounded-2xl border border-primary/20 bg-primary/5 p-3 md:p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-8 w-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
+                {editing ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              </div>
+              <div className="text-sm font-extrabold text-foreground">
+                {editing ? "ক্যাটাগরি সম্পাদনা" : "নতুন ক্যাটাগরি যোগ করুন"}
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                autoFocus={!!editing}
+                value={editing ? editing.name : newCat}
+                onChange={e => editing ? setEditing({ ...editing, name: e.target.value }) : setNewCat(e.target.value)}
+                placeholder={editing ? "ক্যাটাগরির নতুন নাম" : "যেমন: মোবাইল, ফ্রিজ, টিভি..."}
+                onKeyDown={e => e.key === "Enter" && save()}
+                className="h-11 flex-1"
+              />
+              <div className="flex gap-2">
+                <PrimaryButton onClick={save} className="flex-1 sm:flex-initial justify-center">
+                  {editing ? <><Pencil className="h-4 w-4" /> সংরক্ষণ</> : <><Plus className="h-4 w-4" /> যোগ করুন</>}
+                </PrimaryButton>
+                {editing && (
+                  <Button variant="outline" onClick={() => setEditing(null)} className="h-11">বাতিল</Button>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
