@@ -32,6 +32,7 @@ async function generateBarcode(name: string): Promise<string> {
 export default function Products() {
   const { t, fmt } = useT();
   const { role } = useAuth();
+  const { currentShop } = useShop();
   const { toast } = useToast();
   const [items, setItems] = useState<any[]>([]);
   const [cats, setCats] = useState<any[]>([]);
