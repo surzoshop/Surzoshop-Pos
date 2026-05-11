@@ -319,6 +319,7 @@ export default function CashbookHistory() {
                       <th className="p-3">তারিখ</th>
                       <th className="p-3">ধরন</th>
                       <th className="p-3">ক্যাটাগরি</th>
+                      <th className="p-3">উৎস</th>
                       <th className="p-3">পার্টি</th>
                       <th className="p-3">পেমেন্ট</th>
                       <th className="p-3">রেফ</th>
@@ -328,7 +329,10 @@ export default function CashbookHistory() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map(e => (
+                    {filtered.map(e => {
+                      const c = e.created_by ? creators[e.created_by] : null;
+                      const src = c?.source ?? "admin";
+                      return (
                       <tr key={e.id} className="border-t border-border/40 hover:bg-muted/20">
                         <td className="p-3 whitespace-nowrap">{fmtDateTimeBD(e.created_at || e.entry_date)}</td>
                         <td className="p-3">
@@ -338,6 +342,14 @@ export default function CashbookHistory() {
                           </span>
                         </td>
                         <td className="p-3">{e.category ?? "-"}</td>
+                        <td className="p-3">
+                          <div className="flex flex-col gap-0.5">
+                            <span className={`inline-flex w-fit items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold border ${src === "admin" ? "bg-primary/10 text-primary border-primary/30" : "bg-amber-500/10 text-amber-600 border-amber-500/30"}`}>
+                              {src === "admin" ? "অ্যাডমিন প্যানেল" : "স্টাফ প্যানেল"}
+                            </span>
+                            {c?.name && <span className="text-[10px] text-muted-foreground">{c.name}</span>}
+                          </div>
+                        </td>
                         <td className="p-3">{e.party_name ?? "-"}</td>
                         <td className="p-3">{e.payment_method ?? "cash"}</td>
                         <td className="p-3">{e.reference_no ?? "-"}</td>
@@ -347,7 +359,8 @@ export default function CashbookHistory() {
                           <button onClick={() => remove(e.id)} className="text-rose-500 hover:text-rose-700"><Trash2 className="h-4 w-4" /></button>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
