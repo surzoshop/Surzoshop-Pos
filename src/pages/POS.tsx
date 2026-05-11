@@ -516,7 +516,7 @@ export default function POS() {
           )}
         </div>
 
-        <div className="space-y-3 mb-4 max-h-[60vh] lg:min-h-[11rem] lg:max-h-[32vh] overflow-y-auto pr-1 rounded-xl lg:border lg:border-[hsl(var(--surface-container-high))] lg:bg-[hsl(var(--surface-container-low))] lg:p-2">
+        <div className="space-y-3 mb-4 max-h-[60vh] lg:max-h-none overflow-y-auto lg:overflow-visible pr-1 rounded-xl lg:border lg:border-[hsl(var(--surface-container-high))] lg:bg-[hsl(var(--surface-container-low))] lg:p-2">
           {cart.length === 0 && (
             <div className="text-center text-muted-foreground py-12">{t("emptyCart")}</div>
           )}
