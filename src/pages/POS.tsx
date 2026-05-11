@@ -667,7 +667,7 @@ export default function POS() {
           </>
         )}
 
-        <div className="space-y-4 pt-4 border-t border-[hsl(var(--surface-container-high))] lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
+        <div className="space-y-4 pt-4 border-t border-[hsl(var(--surface-container-high))]">
           {isAdmin && (
             <div className="flex gap-2">
               <input
