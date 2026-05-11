@@ -124,6 +124,8 @@ export default function Purchases() {
         unit_cost: Number(it.unit_cost), sell_price: prod?.price ?? 0,
         subtotal: Number(it.subtotal), image_url: prod?.image_url ?? "",
         has_warranty: !!prod?.has_warranty, warranty_months: prod?.warranty_months || 12, warranty_type: "ম্যানুফ্যাকচারার",
+        credit_extra: Number(prod?.credit_extra) || 0,
+        installment_extra: Number(prod?.installment_extra) || 0,
       };
     }));
     setOpen(true);
