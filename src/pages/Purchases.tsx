@@ -153,6 +153,10 @@ export default function Purchases() {
           stock: 0, // trigger will increment
           has_warranty: !!it.has_warranty,
           warranty_months: it.has_warranty ? Number(it.warranty_months) || null : null,
+          ...(isAdmin ? {
+            credit_extra: Number(it.credit_extra) || 0,
+            installment_extra: Number(it.installment_extra) || 0,
+          } : {}),
           shop_id: currentShop?.id ?? null,
         }).select().single();
         if (pe) return toast({ title: "নতুন পণ্য তৈরিতে সমস্যা: " + pe.message, variant: "destructive" });
@@ -165,6 +169,10 @@ export default function Purchases() {
           ...(it.sell_price ? { price: Number(it.sell_price) } : {}),
           has_warranty: !!it.has_warranty,
           warranty_months: it.has_warranty ? Number(it.warranty_months) || null : null,
+          ...(isAdmin ? {
+            credit_extra: Number(it.credit_extra) || 0,
+            installment_extra: Number(it.installment_extra) || 0,
+          } : {}),
         }).eq("id", pid);
       }
       prepared.push({ ...it, product_id: pid, product_name: pname });
