@@ -172,14 +172,25 @@ export default function Ledger() {
 
     const [{ data, error }, { data: sd }, { data: pd }, { data: ed }, { data: ipd }, { data: sid }, { data: pid }] = await Promise.all([q, sq, pq, eq_, ipq, siq, piq]);
     if (error) toast.error(error.message);
-    // Exclude credit-payment cash_book deposits — they're already reflected via sales.paid
-    // (CustomerLedger inserts both: updates sales.paid AND inserts a cash_book deposit row).
-    // Counting both would double the income/balance. The row still exists in DB for history view.
-    const filteredEntries = ((data ?? []) as any[]).filter((e: any) => {
-      const cat = String(e.category ?? "").toLowerCase();
-      return !(cat.includes("বাকি পরিশোধ") || cat.includes("credit payment"));
+    const allEntries = ((data ?? []) as any[]);
+    setEntries(allEntries as any);
+    // Map: sale_id -> total installment_payments amount (these are added to sales.paid by trigger)
+    const instBySale = new Map<string, number>();
+    (ipd ?? []).forEach((p: any) => {
+      const sid_ = p.installments?.sale_id;
+      if (!sid_) return;
+      instBySale.set(sid_, (instBySale.get(sid_) ?? 0) + Number(p.amount || 0));
     });
-    setEntries(filteredEntries as any);
+    // Credit-payment cash_book deposits — by customer (party_name).
+    // These also incremented sales.paid via CustomerLedger; subtract from salesAgg.paid
+    // so the receipt is dated by cash_book.entry_date (today), not sale.created_at.
+    const creditPaidByCustomer = new Map<string, number>();
+    allEntries.forEach((e: any) => {
+      const cat = String(e.category ?? "").toLowerCase();
+      if ((cat.includes("বাকি পরিশোধ") || cat.includes("credit payment")) && e.party_name) {
+        creditPaidByCustomer.set(e.party_name, (creditPaidByCustomer.get(e.party_name) ?? 0) + Number(e.amount || 0));
+      }
+    });
     // Map: sale_id -> total installment_payments amount (these are added to sales.paid by trigger)
     const instBySale = new Map<string, number>();
     (ipd ?? []).forEach((p: any) => {
