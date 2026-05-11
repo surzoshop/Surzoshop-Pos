@@ -109,9 +109,10 @@ export default function Ledger() {
   const [salesAgg, setSalesAgg] = useState<{ date: string; at: string; total: number; paid: number; party: string | null }[]>([]);
   const [purchasesAgg, setPurchasesAgg] = useState<{ date: string; at: string; total: number; paid: number; party: string | null }[]>([]);
   const [expensesAgg, setExpensesAgg] = useState<{ date: string; at: string; total: number; title: string; method: string }[]>([]);
-  const [instPayAgg, setInstPayAgg] = useState<{ date: string; at: string; amount: number }[]>([]);
+  const [instPayAgg, setInstPayAgg] = useState<{ date: string; at: string; amount: number; created_by?: string | null }[]>([]);
   const [profitAgg, setProfitAgg] = useState<{ date: string; profit: number }[]>([]);
   const [purchaseCostAgg, setPurchaseCostAgg] = useState<{ date: string; total: number }[]>([]);
+  const [creators, setCreators] = useState<Record<string, CreatorInfo>>({});
   const [loading, setLoading] = useState(true);
 
   // Top section state
