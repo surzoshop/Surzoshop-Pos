@@ -21,7 +21,7 @@ import {
   ListFilter, CalendarDays, History,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { todayBD, addDaysBDStr, firstOfMonthBD, prevMonthRangeBD, fmtDateBD } from "@/lib/datetime";
+import { todayBD, addDaysBDStr, firstOfMonthBD, prevMonthRangeBD, fmtDateBD, fmtDateTimeBD } from "@/lib/datetime";
 
 type Entry = {
   id: string;
