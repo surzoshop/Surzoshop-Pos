@@ -496,7 +496,7 @@ export default function POS() {
         </div>
       </section>
 
-      <section className="lg:col-span-2 flex flex-col bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-4 sm:p-6 lg:min-h-0 shadow-sm lg:overflow-y-auto">
+      <section className="lg:col-span-2 flex flex-col bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-4 sm:p-6 lg:min-h-0 shadow-sm lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-9rem)] lg:overflow-hidden">
         {editingSaleId && (
           <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs sm:text-sm font-semibold text-primary">
             <span>✎ এডিট মোড — ইনভয়েস আপডেট হবে</span>
@@ -516,7 +516,7 @@ export default function POS() {
           )}
         </div>
 
-        <div className="space-y-3 mb-4 max-h-[60vh] lg:max-h-none overflow-y-auto pr-1">
+        <div className="space-y-3 mb-4 max-h-[60vh] lg:min-h-[11rem] lg:max-h-[32vh] overflow-y-auto pr-1 rounded-xl lg:border lg:border-[hsl(var(--surface-container-high))] lg:bg-[hsl(var(--surface-container-low))] lg:p-2">
           {cart.length === 0 && (
             <div className="text-center text-muted-foreground py-12">{t("emptyCart")}</div>
           )}
@@ -667,7 +667,7 @@ export default function POS() {
           </>
         )}
 
-        <div className="space-y-4 pt-4 border-t border-[hsl(var(--surface-container-high))]">
+        <div className="space-y-4 pt-4 border-t border-[hsl(var(--surface-container-high))] lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
           {isAdmin && (
             <div className="flex gap-2">
               <input
