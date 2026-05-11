@@ -24,7 +24,10 @@ type Entry = {
   party_name: string | null;
   notes: string | null;
   created_at: string;
+  created_by: string | null;
 };
+
+type CreatorInfo = { name: string; source: "admin" | "staff" };
 
 type RangeKey = "today" | "7d" | "30d" | "thisMonth" | "lastMonth" | "lifetime";
 type FilterKey = "all" | "deposit" | "withdraw";
