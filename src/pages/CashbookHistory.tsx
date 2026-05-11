@@ -287,6 +287,18 @@ export default function CashbookHistory() {
                           </div>
                           {e.reference_no && <div className="text-[11px] text-muted-foreground">রেফ: {e.reference_no}</div>}
                           {e.notes && <div className="text-[11px] text-muted-foreground line-clamp-2">{e.notes}</div>}
+                          {(() => {
+                            const c = e.created_by ? creators[e.created_by] : null;
+                            const src = c?.source ?? "admin";
+                            return (
+                              <div className="mt-1 inline-flex items-center gap-1">
+                                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold border ${src === "admin" ? "bg-primary/10 text-primary border-primary/30" : "bg-amber-500/10 text-amber-600 border-amber-500/30"}`}>
+                                  {src === "admin" ? "অ্যাডমিন প্যানেল" : "স্টাফ প্যানেল"}
+                                </span>
+                                {c?.name && <span className="text-[10px] text-muted-foreground truncate">• {c.name}</span>}
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                       <div className="text-right shrink-0">
