@@ -249,7 +249,7 @@ export default function CashbookHistory() {
                         <div className="min-w-0">
                           <div className="font-bold text-sm truncate">{e.category ?? "-"}</div>
                           <div className="text-[11px] text-muted-foreground truncate">
-                            {e.entry_date} • {e.payment_method ?? "cash"}
+                            {fmtDateTimeBD(e.created_at || e.entry_date)} • {e.payment_method ?? "cash"}
                             {e.party_name ? ` • ${e.party_name}` : ""}
                           </div>
                           {e.reference_no && <div className="text-[11px] text-muted-foreground">রেফ: {e.reference_no}</div>}
