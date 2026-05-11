@@ -172,7 +172,14 @@ export default function Ledger() {
 
     const [{ data, error }, { data: sd }, { data: pd }, { data: ed }, { data: ipd }, { data: sid }, { data: pid }] = await Promise.all([q, sq, pq, eq_, ipq, siq, piq]);
     if (error) toast.error(error.message);
-    setEntries((data ?? []) as any);
+    // Exclude credit-payment cash_book deposits — they're already reflected via sales.paid
+    // (CustomerLedger inserts both: updates sales.paid AND inserts a cash_book deposit row).
+    // Counting both would double the income/balance. The row still exists in DB for history view.
+    const filteredEntries = ((data ?? []) as any[]).filter((e: any) => {
+      const cat = String(e.category ?? "").toLowerCase();
+      return !(cat.includes("বাকি পরিশোধ") || cat.includes("credit payment"));
+    });
+    setEntries(filteredEntries as any);
     // Map: sale_id -> total installment_payments amount (these are added to sales.paid by trigger)
     const instBySale = new Map<string, number>();
     (ipd ?? []).forEach((p: any) => {
