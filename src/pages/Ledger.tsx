@@ -339,6 +339,7 @@ export default function Ledger() {
         party_name: s.party,
         notes: null,
         created_at: s.at,
+        created_by: s.created_by ?? null,
       }));
     const purchases: Entry[] = purchasesAgg
       .filter(p => p.paid > 0)
@@ -353,6 +354,7 @@ export default function Ledger() {
         party_name: p.party,
         notes: null,
         created_at: p.at,
+        created_by: p.created_by ?? null,
       }));
     const expenseRows: Entry[] = expensesAgg.map((x, i) => ({
       id: `exp-${i}-${x.date}`,
@@ -365,6 +367,7 @@ export default function Ledger() {
       party_name: null,
       notes: null,
       created_at: x.at,
+      created_by: x.created_by ?? null,
     }));
     const instRows: Entry[] = instPayAgg
       .filter(p => p.amount > 0)
@@ -379,6 +382,7 @@ export default function Ledger() {
         party_name: null,
         notes: null,
         created_at: p.at,
+        created_by: p.created_by ?? null,
       }));
     return [...entries, ...sales, ...purchases, ...expenseRows, ...instRows];
   }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg]);
