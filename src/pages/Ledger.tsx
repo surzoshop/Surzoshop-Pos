@@ -733,7 +733,7 @@ export default function Ledger() {
                     <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">কোনো লেনদেন নেই</td></tr>
                   ) : detailedRows.map(({ e, cr, dr, balance }) => (
                     <tr key={e.id} className="border-t border-border/40 hover:bg-muted/30">
-                      <td className="p-3 whitespace-nowrap">{e.entry_date}</td>
+                      <td className="p-3 whitespace-nowrap">{fmtDateTimeBD(e.created_at || e.entry_date)}</td>
                       <td className="p-3">
                         {e.entry_type === "deposit"
                           ? <span className="text-emerald-600 font-bold">জমা</span>
