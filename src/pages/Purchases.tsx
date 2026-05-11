@@ -41,7 +41,7 @@ export default function Purchases() {
   const [billDate, setBillDate] = useState(todayBD());
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<any[]>([
-    { product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "", has_warranty: false, warranty_months: 12, warranty_type: "ম্যানুফ্যাকচারার" },
+    { product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "", has_warranty: false, warranty_months: 12, warranty_type: "ম্যানুফ্যাকচারার", credit_extra: 0, installment_extra: 0 },
   ]);
   const [discount, setDiscount] = useState(0);
   const [delivery, setDelivery] = useState(0);
@@ -52,7 +52,7 @@ export default function Purchases() {
     const [p, s, pr, c] = await Promise.all([
       supabase.from("purchases").select("*, suppliers(name)").order("created_at", { ascending: false }).limit(200),
       supabase.from("suppliers").select("id,name,phone").order("name"),
-      supabase.from("products").select("id,name,cost,price,unit,barcode,sku,image_url,category_id,has_warranty,warranty_months").order("name"),
+      supabase.from("products").select("id,name,cost,price,unit,barcode,sku,image_url,category_id,has_warranty,warranty_months,credit_extra,installment_extra").order("name"),
       supabase.from("categories").select("id,name").order("name"),
     ]);
     setPurchases(p.data ?? []); setSuppliers(s.data ?? []); setProducts(pr.data ?? []); setCategories(c.data ?? []);
@@ -87,7 +87,7 @@ export default function Purchases() {
       return next;
     }));
   };
-  const addItemRow = () => setItems([...items, { product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "", has_warranty: false, warranty_months: 12, warranty_type: "ম্যানুফ্যাকচারার" }]);
+  const addItemRow = () => setItems([...items, { product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "", has_warranty: false, warranty_months: 12, warranty_type: "ম্যানুফ্যাকচারার", credit_extra: 0, installment_extra: 0 }]);
   const removeItemRow = (idx: number) => setItems(items.length === 1 ? items : items.filter((_, i) => i !== idx));
 
   const pickProduct = (idx: number, p: any) => updateItem(idx, {
@@ -96,10 +96,12 @@ export default function Purchases() {
     unit: p.unit ?? "pcs", category_id: p.category_id ?? "",
     image_url: p.image_url ?? "",
     has_warranty: !!p.has_warranty, warranty_months: p.warranty_months || 12,
+    credit_extra: Number(p.credit_extra) || 0,
+    installment_extra: Number(p.installment_extra) || 0,
   });
 
   const resetForm = () => {
-    setItems([{ product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "", has_warranty: false, warranty_months: 12, warranty_type: "ম্যানুফ্যাকচারার" }]);
+    setItems([{ product_id: "", product_name: "", search: "", brand: "", category_id: "", qty: 1, unit: "pcs", unit_cost: 0, sell_price: 0, subtotal: 0, image_url: "", has_warranty: false, warranty_months: 12, warranty_type: "ম্যানুফ্যাকচারার", credit_extra: 0, installment_extra: 0 }]);
     setPaid(0); setDiscount(0); setDelivery(0); setSupplierId(""); setSupplierSearch(""); setNotes("");
     setEditingId(null);
   };
@@ -122,6 +124,8 @@ export default function Purchases() {
         unit_cost: Number(it.unit_cost), sell_price: prod?.price ?? 0,
         subtotal: Number(it.subtotal), image_url: prod?.image_url ?? "",
         has_warranty: !!prod?.has_warranty, warranty_months: prod?.warranty_months || 12, warranty_type: "ম্যানুফ্যাকচারার",
+        credit_extra: Number(prod?.credit_extra) || 0,
+        installment_extra: Number(prod?.installment_extra) || 0,
       };
     }));
     setOpen(true);
@@ -149,6 +153,10 @@ export default function Purchases() {
           stock: 0, // trigger will increment
           has_warranty: !!it.has_warranty,
           warranty_months: it.has_warranty ? Number(it.warranty_months) || null : null,
+          ...(isAdmin ? {
+            credit_extra: Number(it.credit_extra) || 0,
+            installment_extra: Number(it.installment_extra) || 0,
+          } : {}),
           shop_id: currentShop?.id ?? null,
         }).select().single();
         if (pe) return toast({ title: "নতুন পণ্য তৈরিতে সমস্যা: " + pe.message, variant: "destructive" });
@@ -161,6 +169,10 @@ export default function Purchases() {
           ...(it.sell_price ? { price: Number(it.sell_price) } : {}),
           has_warranty: !!it.has_warranty,
           warranty_months: it.has_warranty ? Number(it.warranty_months) || null : null,
+          ...(isAdmin ? {
+            credit_extra: Number(it.credit_extra) || 0,
+            installment_extra: Number(it.installment_extra) || 0,
+          } : {}),
         }).eq("id", pid);
       }
       prepared.push({ ...it, product_id: pid, product_name: pname });
@@ -760,6 +772,33 @@ export default function Purchases() {
                               </div>
                             );
                           })()}
+
+                          {/* Credit / Installment extra — admin only */}
+                          {isAdmin && (
+                            <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2.5">
+                              <div className="flex items-center gap-2 text-xs font-bold">
+                                <DollarSign className="h-3.5 w-3.5 text-primary" />
+                                বাকি / কিস্তিতে অতিরিক্ত চার্জ
+                              </div>
+                              <p className="text-[10px] text-muted-foreground -mt-1">
+                                বাকিতে বা কিস্তিতে বিক্রি করলে প্রতি ইউনিটে কত টাকা অতিরিক্ত নেওয়া হবে।
+                              </p>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <Label className="text-[10px] mb-1 block text-muted-foreground">বাকিতে অতিরিক্ত (৳)</Label>
+                                  <Input type="number" inputMode="decimal" value={it.credit_extra || ""}
+                                    onChange={e => updateItem(idx, { credit_extra: +e.target.value })}
+                                    placeholder="0" className="h-9 bg-background text-xs" />
+                                </div>
+                                <div>
+                                  <Label className="text-[10px] mb-1 block text-muted-foreground">কিস্তিতে অতিরিক্ত (৳)</Label>
+                                  <Input type="number" inputMode="decimal" value={it.installment_extra || ""}
+                                    onChange={e => updateItem(idx, { installment_extra: +e.target.value })}
+                                    placeholder="0" className="h-9 bg-background text-xs" />
+                                </div>
+                              </div>
+                            </div>
+                          )}
 
                           {/* Warranty section */}
                           <div className="rounded-xl border border-info/20 bg-info/5 p-3 space-y-2.5">
