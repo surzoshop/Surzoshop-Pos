@@ -733,6 +733,21 @@ export default function Ledger() {
                       <div className="min-w-0">
                         <div className="font-bold text-sm truncate">{e.category ?? "-"}</div>
                         <div className="text-[11px] text-muted-foreground truncate">{fmtDateTimeBD(e.created_at || e.entry_date)}{e.party_name ? ` • ${e.party_name}` : ""}</div>
+                        {(() => {
+                          const c = e.created_by ? creators[e.created_by] : null;
+                          const src = c?.source ?? "admin";
+                          return (
+                            <div className="mt-1 inline-flex items-center gap-1 flex-wrap">
+                              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold border ${src === "admin" ? "bg-primary/10 text-primary border-primary/30" : "bg-amber-500/10 text-amber-600 border-amber-500/30"}`}>
+                                {src === "admin" ? "অ্যাডমিন" : "এমপ্লয়ি"}
+                              </span>
+                              {c?.name && <span className="text-[10px] text-muted-foreground">{c.name}</span>}
+                              {src === "staff" && c?.staffCode && (
+                                <span className="text-[10px] font-mono text-muted-foreground">#{c.staffCode}</span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                     <div className="text-right shrink-0">
