@@ -207,6 +207,7 @@ export default function Ledger() {
       }
       return {
         date: String(s.created_at).slice(0, 10),
+        at: String(s.created_at),
         total: Number(s.total || 0),
         paid: basePaid,
         party: custName,
@@ -214,18 +215,21 @@ export default function Ledger() {
     }));
     setPurchasesAgg((pd ?? []).map((p: any) => ({
       date: String(p.created_at).slice(0, 10),
+      at: String(p.created_at),
       total: Number(p.total || 0),
       paid: Number(p.paid || 0),
       party: p.suppliers?.name ?? null,
     })));
     setExpensesAgg((ed ?? []).map((e: any) => ({
       date: String(e.expense_date).slice(0, 10),
+      at: String(e.expense_date),
       total: Number(e.amount || 0),
       title: e.title ?? "খরচ",
       method: e.payment_method ?? "cash",
     })));
     setInstPayAgg((ipd ?? []).map((p: any) => ({
       date: String(p.paid_at).slice(0, 10),
+      at: String(p.paid_at),
       amount: Number(p.amount || 0),
     })));
 
