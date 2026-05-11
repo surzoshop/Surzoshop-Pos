@@ -11,7 +11,7 @@ import {
   ArrowDownCircle, ArrowUpCircle, ArrowLeft, Search, Trash2,
   ArrowDownToLine, ArrowUpFromLine, BookOpen, Download,
 } from "lucide-react";
-import { todayBD, addDaysBDStr, firstOfMonthBD, prevMonthRangeBD } from "@/lib/datetime";
+import { todayBD, addDaysBDStr, firstOfMonthBD, prevMonthRangeBD, fmtDateTimeBD } from "@/lib/datetime";
 
 type Entry = {
   id: string;
@@ -249,7 +249,7 @@ export default function CashbookHistory() {
                         <div className="min-w-0">
                           <div className="font-bold text-sm truncate">{e.category ?? "-"}</div>
                           <div className="text-[11px] text-muted-foreground truncate">
-                            {e.entry_date} • {e.payment_method ?? "cash"}
+                            {fmtDateTimeBD(e.created_at || e.entry_date)} • {e.payment_method ?? "cash"}
                             {e.party_name ? ` • ${e.party_name}` : ""}
                           </div>
                           {e.reference_no && <div className="text-[11px] text-muted-foreground">রেফ: {e.reference_no}</div>}
@@ -285,7 +285,7 @@ export default function CashbookHistory() {
                   <tbody>
                     {filtered.map(e => (
                       <tr key={e.id} className="border-t border-border/40 hover:bg-muted/20">
-                        <td className="p-3 whitespace-nowrap">{e.entry_date}</td>
+                        <td className="p-3 whitespace-nowrap">{fmtDateTimeBD(e.created_at || e.entry_date)}</td>
                         <td className="p-3">
                           <span className={`inline-flex items-center gap-1 text-xs font-bold ${e.entry_type === "deposit" ? "text-emerald-600" : "text-rose-600"}`}>
                             {e.entry_type === "deposit" ? <ArrowDownCircle className="h-3.5 w-3.5" /> : <ArrowUpCircle className="h-3.5 w-3.5" />}

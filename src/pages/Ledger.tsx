@@ -21,7 +21,7 @@ import {
   ListFilter, CalendarDays, History,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { todayBD, addDaysBDStr, firstOfMonthBD, prevMonthRangeBD, fmtDateBD } from "@/lib/datetime";
+import { todayBD, addDaysBDStr, firstOfMonthBD, prevMonthRangeBD, fmtDateBD, fmtDateTimeBD } from "@/lib/datetime";
 
 type Entry = {
   id: string;
@@ -103,10 +103,10 @@ export default function Ledger() {
   const { currentShop } = useShop();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [stockSellValue, setStockSellValue] = useState(0);
-  const [salesAgg, setSalesAgg] = useState<{ date: string; total: number; paid: number; party: string | null }[]>([]);
-  const [purchasesAgg, setPurchasesAgg] = useState<{ date: string; total: number; paid: number; party: string | null }[]>([]);
-  const [expensesAgg, setExpensesAgg] = useState<{ date: string; total: number; title: string; method: string }[]>([]);
-  const [instPayAgg, setInstPayAgg] = useState<{ date: string; amount: number }[]>([]);
+  const [salesAgg, setSalesAgg] = useState<{ date: string; at: string; total: number; paid: number; party: string | null }[]>([]);
+  const [purchasesAgg, setPurchasesAgg] = useState<{ date: string; at: string; total: number; paid: number; party: string | null }[]>([]);
+  const [expensesAgg, setExpensesAgg] = useState<{ date: string; at: string; total: number; title: string; method: string }[]>([]);
+  const [instPayAgg, setInstPayAgg] = useState<{ date: string; at: string; amount: number }[]>([]);
   const [profitAgg, setProfitAgg] = useState<{ date: string; profit: number }[]>([]);
   const [purchaseCostAgg, setPurchaseCostAgg] = useState<{ date: string; total: number }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -172,14 +172,8 @@ export default function Ledger() {
 
     const [{ data, error }, { data: sd }, { data: pd }, { data: ed }, { data: ipd }, { data: sid }, { data: pid }] = await Promise.all([q, sq, pq, eq_, ipq, siq, piq]);
     if (error) toast.error(error.message);
-    // Exclude credit-payment cash_book deposits — they're already reflected via sales.paid
-    // (CustomerLedger inserts both: updates sales.paid AND inserts a cash_book deposit row).
-    // Counting both would double the income/balance. The row still exists in DB for history view.
-    const filteredEntries = ((data ?? []) as any[]).filter((e: any) => {
-      const cat = String(e.category ?? "").toLowerCase();
-      return !(cat.includes("বাকি পরিশোধ") || cat.includes("credit payment"));
-    });
-    setEntries(filteredEntries as any);
+    const allEntries = ((data ?? []) as any[]);
+    setEntries(allEntries as any);
     // Map: sale_id -> total installment_payments amount (these are added to sales.paid by trigger)
     const instBySale = new Map<string, number>();
     (ipd ?? []).forEach((p: any) => {
@@ -187,27 +181,55 @@ export default function Ledger() {
       if (!sid_) return;
       instBySale.set(sid_, (instBySale.get(sid_) ?? 0) + Number(p.amount || 0));
     });
-    setSalesAgg((sd ?? []).map((s: any) => ({
-      date: String(s.created_at).slice(0, 10),
-      total: Number(s.total || 0),
-      // Initial cash received at sale time only — exclude installment payments (counted separately by paid_at)
-      paid: Math.max(0, Number(s.paid || 0) - (instBySale.get(s.id) ?? 0)),
-      party: s.customers?.name ?? null,
-    })));
+    // Credit-payment cash_book deposits — by customer (party_name).
+    // These also incremented sales.paid via CustomerLedger; subtract from salesAgg.paid
+    // so the receipt is dated by cash_book.entry_date (today), not sale.created_at.
+    const creditPaidByCustomer = new Map<string, number>();
+    allEntries.forEach((e: any) => {
+      const cat = String(e.category ?? "").toLowerCase();
+      if ((cat.includes("বাকি পরিশোধ") || cat.includes("credit payment")) && e.party_name) {
+        creditPaidByCustomer.set(e.party_name, (creditPaidByCustomer.get(e.party_name) ?? 0) + Number(e.amount || 0));
+      }
+    });
+    // Track customers we've already deducted credit-paid from (only deduct once total per customer)
+    const creditConsumed = new Map<string, number>();
+    setSalesAgg((sd ?? []).map((s: any) => {
+      const custName = s.customers?.name ?? null;
+      const inst = instBySale.get(s.id) ?? 0;
+      let basePaid = Math.max(0, Number(s.paid || 0) - inst);
+      if (custName && creditPaidByCustomer.has(custName)) {
+        const remaining = (creditPaidByCustomer.get(custName) ?? 0) - (creditConsumed.get(custName) ?? 0);
+        const sub = Math.min(basePaid, remaining);
+        if (sub > 0) {
+          basePaid -= sub;
+          creditConsumed.set(custName, (creditConsumed.get(custName) ?? 0) + sub);
+        }
+      }
+      return {
+        date: String(s.created_at).slice(0, 10),
+        at: String(s.created_at),
+        total: Number(s.total || 0),
+        paid: basePaid,
+        party: custName,
+      };
+    }));
     setPurchasesAgg((pd ?? []).map((p: any) => ({
       date: String(p.created_at).slice(0, 10),
+      at: String(p.created_at),
       total: Number(p.total || 0),
       paid: Number(p.paid || 0),
       party: p.suppliers?.name ?? null,
     })));
     setExpensesAgg((ed ?? []).map((e: any) => ({
       date: String(e.expense_date).slice(0, 10),
+      at: String(e.expense_date),
       total: Number(e.amount || 0),
       title: e.title ?? "খরচ",
       method: e.payment_method ?? "cash",
     })));
     setInstPayAgg((ipd ?? []).map((p: any) => ({
       date: String(p.paid_at).slice(0, 10),
+      at: String(p.paid_at),
       amount: Number(p.amount || 0),
     })));
 
@@ -270,9 +292,8 @@ export default function Ledger() {
         reference_no: null,
         party_name: s.party,
         notes: null,
-        created_at: s.date,
+        created_at: s.at,
       }));
-    // ক্রয়ে আসলে যত নগদ পরিশোধিত (paid) — বাকি অংশ খরচ হিসেবে গণ্য নয়
     const purchases: Entry[] = purchasesAgg
       .filter(p => p.paid > 0)
       .map((p, i) => ({
@@ -285,7 +306,7 @@ export default function Ledger() {
         reference_no: null,
         party_name: p.party,
         notes: null,
-        created_at: p.date,
+        created_at: p.at,
       }));
     const expenseRows: Entry[] = expensesAgg.map((x, i) => ({
       id: `exp-${i}-${x.date}`,
@@ -297,7 +318,7 @@ export default function Ledger() {
       reference_no: null,
       party_name: null,
       notes: null,
-      created_at: x.date,
+      created_at: x.at,
     }));
     const instRows: Entry[] = instPayAgg
       .filter(p => p.amount > 0)
@@ -311,7 +332,7 @@ export default function Ledger() {
         reference_no: null,
         party_name: null,
         notes: null,
-        created_at: p.date,
+        created_at: p.at,
       }));
     return [...entries, ...sales, ...purchases, ...expenseRows, ...instRows];
   }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg]);
@@ -661,7 +682,7 @@ export default function Ledger() {
                       </span>
                       <div className="min-w-0">
                         <div className="font-bold text-sm truncate">{e.category ?? "-"}</div>
-                        <div className="text-[11px] text-muted-foreground truncate">{e.entry_date}{e.party_name ? ` • ${e.party_name}` : ""}</div>
+                        <div className="text-[11px] text-muted-foreground truncate">{fmtDateTimeBD(e.created_at || e.entry_date)}{e.party_name ? ` • ${e.party_name}` : ""}</div>
                       </div>
                     </div>
                     <div className="text-right shrink-0">
@@ -712,7 +733,7 @@ export default function Ledger() {
                     <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">কোনো লেনদেন নেই</td></tr>
                   ) : detailedRows.map(({ e, cr, dr, balance }) => (
                     <tr key={e.id} className="border-t border-border/40 hover:bg-muted/30">
-                      <td className="p-3 whitespace-nowrap">{e.entry_date}</td>
+                      <td className="p-3 whitespace-nowrap">{fmtDateTimeBD(e.created_at || e.entry_date)}</td>
                       <td className="p-3">
                         {e.entry_type === "deposit"
                           ? <span className="text-emerald-600 font-bold">জমা</span>
