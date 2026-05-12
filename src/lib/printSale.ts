@@ -322,7 +322,7 @@ async function downloadPDF(html: string, filename: string) {
   wrapper.innerHTML = html.replace(/<script[\s\S]*?<\/script>/gi, "");
   document.body.appendChild(wrapper);
   try {
-    await html2pdf()
+    await (html2pdf() as any)
       .set({
         margin: 0,
         filename,
