@@ -18,8 +18,8 @@ import { CustomerCombobox } from "@/components/CustomerCombobox";
 import { ThermalReceipt } from "@/components/ThermalReceipt";
 import { bdDateAddMonths, todayBD } from "@/lib/datetime";
 
-type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number; image_url?: string | null };
-type CartItem = { product: Product; qty: number };
+type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number; image_url?: string | null; has_warranty?: boolean; warranty_months?: number | null };
+type CartItem = { product: Product; qty: number; warrantyMonths?: number | null };
 
 const VAT_RATE = 0; // VAT disabled — to be configured later via dedicated VAT settings page
 const INSTALLMENT_DUE_DAY = 5;
@@ -100,7 +100,7 @@ export default function POS() {
             ? roundMoney((lineSubtotal * (intendedSubtotal / rawSubtotal)) / qty)
             : Number(it.unit_price);
           orig[p.id] = (orig[p.id] || 0) + qty;
-          newCart.push({ product: { ...p, price: effectiveUnitPrice }, qty });
+          newCart.push({ product: { ...p, price: effectiveUnitPrice }, qty, warrantyMonths: it.warranty_months ?? (p.has_warranty ? Number(p.warranty_months) || null : null) });
         }
       });
       setEditingSaleId(editId);
@@ -171,7 +171,8 @@ export default function POS() {
     setCart(c => {
       const ex = c.find(i => i.product.id === p.id);
       if (ex) return c.map(i => i.product.id === p.id ? { ...i, qty: Math.min(i.qty + 1, p.stock + extra) } : i);
-      return [...c, { product: p, qty: 1 }];
+      const defaultMonths = p.has_warranty ? (Number(p.warranty_months) || null) : null;
+      return [...c, { product: p, qty: 1, warrantyMonths: defaultMonths }];
     });
   };
   const updateQty = (id: string, delta: number) => {
@@ -182,6 +183,9 @@ export default function POS() {
   const updatePrice = (id: string, price: number) => {
     clearTotalOverride();
     setCart(c => c.map(i => i.product.id === id ? { ...i, product: { ...i.product, price: Math.max(0, price) } } : i));
+  };
+  const updateWarranty = (id: string, months: number | null) => {
+    setCart(c => c.map(i => i.product.id === id ? { ...i, warrantyMonths: months } : i));
   };
 
   const subtotal = cart.reduce((a, i) => a + i.product.price * i.qty, 0);
@@ -310,10 +314,8 @@ export default function POS() {
 
       // 4) Insert new sale_items (trigger will decrement stock)
       const newItems = cart.map(i => {
-        const p: any = i.product;
-        const months = p.has_warranty ? Number(p.warranty_months) || null : null;
-        let warranty_until: string | null = null;
-        if (months) { warranty_until = bdDateAddMonths(months); }
+        const months = i.warrantyMonths != null && Number(i.warrantyMonths) > 0 ? Number(i.warrantyMonths) : null;
+        const warranty_until: string | null = months ? bdDateAddMonths(months) : null;
         return {
           sale_id: editingSaleId, product_id: i.product.id, product_name: i.product.name,
           qty: i.qty, unit_price: i.product.price, subtotal: i.product.price * i.qty,
@@ -366,12 +368,8 @@ export default function POS() {
     });
 
     const items = cart.map(i => {
-      const p: any = i.product;
-      const months = p.has_warranty ? Number(p.warranty_months) || null : null;
-      let warranty_until: string | null = null;
-      if (months) {
-        warranty_until = bdDateAddMonths(months);
-      }
+      const months = i.warrantyMonths != null && Number(i.warrantyMonths) > 0 ? Number(i.warrantyMonths) : null;
+      const warranty_until: string | null = months ? bdDateAddMonths(months) : null;
       return {
         sale_id: sale.id, product_id: i.product.id, product_name: i.product.name,
         qty: i.qty, unit_price: i.product.price, subtotal: i.product.price * i.qty,
@@ -555,6 +553,26 @@ export default function POS() {
                   <button onClick={() => removeItem(i.product.id)} className="text-destructive p-1">
                     <Trash2 className="h-4 w-4" />
                   </button>
+                </div>
+                <div className="flex items-center gap-2 mt-2 px-1">
+                  <span className="text-[10px] font-bold text-info uppercase tracking-wider">ওয়ারেন্টি</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={i.warrantyMonths ?? ""}
+                    onChange={(e) => updateWarranty(i.product.id, e.target.value === "" ? null : Math.max(0, +e.target.value))}
+                    placeholder="0"
+                    className="h-6 w-16 text-xs px-2"
+                    title="এই বিক্রয়ের জন্য ওয়ারেন্টি (মাস)"
+                  />
+                  <span className="text-[10px] text-muted-foreground">মাস</span>
+                  {i.warrantyMonths && Number(i.warrantyMonths) > 0 ? (
+                    <span className="text-[10px] font-semibold text-success">
+                      মেয়াদ {bdDateAddMonths(Number(i.warrantyMonths))}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">কোন ওয়ারেন্টি নেই</span>
+                  )}
                 </div>
               </div>
             </div>
