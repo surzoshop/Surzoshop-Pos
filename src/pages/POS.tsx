@@ -100,7 +100,7 @@ export default function POS() {
             ? roundMoney((lineSubtotal * (intendedSubtotal / rawSubtotal)) / qty)
             : Number(it.unit_price);
           orig[p.id] = (orig[p.id] || 0) + qty;
-          newCart.push({ product: { ...p, price: effectiveUnitPrice }, qty });
+          newCart.push({ product: { ...p, price: effectiveUnitPrice }, qty, warrantyMonths: it.warranty_months ?? (p.has_warranty ? Number(p.warranty_months) || null : null) });
         }
       });
       setEditingSaleId(editId);
