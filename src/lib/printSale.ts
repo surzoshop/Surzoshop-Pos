@@ -439,8 +439,8 @@ function showChooser(): Promise<"thermal" | "a4" | "pdf" | null> {
           <button data-c="thermal" style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:0;border-radius:12px;cursor:pointer;text-align:left;transition:transform .1s">
             <div style="font-size:24px">🖨️</div>
             <div style="flex:1">
-              <div style="font-weight:700;font-size:14px">মিনি থার্মাল প্রিন্টার (৫৮ মিমি)</div>
-              <div style="font-size:11px;opacity:.85">ছোট রসিদ প্রিন্টারের জন্য (POS-58)</div>
+              <div style="font-weight:700;font-size:14px">মিনি থার্মাল প্রিন্টার (৮০মিমি / ৫৮মিমি)</div>
+              <div style="font-size:11px;opacity:.85">প্রিন্ট ডায়ালগে আপনার থার্মাল প্রিন্টার ও কাগজের সাইজ নির্বাচন করুন</div>
             </div>
           </button>
           <button data-c="a4" style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;background:linear-gradient(135deg,#1d4ed8,#1e40af);color:#fff;border:0;border-radius:12px;cursor:pointer;text-align:left;transition:transform .1s">
