@@ -18,8 +18,8 @@ import { CustomerCombobox } from "@/components/CustomerCombobox";
 import { ThermalReceipt } from "@/components/ThermalReceipt";
 import { bdDateAddMonths, todayBD } from "@/lib/datetime";
 
-type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number; image_url?: string | null };
-type CartItem = { product: Product; qty: number };
+type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number; image_url?: string | null; has_warranty?: boolean; warranty_months?: number | null };
+type CartItem = { product: Product; qty: number; warrantyMonths?: number | null };
 
 const VAT_RATE = 0; // VAT disabled — to be configured later via dedicated VAT settings page
 const INSTALLMENT_DUE_DAY = 5;
