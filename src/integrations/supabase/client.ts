@@ -10,8 +10,14 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
+    // Persist the session in localStorage so users (admin & staff) stay logged in
+    // across page reloads, tab closes and browser restarts — until they explicitly
+    // tap "Logout". Auto refresh keeps the JWT alive silently in the background.
     storage: localStorage,
+    storageKey: "ekisti.auth.session",
     persistSession: true,
     autoRefreshToken: true,
-  }
+    detectSessionInUrl: true,
+    flowType: "pkce",
+  },
 });
