@@ -72,16 +72,21 @@ export default function CustomerDetail() {
         title={customer.name}
         subtitle="ক্রেতার সম্পূর্ণ KYC ও লেনদেন বিবরণ"
         actions={
-          isAdmin && (
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setEditing(true)} className="gap-1.5">
-                <Pencil className="h-4 w-4" /> এডিট
-              </Button>
-              <Button variant="destructive" onClick={del} className="gap-1.5">
-                <Trash2 className="h-4 w-4" /> মুছুন
-              </Button>
-            </div>
-          )
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" onClick={() => window.print()} className="gap-1.5">
+              <Printer className="h-4 w-4" /> প্রিন্ট
+            </Button>
+            {isAdmin && (
+              <>
+                <Button variant="outline" onClick={() => setEditing(true)} className="gap-1.5">
+                  <Pencil className="h-4 w-4" /> এডিট
+                </Button>
+                <Button variant="destructive" onClick={del} className="gap-1.5">
+                  <Trash2 className="h-4 w-4" /> মুছুন
+                </Button>
+              </>
+            )}
+          </div>
         }
       />
 
