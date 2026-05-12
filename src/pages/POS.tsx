@@ -17,6 +17,7 @@ import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { CustomerCombobox } from "@/components/CustomerCombobox";
 import { ThermalReceipt } from "@/components/ThermalReceipt";
 import { bdDateAddMonths, todayBD } from "@/lib/datetime";
+import { printSale as printSaleUnified } from "@/lib/printSale";
 
 type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number; image_url?: string | null; has_warranty?: boolean; warranty_months?: number | null };
 type CartItem = { product: Product; qty: number; warrantyMonths?: number | null };
@@ -848,7 +849,7 @@ export default function POS() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowReceipt(false)}>{t("cancel")}</Button>
-            <Button onClick={() => window.print()} className="gradient-primary"><Printer className="h-4 w-4 mr-1" />{t("printReceipt")}</Button>
+            <Button onClick={() => lastSale && printSaleUnified({ saleId: lastSale.id, shop: { name: currentShop?.name, address: currentShop?.address, phone: currentShop?.phone, logo_url: currentShop?.logo_url }, fmt, lang })} className="gradient-primary"><Printer className="h-4 w-4 mr-1" />{t("printReceipt")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
