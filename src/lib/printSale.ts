@@ -125,21 +125,19 @@ const A4_CSS = `
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Hind Siliguli','Noto Sans Bengali','Segoe UI',Arial,sans-serif;color:#0f172a;background:#fff;font-size:12px;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .sheet{width:210mm;min-height:297mm;padding:10mm 10mm;background:#fff;margin:0 auto}
-.outer{border:2px solid #0c1f4a;border-radius:3px;overflow:hidden;box-shadow:0 0 0 4px #fff,0 0 0 5px #0c1f4a}
-.head{background:linear-gradient(135deg,#0c1f4a 0%,#1e3a8a 50%,#2563eb 100%);color:#fff;padding:0;border-bottom:3px solid #facc15}
-.head-grid{width:100%;border-collapse:collapse;table-layout:fixed}
-.head-grid td{vertical-align:middle;padding:14px 18px;border:0}
-.head-logo{width:78px;text-align:center}
-.head-logo img{max-height:64px;max-width:64px;background:#fff;padding:4px;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,.25)}
-.head-shop{padding-left:0 !important}
-.head-shop h1{font-size:26px;font-weight:900;letter-spacing:.8px;line-height:1.05;text-shadow:0 1px 2px rgba(0,0,0,.25)}
-.head-shop .meta{font-size:11.5px;opacity:.95;margin-top:4px;line-height:1.5;font-weight:500}
-.head-shop .meta b{font-weight:700;margin-right:4px}
-.head-inv{width:38%;text-align:right;border-left:1px dashed rgba(255,255,255,.35) !important}
-.head-inv .invlbl{font-size:9.5px;opacity:.9;text-transform:uppercase;letter-spacing:1.5px;font-weight:600}
-.head-inv .invno{font-size:18px;font-weight:900;background:#facc15;color:#78350f;padding:5px 12px;border-radius:4px;display:inline-block;margin-top:5px;letter-spacing:.6px;box-shadow:0 2px 4px rgba(0,0,0,.15)}
-.head-inv .invdate{font-size:11px;margin-top:7px;opacity:.95;font-weight:500}
-.title-band{background:linear-gradient(90deg,#facc15,#fbbf24,#facc15);color:#78350f;font-weight:900;text-align:center;padding:7px;font-size:14px;letter-spacing:6px;border-top:2px solid #fff;border-bottom:2px solid #0c1f4a;text-shadow:0 1px 0 rgba(255,255,255,.4)}
+.outer{border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;box-shadow:0 0 0 3px #f8fafc,0 0 0 4px #c7d2fe}
+.head{background:linear-gradient(135deg,#eff6ff 0%,#e0e7ff 50%,#dbeafe 100%);color:#1e3a8a;padding:18px 16px 14px;border-bottom:2px solid #c7d2fe;text-align:center;position:relative}
+.head .head-logo-c{margin-bottom:6px}
+.head .head-logo-c img{max-height:56px;max-width:80px;background:#fff;padding:4px;border-radius:8px;box-shadow:0 2px 5px rgba(30,58,138,.12)}
+.head h1{font-size:30px;font-weight:900;letter-spacing:1.2px;line-height:1.1;color:#1e3a8a;text-shadow:0 1px 0 rgba(255,255,255,.8)}
+.head .meta{font-size:11.5px;color:#475569;margin-top:5px;line-height:1.5;font-weight:500}
+.head .meta b{font-weight:700;margin-right:4px;color:#1e3a8a}
+.head .invbar{margin-top:10px;display:inline-block;padding:5px 14px;background:#fff;border:1px solid #c7d2fe;border-radius:20px;font-size:11px;color:#1e3a8a;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.head .invbar .lbl{color:#64748b;text-transform:uppercase;letter-spacing:1px;font-size:10px;margin-right:6px}
+.head .invbar .no{color:#1e3a8a;font-weight:900;letter-spacing:.5px}
+.head .invbar .sep{margin:0 10px;color:#cbd5e1}
+.title-band{background:linear-gradient(90deg,#1e3a8a 0%,#2563eb 50%,#1e3a8a 100%);color:#fef3c7;font-family:'Hind Siliguli','Kalpurush','Noto Serif Bengali','Georgia',serif;font-weight:700;font-style:italic;text-align:center;padding:9px;font-size:18px;letter-spacing:4px;border-top:1px solid #fff;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+.title-band .en{font-family:'Georgia','Playfair Display',serif;font-style:italic;font-weight:600;font-size:12px;letter-spacing:5px;opacity:.85;margin-left:10px}
 table.xls{width:100%;border-collapse:collapse;table-layout:fixed}
 table.xls th,table.xls td{border:1px solid #1e3a8a;padding:6px 8px;font-size:11.5px;vertical-align:middle;word-wrap:break-word}
 table.xls th{background:#dbeafe;color:#1e3a8a;font-weight:800;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
