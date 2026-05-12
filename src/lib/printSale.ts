@@ -127,15 +127,15 @@ const A4_CSS = `
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Hind Siliguli','Noto Sans Bengali','Segoe UI',Arial,sans-serif;color:#0f172a;background:#fff;font-size:12px;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .sheet{width:210mm;min-height:297mm;padding:10mm 10mm;background:#fff;margin:0 auto}
-.outer{border:1px solid #c7d2fe;border-radius:6px;overflow:hidden;box-shadow:0 0 0 3px #f8fafc,0 0 0 4px #c7d2fe}
-.head{background:linear-gradient(135deg,#eff6ff 0%,#e0e7ff 50%,#dbeafe 100%);color:#1e3a8a;padding:18px 16px 14px;border-bottom:2px solid #c7d2fe;text-align:center;position:relative}
+.outer{border:1px solid #bfdbfe;border-radius:6px;overflow:hidden;box-shadow:0 0 0 3px #f8fbff,0 0 0 4px #bfdbfe}
+.head{background:linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 55%,#dbeafe 100%);color:#1e3a8a;padding:18px 16px 14px;border-bottom:2px solid #bfdbfe;text-align:center;position:relative}
 .head .head-logo-c{margin-bottom:6px}
 .head .head-logo-c img{max-height:56px;max-width:80px;background:#fff;padding:4px;border-radius:8px;box-shadow:0 2px 5px rgba(30,58,138,.12)}
-.head h1{font-size:30px;font-weight:900;letter-spacing:1.2px;line-height:1.1;color:#1e3a8a;text-shadow:0 1px 0 rgba(255,255,255,.8)}
+.head h1{font-size:32px;font-weight:900;letter-spacing:0;line-height:1.1;color:#172554;text-shadow:0 1px 0 rgba(255,255,255,.9)}
 .head .meta{font-size:11.5px;color:#475569;margin-top:5px;line-height:1.5;font-weight:500}
 .head .meta b{font-weight:700;margin-right:4px;color:#1e3a8a}
-.head .invbar{margin-top:10px;display:inline-block;padding:5px 14px;background:#fff;border:1px solid #c7d2fe;border-radius:20px;font-size:11px;color:#1e3a8a;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.04)}
-.head .invbar .lbl{color:#64748b;text-transform:uppercase;letter-spacing:1px;font-size:10px;margin-right:6px}
+.head .invbar{margin-top:10px;display:inline-block;padding:5px 14px;background:rgba(219,234,254,.72);border:1px solid #93c5fd;border-radius:20px;font-size:11px;color:#1e3a8a;font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,.75)}
+.head .invbar .lbl{color:#334155;text-transform:uppercase;letter-spacing:1px;font-size:10px;margin-right:6px}
 .head .invbar .no{color:#1e3a8a;font-weight:900;letter-spacing:.5px}
 .head .invbar .sep{margin:0 10px;color:#cbd5e1}
 .title-band{background:linear-gradient(90deg,#1e3a8a 0%,#2563eb 50%,#1e3a8a 100%);color:#fef3c7;font-family:'Hind Siliguli','Kalpurush','Noto Serif Bengali','Georgia',serif;font-weight:700;font-style:italic;text-align:center;padding:9px;font-size:18px;letter-spacing:4px;border-top:1px solid #fff;text-shadow:0 1px 2px rgba(0,0,0,.3)}
