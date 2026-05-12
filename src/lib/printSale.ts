@@ -248,21 +248,17 @@ function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, f
     <div class="sheet">
       <div class="outer">
         <div class="head">
-          <table class="head-grid"><tbody><tr>
-            ${shop.logo_url ? `<td class="head-logo"><img src="${shop.logo_url}" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></td>` : ""}
-            <td class="head-shop">
-              <h1>${escapeHtml(shop.name || "Shop")}</h1>
-              ${shop.address ? `<div class="meta"><b>📍</b>${escapeHtml(shop.address)}</div>` : ""}
-              ${shop.phone ? `<div class="meta"><b>📞</b>${escapeHtml(shop.phone)}</div>` : ""}
-            </td>
-            <td class="head-inv">
-              <div class="invlbl">Invoice No.</div>
-              <div class="invno">${escapeHtml(sale.invoice_no)}</div>
-              <div class="invdate">📅 ${dateStr}</div>
-            </td>
-          </tr></tbody></table>
+          ${shop.logo_url ? `<div class="head-logo-c"><img src="${shop.logo_url}" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></div>` : ""}
+          <h1>${escapeHtml(shop.name || "Shop")}</h1>
+          ${shop.address ? `<div class="meta"><b>📍</b>${escapeHtml(shop.address)}</div>` : ""}
+          ${shop.phone ? `<div class="meta"><b>📞</b>${escapeHtml(shop.phone)}</div>` : ""}
+          <div class="invbar">
+            <span class="lbl">Invoice</span><span class="no">${escapeHtml(sale.invoice_no)}</span>
+            <span class="sep">|</span>
+            <span class="lbl">Date</span><span>${dateStr}</span>
+          </div>
         </div>
-        <div class="title-band">◆ ক্যাশ মেমো · CASH MEMO ◆</div>
+        <div class="title-band">৺ ক্যাশ  মেমো ৺<span class="en">CASH MEMO</span></div>
       </div>
 
       <div class="gap"></div>
