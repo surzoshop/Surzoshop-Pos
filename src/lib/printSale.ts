@@ -321,11 +321,10 @@ function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, f
     </div>`;
 }
 
-function buildA4Document(sale: any, items: any[], installments: any[], shop: Shop, fmt: (n: number) => string, lang: "bn" | "en", autoPrint: boolean) {
+function buildA4Document(sale: any, items: any[], installments: any[], shop: Shop, fmt: (n: number) => string, lang: "bn" | "en", _autoPrint: boolean) {
   return `<!doctype html><html><head><meta charset="utf-8"><title>Invoice ${sale.invoice_no}</title>
     <style>@page{size:A4;margin:0}${A4_CSS}</style>
     </head><body>${buildA4Body(sale, items, installments, shop, fmt, lang)}
-    ${autoPrint ? `<script>window.addEventListener('load',()=>setTimeout(()=>{try{window.focus();window.print();}catch(e){}},500));<\/script>` : ""}
     </body></html>`;
 }
 
