@@ -45,14 +45,7 @@ export default function Customers() {
     load();
   };
 
-  const openPreview = async (c: any) => {
-    setPreviewing(c);
-    const { data } = await supabase.from("sales")
-      .select("id,invoice_no,created_at,total,paid,due,status,payment_type")
-      .eq("customer_id", c.id)
-      .order("created_at", { ascending: false });
-    setPreviewSales(data ?? []);
-  };
+  const openPreview = (c: any) => nav(`/customers/${c.id}`);
 
   const filtered = items.filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search) || c.alt_phone?.includes(search));
 
