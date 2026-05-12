@@ -368,12 +368,8 @@ export default function POS() {
     });
 
     const items = cart.map(i => {
-      const p: any = i.product;
-      const months = p.has_warranty ? Number(p.warranty_months) || null : null;
-      let warranty_until: string | null = null;
-      if (months) {
-        warranty_until = bdDateAddMonths(months);
-      }
+      const months = i.warrantyMonths != null && Number(i.warrantyMonths) > 0 ? Number(i.warrantyMonths) : null;
+      const warranty_until: string | null = months ? bdDateAddMonths(months) : null;
       return {
         sale_id: sale.id, product_id: i.product.id, product_name: i.product.name,
         qty: i.qty, unit_price: i.product.price, subtotal: i.product.price * i.qty,
