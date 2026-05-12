@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Search, Phone, MapPin, Pencil, Eye, Users, ShoppingBag, Wallet, IdCard, Briefcase, Calendar } from "lucide-react";
-import { PageHeader, SurfaceCard, PrimaryButton, StatusPill } from "@/components/PageHeader";
+import { Plus, Trash2, Search, Phone, MapPin, Pencil, Eye, Users, ShoppingBag, Wallet } from "lucide-react";
+import { PageHeader, SurfaceCard, PrimaryButton } from "@/components/PageHeader";
 import { AddCustomerSheet } from "@/components/AddCustomerSheet";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function Customers() {
   const { t, fmt } = useT();
