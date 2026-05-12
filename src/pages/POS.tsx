@@ -849,7 +849,7 @@ export default function POS() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowReceipt(false)}>{t("cancel")}</Button>
-            <Button onClick={() => window.print()} className="gradient-primary"><Printer className="h-4 w-4 mr-1" />{t("printReceipt")}</Button>
+            <Button onClick={() => lastSale && printSaleUnified({ saleId: lastSale.id, shop: { name: currentShop?.name, address: currentShop?.address, phone: currentShop?.phone, logo_url: currentShop?.logo_url }, fmt, lang })} className="gradient-primary"><Printer className="h-4 w-4 mr-1" />{t("printReceipt")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
