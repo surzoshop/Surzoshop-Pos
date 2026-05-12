@@ -9,7 +9,7 @@ import { PageHeader, SurfaceCard, StatusPill } from "@/components/PageHeader";
 import { AddCustomerSheet } from "@/components/AddCustomerSheet";
 import {
   ArrowLeft, Phone, MapPin, IdCard, Briefcase, Wallet, Calendar,
-  Pencil, Trash2, ShoppingBag, FileImage, Camera, User as UserIcon, Home,
+  Pencil, Trash2, ShoppingBag, FileImage, Camera, User as UserIcon, Home, Printer,
 } from "lucide-react";
 
 export default function CustomerDetail() {
