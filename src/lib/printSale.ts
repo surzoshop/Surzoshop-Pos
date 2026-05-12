@@ -487,8 +487,8 @@ export async function printSale(opts: PrintSaleOptions) {
   if (choice === "thermal") {
     openHTMLInPrintWindow(buildThermalHTML(sale, items, installments, opts.shop, opts.fmt, lang));
   } else if (choice === "a4") {
-    openHTMLInPrintWindow(buildA4HTML(sale, items, installments, opts.shop, opts.fmt, lang, true));
+    openHTMLInPrintWindow(buildA4Document(sale, items, installments, opts.shop, opts.fmt, lang, true));
   } else if (choice === "pdf") {
-    await downloadPDF(buildA4HTML(sale, items, installments, opts.shop, opts.fmt, lang, false), `Invoice-${sale.invoice_no}.pdf`);
+    await downloadPDF(sale, items, installments, opts.shop, opts.fmt, lang, `Invoice-${sale.invoice_no}.pdf`);
   }
 }
