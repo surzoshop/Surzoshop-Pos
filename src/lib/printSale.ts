@@ -8,6 +8,8 @@ import { jsPDF } from "jspdf";
 
 type Shop = { name?: string | null; address?: string | null; phone?: string | null; logo_url?: string | null };
 
+const SHOP_DISPLAY_NAME = "সূর্য শপ";
+
 export type PrintSaleOptions = {
   saleId: string;
   shop: Shop;
@@ -85,7 +87,7 @@ function buildThermalHTML(sale: any, items: any[], installments: any[], shop: Sh
     </style></head><body>
     <div class="c">
       ${shop.logo_url ? `<img src="${shop.logo_url}" style="max-height:42px" onerror="this.style.display='none'"/>` : ""}
-      <h1>${escapeHtml(shop.name || "Shop")}</h1>
+      <h1>${SHOP_DISPLAY_NAME}</h1>
       ${shop.address ? `<div class="small">📍 ${escapeHtml(shop.address)}</div>` : ""}
       ${shop.phone ? `<div class="small">📞 ${escapeHtml(shop.phone)}</div>` : ""}
       <div class="dash"></div>
