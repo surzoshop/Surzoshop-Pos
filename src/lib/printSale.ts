@@ -251,7 +251,7 @@ function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, f
       <div class="outer">
         <div class="head">
           ${shop.logo_url ? `<div class="head-logo-c"><img src="${shop.logo_url}" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></div>` : ""}
-          <h1>${escapeHtml(shop.name || "Shop")}</h1>
+          <h1>${SHOP_DISPLAY_NAME}</h1>
           ${shop.address ? `<div class="meta"><b>📍</b>${escapeHtml(shop.address)}</div>` : ""}
           ${shop.phone ? `<div class="meta"><b>📞</b>${escapeHtml(shop.phone)}</div>` : ""}
           <div class="invbar">
@@ -317,7 +317,7 @@ function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, f
 
       <div class="foot">
         <div class="b">ধন্যবাদ — আবার আসবেন</div>
-        <div>বিক্রয়কৃত পণ্য ফেরতযোগ্য নয় · Powered by সূর্য শপ</div>
+        <div>বিক্রয়কৃত পণ্য ফেরতযোগ্য নয় · Powered by ${SHOP_DISPLAY_NAME}</div>
       </div>
     </div>`;
 }
