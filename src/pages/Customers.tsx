@@ -13,13 +13,12 @@ export default function Customers() {
   const { t, fmt } = useT();
   const { role } = useAuth();
   const { toast } = useToast();
+  const nav = useNavigate();
   const [items, setItems] = useState<any[]>([]);
   const [stats, setStats] = useState<Record<string, { count: number; total: number; due: number }>>({});
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
-  const [previewing, setPreviewing] = useState<any | null>(null);
-  const [previewSales, setPreviewSales] = useState<any[]>([]);
   const isAdmin = role === "admin";
 
   const load = async () => {
