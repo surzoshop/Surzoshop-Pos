@@ -352,10 +352,13 @@ function openHTMLInPrintWindow(html: string) {
 }
 
 async function downloadPDF(sale: any, items: any[], installments: any[], shop: Shop, fmt: (n: number) => string, lang: "bn" | "en", filename: string) {
+  const existing = document.getElementById("__a4_pdf_wrapper");
+  if (existing) existing.remove();
+
   // Render in an actual on-page (but offscreen) container so html2canvas captures real layout + fonts
   const wrapper = document.createElement("div");
   wrapper.id = "__a4_pdf_wrapper";
-  wrapper.style.cssText = "position:fixed;left:0;top:0;z-index:-1;opacity:0;pointer-events:none;width:210mm;background:#fff";
+  wrapper.style.cssText = "position:fixed;left:-10000px;top:0;z-index:-1;opacity:1;pointer-events:none;width:210mm;background:#fff;overflow:hidden";
 
   const styleEl = document.createElement("style");
   styleEl.textContent = A4_CSS;
@@ -393,23 +396,10 @@ async function downloadPDF(sale: any, items: any[], installments: any[], shop: S
     const pdf = new jsPDF("p", "mm", "a4");
     const pdfW = 210;
     const pdfH = 297;
-    const imgH = (canvas.height * pdfW) / canvas.width;
+    const imgH = Math.min((canvas.height * pdfW) / canvas.width, pdfH);
     const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
-    if (imgH <= pdfH) {
-      pdf.addImage(imgData, "JPEG", 0, 0, pdfW, imgH);
-    } else {
-      let heightLeft = imgH;
-      let position = 0;
-      pdf.addImage(imgData, "JPEG", 0, position, pdfW, imgH);
-      heightLeft -= pdfH;
-      while (heightLeft > 0) {
-        position = heightLeft - imgH;
-        pdf.addPage();
-        pdf.addImage(imgData, "JPEG", 0, position, pdfW, imgH);
-        heightLeft -= pdfH;
-      }
-    }
+    pdf.addImage(imgData, "JPEG", 0, 0, pdfW, imgH);
     pdf.save(filename);
   } catch (err) {
     console.error("PDF generation failed:", err);
