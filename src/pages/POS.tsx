@@ -171,7 +171,8 @@ export default function POS() {
     setCart(c => {
       const ex = c.find(i => i.product.id === p.id);
       if (ex) return c.map(i => i.product.id === p.id ? { ...i, qty: Math.min(i.qty + 1, p.stock + extra) } : i);
-      return [...c, { product: p, qty: 1 }];
+      const defaultMonths = p.has_warranty ? (Number(p.warranty_months) || null) : null;
+      return [...c, { product: p, qty: 1, warrantyMonths: defaultMonths }];
     });
   };
   const updateQty = (id: string, delta: number) => {
@@ -182,6 +183,9 @@ export default function POS() {
   const updatePrice = (id: string, price: number) => {
     clearTotalOverride();
     setCart(c => c.map(i => i.product.id === id ? { ...i, product: { ...i.product, price: Math.max(0, price) } } : i));
+  };
+  const updateWarranty = (id: string, months: number | null) => {
+    setCart(c => c.map(i => i.product.id === id ? { ...i, warrantyMonths: months } : i));
   };
 
   const subtotal = cart.reduce((a, i) => a + i.product.price * i.qty, 0);
