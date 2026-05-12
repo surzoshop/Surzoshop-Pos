@@ -20,6 +20,7 @@ import Products from "./pages/Products";
 import BarcodePrint from "./pages/BarcodePrint";
 import Categories from "./pages/Categories";
 import Customers from "./pages/Customers";
+import CustomerDetail from "./pages/CustomerDetail";
 import Installments from "./pages/Installments";
 import Sales from "./pages/Sales";
 import SalesReturns from "./pages/SalesReturns";
