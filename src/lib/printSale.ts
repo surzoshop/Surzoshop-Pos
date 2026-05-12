@@ -335,20 +335,46 @@ function escapeHtml(s: any): string {
 }
 
 function openHTMLInPrintWindow(html: string) {
-  const w = window.open("", "_blank");
-  if (w && !w.closed) {
-    w.document.open(); w.document.write(html); w.document.close();
-    return;
-  }
+  // Always use a hidden iframe — never open a new tab/window.
+  // This shows only the browser's native print dialog without redirecting the user.
   const old = document.getElementById("__print_iframe"); if (old) old.remove();
   const iframe = document.createElement("iframe");
   iframe.id = "__print_iframe";
-  Object.assign(iframe.style, { position: "fixed", right: "0", bottom: "0", width: "0", height: "0", border: "0" });
+  Object.assign(iframe.style, {
+    position: "fixed", right: "0", bottom: "0",
+    width: "0", height: "0", border: "0", visibility: "hidden",
+  });
   document.body.appendChild(iframe);
   const idoc = iframe.contentDocument || iframe.contentWindow?.document;
   if (!idoc) return;
   idoc.open(); idoc.write(html); idoc.close();
-  setTimeout(() => { try { iframe.contentWindow?.focus(); iframe.contentWindow?.print(); } catch {} }, 700);
+
+  const cleanup = () => { try { iframe.remove(); } catch {} };
+  const triggerPrint = () => {
+    try {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+    } catch (e) { console.error("Print failed:", e); }
+    // Remove iframe after the print dialog closes
+    try { iframe.contentWindow?.addEventListener("afterprint", cleanup); } catch {}
+    setTimeout(cleanup, 60_000);
+  };
+
+  // Wait for images (logo) inside iframe before printing
+  const waitImages = async () => {
+    const imgs = Array.from(idoc.images || []);
+    await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise<void>(res => {
+      img.onload = () => res();
+      img.onerror = () => res();
+      setTimeout(() => res(), 2000);
+    })));
+  };
+
+  if (iframe.contentWindow?.document.readyState === "complete") {
+    waitImages().then(() => setTimeout(triggerPrint, 200));
+  } else {
+    iframe.addEventListener("load", () => { waitImages().then(() => setTimeout(triggerPrint, 200)); });
+  }
 }
 
 async function downloadPDF(sale: any, items: any[], installments: any[], shop: Shop, fmt: (n: number) => string, lang: "bn" | "en", filename: string) {
