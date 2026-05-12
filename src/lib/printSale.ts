@@ -71,24 +71,25 @@ function buildThermalHTML(sale: any, items: any[], installments: any[], shop: Sh
 
   return `<!doctype html><html><head><meta charset="utf-8"><title>${sale.invoice_no}</title>
     <style>
-      @page{size:58mm auto;margin:2mm}
+      @page{size:80mm auto;margin:3mm}
       @media print{body{margin:0}}
-      body{font-family:'Courier New',monospace;font-size:11px;color:#000;width:54mm;margin:0 auto;padding:3px}
+      html,body{margin:0;padding:0}
+      body{font-family:'Courier New',monospace;font-size:12px;color:#000;width:74mm;margin:0 auto;padding:4px}
       .c{text-align:center}.r{text-align:right}.b{font-weight:700}
-      table{width:100%;border-collapse:collapse;font-size:10px}
+      table{width:100%;border-collapse:collapse;font-size:11px}
       th,td{padding:2px 0}
       .dash{border-top:1px dashed #000;margin:4px 0}
       .solid{border-top:1px solid #000;margin:4px 0}
-      h1{font-size:13px;margin:0;font-weight:800}
-      .small{font-size:9px}
+      h1{font-size:15px;margin:0;font-weight:800;letter-spacing:.5px}
+      .small{font-size:10px;line-height:1.3}
     </style></head><body>
     <div class="c">
-      ${shop.logo_url ? `<img src="${shop.logo_url}" style="max-height:36px" onerror="this.style.display='none'"/>` : ""}
+      ${shop.logo_url ? `<img src="${shop.logo_url}" style="max-height:42px" onerror="this.style.display='none'"/>` : ""}
       <h1>${escapeHtml(shop.name || "Shop")}</h1>
-      ${shop.address ? `<div class="small">${escapeHtml(shop.address)}</div>` : ""}
+      ${shop.address ? `<div class="small">📍 ${escapeHtml(shop.address)}</div>` : ""}
       ${shop.phone ? `<div class="small">📞 ${escapeHtml(shop.phone)}</div>` : ""}
       <div class="dash"></div>
-      <div class="b">ক্যাশ মেমো</div>
+      <div class="b">ক্যাশ মেমো / CASH MEMO</div>
     </div>
     <div class="small">
       <div style="display:flex;justify-content:space-between"><span>Inv:</span><span class="b">${sale.invoice_no}</span></div>
@@ -106,7 +107,7 @@ function buildThermalHTML(sale: any, items: any[], installments: any[], shop: Sh
     <div style="display:flex;justify-content:space-between"><span>Subtotal</span><span>${fmt(Number(sale.subtotal))}</span></div>
     ${Number(sale.discount) > 0 ? `<div style="display:flex;justify-content:space-between"><span>Discount</span><span>- ${fmt(Number(sale.discount))}</span></div>` : ""}
     <div class="solid"></div>
-    <div style="display:flex;justify-content:space-between;font-size:13px" class="b"><span>মোট</span><span>${fmt(Number(sale.total))}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:14px" class="b"><span>মোট</span><span>${fmt(Number(sale.total))}</span></div>
     <div style="display:flex;justify-content:space-between"><span>Paid</span><span>${fmt(Number(sale.paid))}</span></div>
     ${Number(sale.due) > 0 ? `<div style="display:flex;justify-content:space-between" class="b"><span>বকেয়া</span><span>${fmt(Number(sale.due))}</span></div>` : ""}
     ${instRows}
@@ -115,7 +116,7 @@ function buildThermalHTML(sale: any, items: any[], installments: any[], shop: Sh
       <div class="b">ধন্যবাদ — আবার আসবেন</div>
       <div style="margin-top:2px">বিক্রয়কৃত পণ্য ফেরতযোগ্য নয়</div>
     </div>
-    <script>window.addEventListener('load',()=>setTimeout(()=>{try{window.focus();window.print();}catch(e){}},300));<\/script>
+    <script>window.addEventListener('load',()=>setTimeout(()=>{try{window.focus();window.print();}catch(e){}},400));<\/script>
     </body></html>`;
 }
 
