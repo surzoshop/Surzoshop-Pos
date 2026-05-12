@@ -554,6 +554,26 @@ export default function POS() {
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
+                <div className="flex items-center gap-2 mt-2 px-1">
+                  <span className="text-[10px] font-bold text-info uppercase tracking-wider">ওয়ারেন্টি</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={i.warrantyMonths ?? ""}
+                    onChange={(e) => updateWarranty(i.product.id, e.target.value === "" ? null : Math.max(0, +e.target.value))}
+                    placeholder="0"
+                    className="h-6 w-16 text-xs px-2"
+                    title="এই বিক্রয়ের জন্য ওয়ারেন্টি (মাস)"
+                  />
+                  <span className="text-[10px] text-muted-foreground">মাস</span>
+                  {i.warrantyMonths && Number(i.warrantyMonths) > 0 ? (
+                    <span className="text-[10px] font-semibold text-success">
+                      মেয়াদ {bdDateAddMonths(Number(i.warrantyMonths))}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">কোন ওয়ারেন্টি নেই</span>
+                  )}
+                </div>
               </div>
             </div>
           ))}
