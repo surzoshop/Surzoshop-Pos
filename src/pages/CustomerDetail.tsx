@@ -213,6 +213,154 @@ export default function CustomerDetail() {
           <img src={zoomed} alt="" className="max-h-full max-w-full rounded-xl shadow-2xl" />
         </div>
       )}
+
+      {/* ===== PRINT SHEET (A4) — visible only when printing ===== */}
+      <style>{`
+        @media print {
+          @page { size: A4 portrait; margin: 10mm; }
+          html, body { background: #fff !important; }
+          body * { visibility: hidden !important; }
+          .customer-print-sheet, .customer-print-sheet * { visibility: visible !important; }
+          .customer-print-sheet {
+            position: absolute !important;
+            left: 0; top: 0;
+            width: 100%;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: #fff !important;
+            color: #000 !important;
+            font-family: 'Times New Roman', Georgia, serif;
+          }
+        }
+        .customer-print-sheet { display: none; }
+        @media print { .customer-print-sheet { display: block; } }
+      `}</style>
+
+      <div className="customer-print-sheet" style={{ fontSize: 11, lineHeight: 1.4 }}>
+        {/* Header */}
+        <div style={{ borderBottom: "3px double #000", paddingBottom: 8, marginBottom: 12, textAlign: "center" }}>
+          <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: 1 }}>ক্রেতার তথ্যপত্র / CUSTOMER PROFILE</div>
+          <div style={{ fontSize: 10, marginTop: 2, color: "#444" }}>
+            প্রিন্টের তারিখ: {new Date().toLocaleString("bn-BD", { timeZone: "Asia/Dhaka" })}
+          </div>
+        </div>
+
+        {/* Top: photo + name block */}
+        <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 10 }}>
+          <tbody>
+            <tr>
+              <td style={{ width: 110, verticalAlign: "top", border: "1px solid #000", padding: 4 }}>
+                {customer.photo_url ? (
+                  <img src={customer.photo_url} crossOrigin="anonymous" alt="photo"
+                    style={{ width: 100, height: 120, objectFit: "cover", display: "block" }} />
+                ) : (
+                  <div style={{ width: 100, height: 120, border: "1px dashed #777", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#777" }}>
+                    No Photo
+                  </div>
+                )}
+                <div style={{ fontSize: 8, textAlign: "center", marginTop: 2, color: "#555" }}>ক্রেতার ছবি</div>
+              </td>
+              <td style={{ verticalAlign: "top", paddingLeft: 10 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <tbody>
+                    {[
+                      ["নাম / Name", customer.name],
+                      ["প্রধান মোবাইল / Phone", customer.phone || "—"],
+                      ["বিকল্প মোবাইল / Alt Phone", customer.alt_phone || "—"],
+                      ["NID নম্বর / NID No", customer.nid || "—"],
+                      ["পেশা / Occupation", customer.occupation || "—"],
+                      ["মাসিক আয় / Income", customer.monthly_income ? `৳ ${fmt(customer.monthly_income)}` : "—"],
+                      ["যুক্ত হয়েছে / Joined", new Date(customer.created_at).toLocaleDateString("bn-BD")],
+                    ].map(([k, v], i) => (
+                      <tr key={i}>
+                        <td style={{ border: "1px solid #000", padding: "4px 6px", width: "38%", background: "#f0f0f0", fontWeight: 700 }}>{k}</td>
+                        <td style={{ border: "1px solid #000", padding: "4px 6px" }}>{v}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Address */}
+        <div style={{ fontWeight: 800, fontSize: 12, marginBottom: 4, borderBottom: "1px solid #000" }}>ঠিকানা / Address</div>
+        <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 10 }}>
+          <tbody>
+            <tr>
+              <td style={{ border: "1px solid #000", padding: "4px 6px", width: "22%", background: "#f0f0f0", fontWeight: 700 }}>বর্তমান ঠিকানা</td>
+              <td style={{ border: "1px solid #000", padding: "4px 6px" }}>{customer.present_address || "—"}</td>
+            </tr>
+            <tr>
+              <td style={{ border: "1px solid #000", padding: "4px 6px", background: "#f0f0f0", fontWeight: 700 }}>স্থায়ী ঠিকানা</td>
+              <td style={{ border: "1px solid #000", padding: "4px 6px" }}>{customer.permanent_address || "—"}</td>
+            </tr>
+            <tr>
+              <td style={{ border: "1px solid #000", padding: "4px 6px", background: "#f0f0f0", fontWeight: 700 }}>সংক্ষিপ্ত / এলাকা</td>
+              <td style={{ border: "1px solid #000", padding: "4px 6px" }}>{customer.address || "—"}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* NID copies */}
+        <div style={{ fontWeight: 800, fontSize: 12, marginBottom: 4, borderBottom: "1px solid #000" }}>NID কপি / NID Copies</div>
+        <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 10 }}>
+          <tbody>
+            <tr>
+              <td style={{ border: "1px solid #000", padding: 6, width: "50%", textAlign: "center", verticalAlign: "top" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, marginBottom: 4 }}>NID — সামনের দিক / Front</div>
+                {customer.nid_front_url ? (
+                  <img src={customer.nid_front_url} crossOrigin="anonymous" alt="nid front"
+                    style={{ maxWidth: "100%", maxHeight: 200, objectFit: "contain" }} />
+                ) : (
+                  <div style={{ height: 160, display: "flex", alignItems: "center", justifyContent: "center", color: "#888", fontSize: 10, border: "1px dashed #999" }}>
+                    ছবি যোগ করা হয়নি
+                  </div>
+                )}
+              </td>
+              <td style={{ border: "1px solid #000", padding: 6, width: "50%", textAlign: "center", verticalAlign: "top" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, marginBottom: 4 }}>NID — পিছনের দিক / Back</div>
+                {customer.nid_back_url ? (
+                  <img src={customer.nid_back_url} crossOrigin="anonymous" alt="nid back"
+                    style={{ maxWidth: "100%", maxHeight: 200, objectFit: "contain" }} />
+                ) : (
+                  <div style={{ height: 160, display: "flex", alignItems: "center", justifyContent: "center", color: "#888", fontSize: 10, border: "1px dashed #999" }}>
+                    ছবি যোগ করা হয়নি
+                  </div>
+                )}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Sales summary */}
+        <div style={{ fontWeight: 800, fontSize: 12, marginBottom: 4, borderBottom: "1px solid #000" }}>লেনদেন সারসংক্ষেপ / Transactions Summary</div>
+        <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 10 }}>
+          <tbody>
+            <tr>
+              <td style={{ border: "1px solid #000", padding: "4px 6px", background: "#f0f0f0", fontWeight: 700, width: "33%" }}>মোট ক্রয় সংখ্যা</td>
+              <td style={{ border: "1px solid #000", padding: "4px 6px", background: "#f0f0f0", fontWeight: 700, width: "33%" }}>মোট পরিমাণ</td>
+              <td style={{ border: "1px solid #000", padding: "4px 6px", background: "#f0f0f0", fontWeight: 700 }}>মোট বকেয়া</td>
+            </tr>
+            <tr>
+              <td style={{ border: "1px solid #000", padding: "4px 6px" }}>{sales.length}</td>
+              <td style={{ border: "1px solid #000", padding: "4px 6px" }}>৳ {fmt(totalPurchase)}</td>
+              <td style={{ border: "1px solid #000", padding: "4px 6px" }}>৳ {fmt(totalDue)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Signature */}
+        <div style={{ marginTop: 30, display: "flex", justifyContent: "space-between" }}>
+          <div style={{ textAlign: "center", width: "40%" }}>
+            <div style={{ borderTop: "1px solid #000", paddingTop: 4, fontSize: 10 }}>ক্রেতার স্বাক্ষর</div>
+          </div>
+          <div style={{ textAlign: "center", width: "40%" }}>
+            <div style={{ borderTop: "1px solid #000", paddingTop: 4, fontSize: 10 }}>অনুমোদনকারী</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
