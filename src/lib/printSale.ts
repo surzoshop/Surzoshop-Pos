@@ -3,7 +3,8 @@
 // Includes warranty info + full installment schedule (date + amount).
 
 import { supabase } from "@/integrations/supabase/client";
-import html2pdf from "html2pdf.js";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 
 type Shop = { name?: string | null; address?: string | null; phone?: string | null; logo_url?: string | null };
 
