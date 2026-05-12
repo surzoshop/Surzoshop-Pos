@@ -71,24 +71,25 @@ function buildThermalHTML(sale: any, items: any[], installments: any[], shop: Sh
 
   return `<!doctype html><html><head><meta charset="utf-8"><title>${sale.invoice_no}</title>
     <style>
-      @page{size:58mm auto;margin:2mm}
+      @page{size:80mm auto;margin:3mm}
       @media print{body{margin:0}}
-      body{font-family:'Courier New',monospace;font-size:11px;color:#000;width:54mm;margin:0 auto;padding:3px}
+      html,body{margin:0;padding:0}
+      body{font-family:'Courier New',monospace;font-size:12px;color:#000;width:74mm;margin:0 auto;padding:4px}
       .c{text-align:center}.r{text-align:right}.b{font-weight:700}
-      table{width:100%;border-collapse:collapse;font-size:10px}
+      table{width:100%;border-collapse:collapse;font-size:11px}
       th,td{padding:2px 0}
       .dash{border-top:1px dashed #000;margin:4px 0}
       .solid{border-top:1px solid #000;margin:4px 0}
-      h1{font-size:13px;margin:0;font-weight:800}
-      .small{font-size:9px}
+      h1{font-size:15px;margin:0;font-weight:800;letter-spacing:.5px}
+      .small{font-size:10px;line-height:1.3}
     </style></head><body>
     <div class="c">
-      ${shop.logo_url ? `<img src="${shop.logo_url}" style="max-height:36px" onerror="this.style.display='none'"/>` : ""}
+      ${shop.logo_url ? `<img src="${shop.logo_url}" style="max-height:42px" onerror="this.style.display='none'"/>` : ""}
       <h1>${escapeHtml(shop.name || "Shop")}</h1>
-      ${shop.address ? `<div class="small">${escapeHtml(shop.address)}</div>` : ""}
+      ${shop.address ? `<div class="small">📍 ${escapeHtml(shop.address)}</div>` : ""}
       ${shop.phone ? `<div class="small">📞 ${escapeHtml(shop.phone)}</div>` : ""}
       <div class="dash"></div>
-      <div class="b">ক্যাশ মেমো</div>
+      <div class="b">ক্যাশ মেমো / CASH MEMO</div>
     </div>
     <div class="small">
       <div style="display:flex;justify-content:space-between"><span>Inv:</span><span class="b">${sale.invoice_no}</span></div>
@@ -106,7 +107,7 @@ function buildThermalHTML(sale: any, items: any[], installments: any[], shop: Sh
     <div style="display:flex;justify-content:space-between"><span>Subtotal</span><span>${fmt(Number(sale.subtotal))}</span></div>
     ${Number(sale.discount) > 0 ? `<div style="display:flex;justify-content:space-between"><span>Discount</span><span>- ${fmt(Number(sale.discount))}</span></div>` : ""}
     <div class="solid"></div>
-    <div style="display:flex;justify-content:space-between;font-size:13px" class="b"><span>মোট</span><span>${fmt(Number(sale.total))}</span></div>
+    <div style="display:flex;justify-content:space-between;font-size:14px" class="b"><span>মোট</span><span>${fmt(Number(sale.total))}</span></div>
     <div style="display:flex;justify-content:space-between"><span>Paid</span><span>${fmt(Number(sale.paid))}</span></div>
     ${Number(sale.due) > 0 ? `<div style="display:flex;justify-content:space-between" class="b"><span>বকেয়া</span><span>${fmt(Number(sale.due))}</span></div>` : ""}
     ${instRows}
@@ -115,7 +116,7 @@ function buildThermalHTML(sale: any, items: any[], installments: any[], shop: Sh
       <div class="b">ধন্যবাদ — আবার আসবেন</div>
       <div style="margin-top:2px">বিক্রয়কৃত পণ্য ফেরতযোগ্য নয়</div>
     </div>
-    <script>window.addEventListener('load',()=>setTimeout(()=>{try{window.focus();window.print();}catch(e){}},300));<\/script>
+    <script>window.addEventListener('load',()=>setTimeout(()=>{try{window.focus();window.print();}catch(e){}},400));<\/script>
     </body></html>`;
 }
 
@@ -124,20 +125,21 @@ const A4_CSS = `
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Hind Siliguli','Noto Sans Bengali','Segoe UI',Arial,sans-serif;color:#0f172a;background:#fff;font-size:12px;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .sheet{width:210mm;min-height:297mm;padding:10mm 10mm;background:#fff;margin:0 auto}
-.outer{border:2px solid #1e3a8a;border-radius:2px;overflow:hidden}
-.head{display:table;width:100%;background:linear-gradient(90deg,#1e3a8a,#2563eb);color:#fff;border-bottom:2px solid #1e3a8a}
-.head .l,.head .r{display:table-cell;vertical-align:middle;padding:12px 16px}
-.head .r{text-align:right;width:35%}
-.head h1{font-size:22px;font-weight:800;letter-spacing:.5px;line-height:1.1}
-.head .meta{font-size:10.5px;opacity:.92;margin-top:3px}
-.head .invlbl{font-size:9.5px;opacity:.85;text-transform:uppercase;letter-spacing:1.2px}
-.head .invno{font-size:18px;font-weight:800;background:#fff;color:#1e3a8a;padding:4px 10px;border-radius:3px;display:inline-block;margin-top:4px;letter-spacing:.5px}
-.head .invdate{font-size:10.5px;margin-top:5px;opacity:.92}
-.brandrow{display:table;width:100%}
-.brandrow .lo{display:table-cell;width:60px;vertical-align:middle}
-.brandrow .lo img{max-height:50px;max-width:60px;background:#fff;padding:2px;border-radius:3px}
-.brandrow .nm{display:table-cell;vertical-align:middle;padding-left:12px}
-.title-band{background:#facc15;color:#78350f;font-weight:800;text-align:center;padding:6px;font-size:13px;letter-spacing:3px;border-bottom:2px solid #1e3a8a}
+.outer{border:2px solid #0c1f4a;border-radius:3px;overflow:hidden;box-shadow:0 0 0 4px #fff,0 0 0 5px #0c1f4a}
+.head{background:linear-gradient(135deg,#0c1f4a 0%,#1e3a8a 50%,#2563eb 100%);color:#fff;padding:0;border-bottom:3px solid #facc15}
+.head-grid{width:100%;border-collapse:collapse;table-layout:fixed}
+.head-grid td{vertical-align:middle;padding:14px 18px;border:0}
+.head-logo{width:78px;text-align:center}
+.head-logo img{max-height:64px;max-width:64px;background:#fff;padding:4px;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.head-shop{padding-left:0 !important}
+.head-shop h1{font-size:26px;font-weight:900;letter-spacing:.8px;line-height:1.05;text-shadow:0 1px 2px rgba(0,0,0,.25)}
+.head-shop .meta{font-size:11.5px;opacity:.95;margin-top:4px;line-height:1.5;font-weight:500}
+.head-shop .meta b{font-weight:700;margin-right:4px}
+.head-inv{width:38%;text-align:right;border-left:1px dashed rgba(255,255,255,.35) !important}
+.head-inv .invlbl{font-size:9.5px;opacity:.9;text-transform:uppercase;letter-spacing:1.5px;font-weight:600}
+.head-inv .invno{font-size:18px;font-weight:900;background:#facc15;color:#78350f;padding:5px 12px;border-radius:4px;display:inline-block;margin-top:5px;letter-spacing:.6px;box-shadow:0 2px 4px rgba(0,0,0,.15)}
+.head-inv .invdate{font-size:11px;margin-top:7px;opacity:.95;font-weight:500}
+.title-band{background:linear-gradient(90deg,#facc15,#fbbf24,#facc15);color:#78350f;font-weight:900;text-align:center;padding:7px;font-size:14px;letter-spacing:6px;border-top:2px solid #fff;border-bottom:2px solid #0c1f4a;text-shadow:0 1px 0 rgba(255,255,255,.4)}
 table.xls{width:100%;border-collapse:collapse;table-layout:fixed}
 table.xls th,table.xls td{border:1px solid #1e3a8a;padding:6px 8px;font-size:11.5px;vertical-align:middle;word-wrap:break-word}
 table.xls th{background:#dbeafe;color:#1e3a8a;font-weight:800;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
@@ -248,23 +250,21 @@ function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, f
     <div class="sheet">
       <div class="outer">
         <div class="head">
-          <div class="l">
-            <div class="brandrow">
-              ${shop.logo_url ? `<div class="lo"><img src="${shop.logo_url}" crossorigin="anonymous" onerror="this.style.display='none'"/></div>` : ""}
-              <div class="nm">
-                <h1>${escapeHtml(shop.name || "Shop")}</h1>
-                ${shop.address ? `<div class="meta">📍 ${escapeHtml(shop.address)}</div>` : ""}
-                ${shop.phone ? `<div class="meta">📞 ${escapeHtml(shop.phone)}</div>` : ""}
-              </div>
-            </div>
-          </div>
-          <div class="r">
-            <div class="invlbl">Invoice No.</div>
-            <div class="invno">${escapeHtml(sale.invoice_no)}</div>
-            <div class="invdate">📅 ${dateStr}</div>
-          </div>
+          <table class="head-grid"><tbody><tr>
+            ${shop.logo_url ? `<td class="head-logo"><img src="${shop.logo_url}" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></td>` : ""}
+            <td class="head-shop">
+              <h1>${escapeHtml(shop.name || "Shop")}</h1>
+              ${shop.address ? `<div class="meta"><b>📍</b>${escapeHtml(shop.address)}</div>` : ""}
+              ${shop.phone ? `<div class="meta"><b>📞</b>${escapeHtml(shop.phone)}</div>` : ""}
+            </td>
+            <td class="head-inv">
+              <div class="invlbl">Invoice No.</div>
+              <div class="invno">${escapeHtml(sale.invoice_no)}</div>
+              <div class="invdate">📅 ${dateStr}</div>
+            </td>
+          </tr></tbody></table>
         </div>
-        <div class="title-band">ক্যাশ মেমো / CASH MEMO</div>
+        <div class="title-band">◆ ক্যাশ মেমো · CASH MEMO ◆</div>
       </div>
 
       <div class="gap"></div>
@@ -439,8 +439,8 @@ function showChooser(): Promise<"thermal" | "a4" | "pdf" | null> {
           <button data-c="thermal" style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:0;border-radius:12px;cursor:pointer;text-align:left;transition:transform .1s">
             <div style="font-size:24px">🖨️</div>
             <div style="flex:1">
-              <div style="font-weight:700;font-size:14px">মিনি থার্মাল প্রিন্টার (৫৮ মিমি)</div>
-              <div style="font-size:11px;opacity:.85">ছোট রসিদ প্রিন্টারের জন্য (POS-58)</div>
+              <div style="font-weight:700;font-size:14px">মিনি থার্মাল প্রিন্টার (৮০মিমি / ৫৮মিমি)</div>
+              <div style="font-size:11px;opacity:.85">প্রিন্ট ডায়ালগে আপনার থার্মাল প্রিন্টার ও কাগজের সাইজ নির্বাচন করুন</div>
             </div>
           </button>
           <button data-c="a4" style="display:flex;align-items:center;gap:12px;width:100%;padding:14px;background:linear-gradient(135deg,#1d4ed8,#1e40af);color:#fff;border:0;border-radius:12px;cursor:pointer;text-align:left;transition:transform .1s">
