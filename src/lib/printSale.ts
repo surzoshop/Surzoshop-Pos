@@ -118,7 +118,6 @@ function buildThermalHTML(sale: any, items: any[], installments: any[], shop: Sh
       <div class="b">ধন্যবাদ — আবার আসবেন</div>
       <div style="margin-top:2px">বিক্রয়কৃত পণ্য ফেরতযোগ্য নয়</div>
     </div>
-    <script>window.addEventListener('load',()=>setTimeout(()=>{try{window.focus();window.print();}catch(e){}},400));<\/script>
     </body></html>`;
 }
 
