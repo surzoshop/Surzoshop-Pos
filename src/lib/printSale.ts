@@ -167,9 +167,11 @@ table.totals .paid .lbl,table.totals .paid .val{background:#dcfce7 !important;co
 .inst td{border-color:#dc2626}
 .inst .section-title{background:#dc2626;border-color:#dc2626}
 .warr .section-title{background:#059669;border-color:#059669}
-.signs{display:table;width:100%;margin-top:30px}
-.sig{display:table-cell;width:50%;text-align:center;padding:0 16px;vertical-align:bottom}
+.signs{display:table;width:100%;margin-top:24px;table-layout:fixed}
+.sig{display:table-cell;width:33.33%;text-align:center;padding:0 10px;vertical-align:bottom}
 .sig .line{border-top:1.5px solid #0f172a;margin-top:42px;padding-top:5px;font-size:11px;color:#475569;font-weight:600}
+.seal-box{width:110px;height:110px;border:1.5px dashed #1e3a8a;border-radius:6px;margin:0 auto;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:10px;font-weight:600;letter-spacing:1px;background:repeating-linear-gradient(45deg,#fff,#fff 6px,#f8fafc 6px,#f8fafc 12px)}
+.seal-cap{font-size:11px;color:#475569;font-weight:600;margin-top:6px}
 .foot{margin-top:14px;text-align:center;font-size:10px;color:#475569;border-top:2px dashed #1e3a8a;padding-top:8px}
 .foot .b{font-weight:800;color:#1e3a8a;font-size:11px}
 .gap{height:8px}
