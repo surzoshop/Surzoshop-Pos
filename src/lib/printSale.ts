@@ -167,9 +167,11 @@ table.totals .paid .lbl,table.totals .paid .val{background:#dcfce7 !important;co
 .inst td{border-color:#dc2626}
 .inst .section-title{background:#dc2626;border-color:#dc2626}
 .warr .section-title{background:#059669;border-color:#059669}
-.signs{display:table;width:100%;margin-top:30px}
-.sig{display:table-cell;width:50%;text-align:center;padding:0 16px;vertical-align:bottom}
+.signs{display:table;width:100%;margin-top:24px;table-layout:fixed}
+.sig{display:table-cell;width:33.33%;text-align:center;padding:0 10px;vertical-align:bottom}
 .sig .line{border-top:1.5px solid #0f172a;margin-top:42px;padding-top:5px;font-size:11px;color:#475569;font-weight:600}
+.seal-box{width:110px;height:110px;border:1.5px dashed #1e3a8a;border-radius:6px;margin:0 auto;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:10px;font-weight:600;letter-spacing:1px;background:repeating-linear-gradient(45deg,#fff,#fff 6px,#f8fafc 6px,#f8fafc 12px)}
+.seal-cap{font-size:11px;color:#475569;font-weight:600;margin-top:6px}
 .foot{margin-top:14px;text-align:center;font-size:10px;color:#475569;border-top:2px dashed #1e3a8a;padding-top:8px}
 .foot .b{font-weight:800;color:#1e3a8a;font-size:11px}
 .gap{height:8px}
@@ -219,13 +221,15 @@ function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, f
     <div class="inst">
       <div class="section-title">💰 কিস্তি সময়সূচি / Installment Schedule</div>
       <table class="xls">
-        <colgroup><col style="width:10%"><col style="width:25%"><col style="width:22%"><col style="width:22%"><col style="width:21%"></colgroup>
+        <colgroup><col style="width:7%"><col style="width:17%"><col style="width:14%"><col style="width:14%"><col style="width:16%"><col style="width:16%"><col style="width:16%"></colgroup>
         <thead><tr>
           <th style="text-align:center">কিস্তি নং</th>
           <th style="text-align:center">পরিশোধের তারিখ</th>
           <th style="text-align:right">কিস্তি (৳)</th>
           <th style="text-align:right">পরিশোধিত (৳)</th>
           <th style="text-align:center">অবস্থা</th>
+          <th style="text-align:center">পরিশোধের তারিখ (ম্যানুয়াল)</th>
+          <th style="text-align:center">গ্রহণকারীর স্বাক্ষর</th>
         </tr></thead>
         <tbody>
           ${installments.map(i => `<tr>
@@ -234,15 +238,20 @@ function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, f
             <td class="num">${fmt(Number(i.amount))}</td>
             <td class="num">${fmt(Number(i.paid_amount || 0))}</td>
             <td style="text-align:center" class="${i.status === "paid" ? "inst-paid" : "inst-due"}">${i.status === "paid" ? "✓ পরিশোধিত" : "⏳ বকেয়া"}</td>
+            <td style="height:32px;background:#fff"></td>
+            <td style="height:32px;background:#fff"></td>
           </tr>`).join("")}
           <tr>
             <td colspan="2" style="text-align:right;font-weight:800;background:#fef3c7;color:#92400e">সর্বমোট</td>
             <td class="num" style="background:#fef3c7;color:#92400e">${fmt(totalInst)}</td>
             <td class="num" style="background:#fef3c7;color:#92400e">${fmt(totalPaidInst)}</td>
-            <td style="background:#fef3c7;text-align:center;font-weight:800;color:#92400e">বকেয়া ${fmt(Math.max(totalInst - totalPaidInst, 0))}</td>
+            <td colspan="3" style="background:#fef3c7;text-align:center;font-weight:800;color:#92400e">বকেয়া ${fmt(Math.max(totalInst - totalPaidInst, 0))}</td>
           </tr>
         </tbody>
       </table>
+      <div style="font-size:10px;color:#475569;margin-top:4px;font-style:italic">
+        * প্রতিটি কিস্তি পরিশোধের সময় উপরের ফাঁকা ঘরে তারিখ ও গ্রহণকারীর স্বাক্ষর দিতে হবে।
+      </div>
     </div>` : "";
 
   return `
@@ -311,6 +320,10 @@ function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, f
 
       <div class="signs">
         <div class="sig"><div class="line">ক্রেতার স্বাক্ষর / Customer Signature</div></div>
+        <div class="sig">
+          <div class="seal-box">SEAL / সীল</div>
+          <div class="seal-cap">প্রতিষ্ঠানের সীল</div>
+        </div>
         <div class="sig"><div class="line">অনুমোদনকারীর স্বাক্ষর / Authorized Signature</div></div>
       </div>
 
