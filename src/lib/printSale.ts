@@ -219,13 +219,15 @@ function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, f
     <div class="inst">
       <div class="section-title">💰 কিস্তি সময়সূচি / Installment Schedule</div>
       <table class="xls">
-        <colgroup><col style="width:10%"><col style="width:25%"><col style="width:22%"><col style="width:22%"><col style="width:21%"></colgroup>
+        <colgroup><col style="width:7%"><col style="width:17%"><col style="width:14%"><col style="width:14%"><col style="width:16%"><col style="width:16%"><col style="width:16%"></colgroup>
         <thead><tr>
           <th style="text-align:center">কিস্তি নং</th>
           <th style="text-align:center">পরিশোধের তারিখ</th>
           <th style="text-align:right">কিস্তি (৳)</th>
           <th style="text-align:right">পরিশোধিত (৳)</th>
           <th style="text-align:center">অবস্থা</th>
+          <th style="text-align:center">পরিশোধের তারিখ (ম্যানুয়াল)</th>
+          <th style="text-align:center">গ্রহণকারীর স্বাক্ষর</th>
         </tr></thead>
         <tbody>
           ${installments.map(i => `<tr>
@@ -234,15 +236,20 @@ function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, f
             <td class="num">${fmt(Number(i.amount))}</td>
             <td class="num">${fmt(Number(i.paid_amount || 0))}</td>
             <td style="text-align:center" class="${i.status === "paid" ? "inst-paid" : "inst-due"}">${i.status === "paid" ? "✓ পরিশোধিত" : "⏳ বকেয়া"}</td>
+            <td style="height:32px;background:#fff"></td>
+            <td style="height:32px;background:#fff"></td>
           </tr>`).join("")}
           <tr>
             <td colspan="2" style="text-align:right;font-weight:800;background:#fef3c7;color:#92400e">সর্বমোট</td>
             <td class="num" style="background:#fef3c7;color:#92400e">${fmt(totalInst)}</td>
             <td class="num" style="background:#fef3c7;color:#92400e">${fmt(totalPaidInst)}</td>
-            <td style="background:#fef3c7;text-align:center;font-weight:800;color:#92400e">বকেয়া ${fmt(Math.max(totalInst - totalPaidInst, 0))}</td>
+            <td colspan="3" style="background:#fef3c7;text-align:center;font-weight:800;color:#92400e">বকেয়া ${fmt(Math.max(totalInst - totalPaidInst, 0))}</td>
           </tr>
         </tbody>
       </table>
+      <div style="font-size:10px;color:#475569;margin-top:4px;font-style:italic">
+        * প্রতিটি কিস্তি পরিশোধের সময় উপরের ফাঁকা ঘরে তারিখ ও গ্রহণকারীর স্বাক্ষর দিতে হবে।
+      </div>
     </div>` : "";
 
   return `
