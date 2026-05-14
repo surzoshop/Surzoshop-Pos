@@ -320,6 +320,10 @@ function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, f
 
       <div class="signs">
         <div class="sig"><div class="line">ক্রেতার স্বাক্ষর / Customer Signature</div></div>
+        <div class="sig">
+          <div class="seal-box">SEAL / সীল</div>
+          <div class="seal-cap">প্রতিষ্ঠানের সীল</div>
+        </div>
         <div class="sig"><div class="line">অনুমোদনকারীর স্বাক্ষর / Authorized Signature</div></div>
       </div>
 
