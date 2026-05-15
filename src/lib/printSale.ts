@@ -465,14 +465,14 @@ function openHTMLInPrintWindow(html: string) {
   if (!idoc) return;
   idoc.open(); idoc.write(html); idoc.close();
 
-  const cleanup = () => { try { iframe.remove(); } catch {} };
+  const cleanup = () => { try { iframe.remove(); } catch { void 0; } };
   const triggerPrint = () => {
     try {
       iframe.contentWindow?.focus();
       iframe.contentWindow?.print();
     } catch (e) { console.error("Print failed:", e); }
     // Remove iframe after the print dialog closes
-    try { iframe.contentWindow?.addEventListener("afterprint", cleanup); } catch {}
+    try { iframe.contentWindow?.addEventListener("afterprint", cleanup); } catch { void 0; }
     setTimeout(cleanup, 60_000);
   };
 
