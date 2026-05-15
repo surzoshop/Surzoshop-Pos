@@ -128,8 +128,8 @@ body{font-family:'Hind Siliguli','Noto Sans Bengali','Segoe UI',Arial,sans-serif
 .sheet{width:210mm;min-height:297mm;padding:10mm 10mm;background:#fff;margin:0 auto}
 .outer{border:1px solid #bfdbfe;border-radius:6px;overflow:hidden;box-shadow:0 0 0 3px #f8fbff,0 0 0 4px #bfdbfe}
 .head{background:linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 55%,#dbeafe 100%);color:#1e3a8a;padding:18px 16px 14px;border-bottom:2px solid #bfdbfe;text-align:center;position:relative}
-.head .head-logo-c{margin-bottom:6px}
-.head .head-logo-c img{max-height:56px;max-width:80px;background:#fff;padding:4px;border-radius:8px;box-shadow:0 2px 5px rgba(30,58,138,.12)}
+.head .head-logo-c{position:absolute;top:12px;right:14px;margin-bottom:0;z-index:2}
+.head .head-logo-c img{max-height:56px;max-width:80px;background:#fff;padding:4px;border-radius:8px;box-shadow:0 2px 5px rgba(30,58,138,.12);border:1px solid #bfdbfe}
 .head h1{font-size:32px;font-weight:900;letter-spacing:0;line-height:1.1;color:#172554;text-shadow:0 1px 0 rgba(255,255,255,.9)}
 .head .meta{font-size:11.5px;color:#475569;margin-top:5px;line-height:1.5;font-weight:500}
 .head .meta b{font-weight:700;margin-right:4px;color:#1e3a8a}
