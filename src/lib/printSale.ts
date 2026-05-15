@@ -212,6 +212,12 @@ table.totals .paid .lbl,table.totals .paid .val{background:#dcfce7 !important;co
 .foot{margin-top:14px;text-align:center;font-size:10px;color:#475569;border-top:2px dashed #1e3a8a;padding-top:8px}
 .foot .b{font-weight:800;color:#1e3a8a;font-size:11px}
 .gap{height:8px}
+@media print{
+  html,body{width:210mm;min-height:297mm;margin:0 !important;padding:0 !important;background:#fff !important;overflow:visible !important}
+  .sheet{width:210mm;min-height:296mm;margin:0 !important;padding:8mm 9mm !important;page-break-after:avoid;break-after:avoid;overflow:hidden}
+  .outer{box-shadow:none}
+  .signs,.foot{break-inside:avoid;page-break-inside:avoid}
+}
 `;
 
 function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, fmt: (n: number) => string, lang: "bn" | "en") {
