@@ -34,6 +34,39 @@ const fmtBDDateTime = (d: string | Date, lang: "bn" | "en" = "bn") => {
   }).format(date);
 };
 
+const DEFAULT_LOGO_PATH = "/brand-logo.png";
+
+const defaultLogoUrl = () => {
+  if (typeof window === "undefined") return DEFAULT_LOGO_PATH;
+  return new URL(DEFAULT_LOGO_PATH, window.location.origin).toString();
+};
+
+const normalizeLogoUrl = (logo?: string | null) => {
+  const source = logo?.trim() || defaultLogoUrl();
+  if (source.startsWith("data:")) return source;
+  try { return new URL(source, window.location.origin).toString(); }
+  catch { return defaultLogoUrl(); }
+};
+
+async function imageUrlToDataUrl(src?: string | null) {
+  const url = normalizeLogoUrl(src);
+  if (url.startsWith("data:")) return url;
+  try {
+    const res = await fetch(url, { cache: "force-cache", mode: "cors" });
+    if (!res.ok) throw new Error(`Logo fetch failed: ${res.status}`);
+    const blob = await res.blob();
+    if (!blob.type.startsWith("image/")) throw new Error("Logo is not an image");
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return normalizeLogoUrl(null);
+  }
+}
+
 async function loadSale(saleId: string) {
   const [{ data: sale }, { data: items }, { data: installments }] = await Promise.all([
     supabase.from("sales").select("*, customers(name, phone, address)").eq("id", saleId).maybeSingle(),
@@ -46,6 +79,8 @@ async function loadSale(saleId: string) {
 // ---------- 58mm thermal ----------
 function buildThermalHTML(sale: any, items: any[], installments: any[], shop: Shop, fmt: (n: number) => string, lang: "bn" | "en") {
   const dateStr = fmtBDDateTime(sale.created_at, lang);
+  const logoUrl = normalizeLogoUrl(shop.logo_url);
+  const fallbackLogo = defaultLogoUrl();
   const itemRows = items.map((it: any) => `
     <tr>
       <td style="padding:2px 0">${escapeHtml(it.product_name)}${it.warranty_until ? `<div style="font-size:9px;color:#000">⛨ ওয়ারেন্টি ${it.warranty_months || ""} মাস (${fmtBDDate(it.warranty_until, lang)})</div>` : ""}</td>
@@ -86,7 +121,7 @@ function buildThermalHTML(sale: any, items: any[], installments: any[], shop: Sh
       .small{font-size:10px;line-height:1.3}
     </style></head><body>
     <div class="c">
-      ${shop.logo_url ? `<img src="${shop.logo_url}" style="max-height:42px" onerror="this.style.display='none'"/>` : ""}
+      <img src="${escapeHtml(logoUrl)}" data-fallback="${escapeHtml(fallbackLogo)}" style="max-height:42px"/>
       <h1>${SHOP_DISPLAY_NAME}</h1>
       ${shop.address ? `<div class="small">📍 ${escapeHtml(shop.address)}</div>` : ""}
       ${shop.phone ? `<div class="small">📞 ${escapeHtml(shop.phone)}</div>` : ""}
