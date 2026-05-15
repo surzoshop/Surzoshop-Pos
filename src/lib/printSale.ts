@@ -34,6 +34,41 @@ const fmtBDDateTime = (d: string | Date, lang: "bn" | "en" = "bn") => {
   }).format(date);
 };
 
+const DEFAULT_LOGO_PATH = "/brand-logo.png";
+
+const defaultLogoUrl = () => {
+  if (typeof window === "undefined") return DEFAULT_LOGO_PATH;
+  return new URL(DEFAULT_LOGO_PATH, window.location.origin).toString();
+};
+
+const normalizeLogoUrl = (logo?: string | null) => {
+  const source = logo?.trim() || defaultLogoUrl();
+  if (source.startsWith("data:")) return source;
+  try { return new URL(source, window.location.origin).toString(); }
+  catch { return defaultLogoUrl(); }
+};
+
+async function imageUrlToDataUrl(src?: string | null) {
+  const url = normalizeLogoUrl(src);
+  if (url.startsWith("data:")) return url;
+  try {
+    const res = await fetch(url, { cache: "force-cache", mode: "cors" });
+    if (!res.ok) throw new Error(`Logo fetch failed: ${res.status}`);
+    const blob = await res.blob();
+    if (!blob.type.startsWith("image/")) throw new Error("Logo is not an image");
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    const fallback = defaultLogoUrl();
+    if (url !== fallback) return imageUrlToDataUrl(fallback);
+    return fallback;
+  }
+}
+
 async function loadSale(saleId: string) {
   const [{ data: sale }, { data: items }, { data: installments }] = await Promise.all([
     supabase.from("sales").select("*, customers(name, phone, address)").eq("id", saleId).maybeSingle(),
@@ -46,6 +81,8 @@ async function loadSale(saleId: string) {
 // ---------- 58mm thermal ----------
 function buildThermalHTML(sale: any, items: any[], installments: any[], shop: Shop, fmt: (n: number) => string, lang: "bn" | "en") {
   const dateStr = fmtBDDateTime(sale.created_at, lang);
+  const logoUrl = normalizeLogoUrl(shop.logo_url);
+  const fallbackLogo = defaultLogoUrl();
   const itemRows = items.map((it: any) => `
     <tr>
       <td style="padding:2px 0">${escapeHtml(it.product_name)}${it.warranty_until ? `<div style="font-size:9px;color:#000">⛨ ওয়ারেন্টি ${it.warranty_months || ""} মাস (${fmtBDDate(it.warranty_until, lang)})</div>` : ""}</td>
@@ -86,7 +123,7 @@ function buildThermalHTML(sale: any, items: any[], installments: any[], shop: Sh
       .small{font-size:10px;line-height:1.3}
     </style></head><body>
     <div class="c">
-      ${shop.logo_url ? `<img src="${shop.logo_url}" style="max-height:42px" onerror="this.style.display='none'"/>` : ""}
+      <img src="${escapeHtml(logoUrl)}" data-fallback="${escapeHtml(fallbackLogo)}" style="max-height:42px"/>
       <h1>${SHOP_DISPLAY_NAME}</h1>
       ${shop.address ? `<div class="small">📍 ${escapeHtml(shop.address)}</div>` : ""}
       ${shop.phone ? `<div class="small">📞 ${escapeHtml(shop.phone)}</div>` : ""}
@@ -175,10 +212,17 @@ table.totals .paid .lbl,table.totals .paid .val{background:#dcfce7 !important;co
 .foot{margin-top:14px;text-align:center;font-size:10px;color:#475569;border-top:2px dashed #1e3a8a;padding-top:8px}
 .foot .b{font-weight:800;color:#1e3a8a;font-size:11px}
 .gap{height:8px}
+@media print{
+  html,body{width:210mm;min-height:297mm;margin:0 !important;padding:0 !important;background:#fff !important;overflow:visible !important}
+  .sheet{width:210mm;min-height:296mm;margin:0 !important;padding:8mm 9mm !important;page-break-after:avoid;break-after:avoid;overflow:hidden}
+  .outer{box-shadow:none}
+  .signs,.foot{break-inside:avoid;page-break-inside:avoid}
+}
 `;
 
 function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, fmt: (n: number) => string, lang: "bn" | "en") {
   const dateStr = fmtBDDateTime(sale.created_at, lang);
+  const logoUrl = normalizeLogoUrl(shop.logo_url);
   const warrantyItems = items.filter((i: any) => i.warranty_until);
 
   const itemRows = items.map((it: any, idx: number) => `
@@ -258,7 +302,7 @@ function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, f
     <div class="sheet">
       <div class="outer">
         <div class="head">
-          ${shop.logo_url ? `<div class="head-logo-c"><img src="${shop.logo_url}" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></div>` : ""}
+          <div class="head-logo-c"><img src="${escapeHtml(logoUrl)}" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></div>
           <h1>${SHOP_DISPLAY_NAME}</h1>
           ${shop.address ? `<div class="meta"><b>📍</b>${escapeHtml(shop.address)}</div>` : ""}
           ${shop.phone ? `<div class="meta"><b>📞</b>${escapeHtml(shop.phone)}</div>` : ""}
@@ -345,39 +389,111 @@ function escapeHtml(s: any): string {
   return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 }
 
+function isMobilePrintContext() {
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.matchMedia("(max-width: 768px)").matches;
+}
+
+async function waitForImages(root: Document | HTMLElement) {
+  const imgs = root instanceof Document ? Array.from(root.images || []) : Array.from(root.querySelectorAll("img"));
+  await Promise.all(imgs.map(img => new Promise<void>(res => {
+    let settled = false;
+    const done = () => { if (!settled) { settled = true; res(); } };
+    img.onload = done;
+    img.onerror = () => {
+      const fallback = img.getAttribute("data-fallback");
+      if (fallback && img.src !== fallback) {
+        img.removeAttribute("data-fallback");
+        img.src = fallback;
+        return;
+      }
+      img.style.display = "none";
+      done();
+    };
+    if (img.complete && img.naturalWidth > 0) done();
+    setTimeout(done, 3000);
+  })));
+}
+
+function openHTMLInCurrentWindowForMobile(html: string) {
+  document.getElementById("__mobile_print_root")?.remove();
+  document.getElementById("__mobile_print_style")?.remove();
+
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  const isA4 = !!parsed.querySelector(".sheet");
+  const rootWidth = isA4 ? "210mm" : "80mm";
+  const rootMinHeight = isA4 ? "297mm" : "auto";
+  const styleEl = document.createElement("style");
+  styleEl.id = "__mobile_print_style";
+  styleEl.textContent = `${Array.from(parsed.querySelectorAll("style")).map(s => s.textContent ?? "").join("\n")}
+    @media print{
+      body > *:not(#__mobile_print_root){display:none !important}
+      #__mobile_print_root{display:block !important;position:static !important;opacity:1 !important;width:${rootWidth} !important;min-height:auto !important;margin:0 auto !important;padding:${isA4 ? "0" : "4px"} !important;background:#fff !important;overflow:visible !important;color:#000 !important}
+    }`;
+
+  const root = document.createElement("div");
+  root.id = "__mobile_print_root";
+  root.style.cssText = `position:fixed;left:0;top:0;width:${rootWidth};min-height:${rootMinHeight};background:#fff;z-index:2147483647;opacity:0;pointer-events:none;overflow:hidden`;
+  root.innerHTML = parsed.body.innerHTML;
+  document.head.appendChild(styleEl);
+  document.body.appendChild(root);
+
+  const cleanup = () => { root.remove(); styleEl.remove(); };
+  waitForImages(root).then(() => setTimeout(() => {
+    try { window.print(); } catch (e) { console.error("Print failed:", e); cleanup(); }
+    window.addEventListener("afterprint", cleanup, { once: true });
+    setTimeout(cleanup, 60_000);
+  }, 250));
+}
+
 function openHTMLInPrintWindow(html: string) {
+  if (isMobilePrintContext()) {
+    openHTMLInCurrentWindowForMobile(html);
+    return;
+  }
+
   // Always use a hidden iframe — never open a new tab/window.
   // This shows only the browser's native print dialog without redirecting the user.
   const old = document.getElementById("__print_iframe"); if (old) old.remove();
   const iframe = document.createElement("iframe");
   iframe.id = "__print_iframe";
   Object.assign(iframe.style, {
-    position: "fixed", right: "0", bottom: "0",
-    width: "0", height: "0", border: "0", visibility: "hidden",
+    position: "fixed", left: "0", top: "0",
+    width: "210mm", height: "297mm", border: "0", opacity: "0", pointerEvents: "none",
   });
   document.body.appendChild(iframe);
   const idoc = iframe.contentDocument || iframe.contentWindow?.document;
   if (!idoc) return;
   idoc.open(); idoc.write(html); idoc.close();
 
-  const cleanup = () => { try { iframe.remove(); } catch {} };
+  const cleanup = () => { try { iframe.remove(); } catch { void 0; } };
   const triggerPrint = () => {
     try {
       iframe.contentWindow?.focus();
       iframe.contentWindow?.print();
     } catch (e) { console.error("Print failed:", e); }
     // Remove iframe after the print dialog closes
-    try { iframe.contentWindow?.addEventListener("afterprint", cleanup); } catch {}
+    try { iframe.contentWindow?.addEventListener("afterprint", cleanup); } catch { void 0; }
     setTimeout(cleanup, 60_000);
   };
 
   // Wait for images (logo) inside iframe before printing
   const waitImages = async () => {
     const imgs = Array.from(idoc.images || []);
-    await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise<void>(res => {
-      img.onload = () => res();
-      img.onerror = () => res();
-      setTimeout(() => res(), 2000);
+    await Promise.all(imgs.map(img => new Promise<void>(res => {
+      const done = () => res();
+      img.onload = done;
+      img.onerror = () => {
+        const fallback = img.getAttribute("data-fallback");
+        if (fallback && img.src !== fallback) {
+          img.removeAttribute("data-fallback");
+          img.src = fallback;
+          return;
+        }
+        img.style.display = "none";
+        done();
+      };
+      if (img.complete && img.naturalWidth > 0) done();
+      setTimeout(done, 3000);
     })));
   };
 
@@ -391,6 +507,7 @@ function openHTMLInPrintWindow(html: string) {
 async function downloadPDF(sale: any, items: any[], installments: any[], shop: Shop, fmt: (n: number) => string, lang: "bn" | "en", filename: string) {
   const existing = document.getElementById("__a4_pdf_wrapper");
   if (existing) existing.remove();
+  const pdfShop = { ...shop, logo_url: await imageUrlToDataUrl(shop.logo_url) };
 
   // Render in an actual on-page (but offscreen) container so html2canvas captures real layout + fonts
   const wrapper = document.createElement("div");
@@ -402,7 +519,7 @@ async function downloadPDF(sale: any, items: any[], installments: any[], shop: S
   wrapper.appendChild(styleEl);
 
   const content = document.createElement("div");
-  content.innerHTML = buildA4Body(sale, items, installments, shop, fmt, lang);
+  content.innerHTML = buildA4Body(sale, items, installments, pdfShop, fmt, lang);
   wrapper.appendChild(content);
   document.body.appendChild(wrapper);
 
@@ -510,7 +627,8 @@ export async function printSale(opts: PrintSaleOptions) {
   if (choice === "thermal") {
     openHTMLInPrintWindow(buildThermalHTML(sale, items, installments, opts.shop, opts.fmt, lang));
   } else if (choice === "a4") {
-    openHTMLInPrintWindow(buildA4Document(sale, items, installments, opts.shop, opts.fmt, lang, true));
+    const printShop = { ...opts.shop, logo_url: await imageUrlToDataUrl(opts.shop.logo_url) };
+    openHTMLInPrintWindow(buildA4Document(sale, items, installments, printShop, opts.fmt, lang, true));
   } else if (choice === "pdf") {
     await downloadPDF(sale, items, installments, opts.shop, opts.fmt, lang, `Invoice-${sale.invoice_no}.pdf`);
   }
