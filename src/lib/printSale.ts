@@ -419,17 +419,20 @@ function openHTMLInCurrentWindowForMobile(html: string) {
   document.getElementById("__mobile_print_style")?.remove();
 
   const parsed = new DOMParser().parseFromString(html, "text/html");
+  const isA4 = !!parsed.querySelector(".sheet");
+  const rootWidth = isA4 ? "210mm" : "80mm";
+  const rootMinHeight = isA4 ? "297mm" : "auto";
   const styleEl = document.createElement("style");
   styleEl.id = "__mobile_print_style";
   styleEl.textContent = `${Array.from(parsed.querySelectorAll("style")).map(s => s.textContent ?? "").join("\n")}
     @media print{
       body > *:not(#__mobile_print_root){display:none !important}
-      #__mobile_print_root{display:block !important;position:static !important;opacity:1 !important;width:210mm !important;min-height:auto !important;margin:0 !important;padding:0 !important;background:#fff !important;overflow:visible !important}
+      #__mobile_print_root{display:block !important;position:static !important;opacity:1 !important;width:${rootWidth} !important;min-height:auto !important;margin:0 auto !important;padding:${isA4 ? "0" : "4px"} !important;background:#fff !important;overflow:visible !important;color:#000 !important}
     }`;
 
   const root = document.createElement("div");
   root.id = "__mobile_print_root";
-  root.style.cssText = "position:fixed;left:0;top:0;width:210mm;min-height:297mm;background:#fff;z-index:2147483647;opacity:0;pointer-events:none;overflow:hidden";
+  root.style.cssText = `position:fixed;left:0;top:0;width:${rootWidth};min-height:${rootMinHeight};background:#fff;z-index:2147483647;opacity:0;pointer-events:none;overflow:hidden`;
   root.innerHTML = parsed.body.innerHTML;
   document.head.appendChild(styleEl);
   document.body.appendChild(root);
