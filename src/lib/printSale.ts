@@ -396,8 +396,8 @@ function openHTMLInPrintWindow(html: string) {
   const iframe = document.createElement("iframe");
   iframe.id = "__print_iframe";
   Object.assign(iframe.style, {
-    position: "fixed", right: "0", bottom: "0",
-    width: "0", height: "0", border: "0", visibility: "hidden",
+    position: "fixed", left: "0", top: "0",
+    width: "210mm", height: "297mm", border: "0", opacity: "0", pointerEvents: "none",
   });
   document.body.appendChild(iframe);
   const idoc = iframe.contentDocument || iframe.contentWindow?.document;
@@ -418,10 +418,21 @@ function openHTMLInPrintWindow(html: string) {
   // Wait for images (logo) inside iframe before printing
   const waitImages = async () => {
     const imgs = Array.from(idoc.images || []);
-    await Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise<void>(res => {
-      img.onload = () => res();
-      img.onerror = () => res();
-      setTimeout(() => res(), 2000);
+    await Promise.all(imgs.map(img => new Promise<void>(res => {
+      const done = () => res();
+      img.onload = done;
+      img.onerror = () => {
+        const fallback = img.getAttribute("data-fallback");
+        if (fallback && img.src !== fallback) {
+          img.removeAttribute("data-fallback");
+          img.src = fallback;
+          return;
+        }
+        img.style.display = "none";
+        done();
+      };
+      if (img.complete && img.naturalWidth > 0) done();
+      setTimeout(done, 3000);
     })));
   };
 
