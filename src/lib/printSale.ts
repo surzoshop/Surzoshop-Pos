@@ -504,6 +504,7 @@ function openHTMLInPrintWindow(html: string) {
 async function downloadPDF(sale: any, items: any[], installments: any[], shop: Shop, fmt: (n: number) => string, lang: "bn" | "en", filename: string) {
   const existing = document.getElementById("__a4_pdf_wrapper");
   if (existing) existing.remove();
+  const pdfShop = { ...shop, logo_url: await imageUrlToDataUrl(shop.logo_url) };
 
   // Render in an actual on-page (but offscreen) container so html2canvas captures real layout + fonts
   const wrapper = document.createElement("div");
@@ -515,7 +516,7 @@ async function downloadPDF(sale: any, items: any[], installments: any[], shop: S
   wrapper.appendChild(styleEl);
 
   const content = document.createElement("div");
-  content.innerHTML = buildA4Body(sale, items, installments, shop, fmt, lang);
+  content.innerHTML = buildA4Body(sale, items, installments, pdfShop, fmt, lang);
   wrapper.appendChild(content);
   document.body.appendChild(wrapper);
 
@@ -623,7 +624,8 @@ export async function printSale(opts: PrintSaleOptions) {
   if (choice === "thermal") {
     openHTMLInPrintWindow(buildThermalHTML(sale, items, installments, opts.shop, opts.fmt, lang));
   } else if (choice === "a4") {
-    openHTMLInPrintWindow(buildA4Document(sale, items, installments, opts.shop, opts.fmt, lang, true));
+    const printShop = { ...opts.shop, logo_url: await imageUrlToDataUrl(opts.shop.logo_url) };
+    openHTMLInPrintWindow(buildA4Document(sale, items, installments, printShop, opts.fmt, lang, true));
   } else if (choice === "pdf") {
     await downloadPDF(sale, items, installments, opts.shop, opts.fmt, lang, `Invoice-${sale.invoice_no}.pdf`);
   }
