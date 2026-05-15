@@ -63,7 +63,9 @@ async function imageUrlToDataUrl(src?: string | null) {
       reader.readAsDataURL(blob);
     });
   } catch {
-    return normalizeLogoUrl(null);
+    const fallback = defaultLogoUrl();
+    if (url !== fallback) return imageUrlToDataUrl(fallback);
+    return fallback;
   }
 }
 
@@ -214,6 +216,7 @@ table.totals .paid .lbl,table.totals .paid .val{background:#dcfce7 !important;co
 
 function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, fmt: (n: number) => string, lang: "bn" | "en") {
   const dateStr = fmtBDDateTime(sale.created_at, lang);
+  const logoUrl = normalizeLogoUrl(shop.logo_url);
   const warrantyItems = items.filter((i: any) => i.warranty_until);
 
   const itemRows = items.map((it: any, idx: number) => `
@@ -293,7 +296,7 @@ function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, f
     <div class="sheet">
       <div class="outer">
         <div class="head">
-          ${shop.logo_url ? `<div class="head-logo-c"><img src="${shop.logo_url}" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></div>` : ""}
+          <div class="head-logo-c"><img src="${escapeHtml(logoUrl)}" crossorigin="anonymous" onerror="this.parentNode.style.display='none'"/></div>
           <h1>${SHOP_DISPLAY_NAME}</h1>
           ${shop.address ? `<div class="meta"><b>📍</b>${escapeHtml(shop.address)}</div>` : ""}
           ${shop.phone ? `<div class="meta"><b>📞</b>${escapeHtml(shop.phone)}</div>` : ""}
