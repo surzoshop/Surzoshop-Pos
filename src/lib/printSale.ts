@@ -389,7 +389,65 @@ function escapeHtml(s: any): string {
   return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 }
 
+function isMobilePrintContext() {
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.matchMedia("(max-width: 768px)").matches;
+}
+
+async function waitForImages(root: Document | HTMLElement) {
+  const imgs = root instanceof Document ? Array.from(root.images || []) : Array.from(root.querySelectorAll("img"));
+  await Promise.all(imgs.map(img => new Promise<void>(res => {
+    let settled = false;
+    const done = () => { if (!settled) { settled = true; res(); } };
+    img.onload = done;
+    img.onerror = () => {
+      const fallback = img.getAttribute("data-fallback");
+      if (fallback && img.src !== fallback) {
+        img.removeAttribute("data-fallback");
+        img.src = fallback;
+        return;
+      }
+      img.style.display = "none";
+      done();
+    };
+    if (img.complete && img.naturalWidth > 0) done();
+    setTimeout(done, 3000);
+  })));
+}
+
+function openHTMLInCurrentWindowForMobile(html: string) {
+  document.getElementById("__mobile_print_root")?.remove();
+  document.getElementById("__mobile_print_style")?.remove();
+
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  const styleEl = document.createElement("style");
+  styleEl.id = "__mobile_print_style";
+  styleEl.textContent = `${Array.from(parsed.querySelectorAll("style")).map(s => s.textContent ?? "").join("\n")}
+    @media print{
+      body > *:not(#__mobile_print_root){display:none !important}
+      #__mobile_print_root{display:block !important;position:static !important;opacity:1 !important;width:210mm !important;min-height:auto !important;margin:0 !important;padding:0 !important;background:#fff !important;overflow:visible !important}
+    }`;
+
+  const root = document.createElement("div");
+  root.id = "__mobile_print_root";
+  root.style.cssText = "position:fixed;left:0;top:0;width:210mm;min-height:297mm;background:#fff;z-index:2147483647;opacity:0;pointer-events:none;overflow:hidden";
+  root.innerHTML = parsed.body.innerHTML;
+  document.head.appendChild(styleEl);
+  document.body.appendChild(root);
+
+  const cleanup = () => { root.remove(); styleEl.remove(); };
+  waitForImages(root).then(() => setTimeout(() => {
+    try { window.print(); } catch (e) { console.error("Print failed:", e); cleanup(); }
+    window.addEventListener("afterprint", cleanup, { once: true });
+    setTimeout(cleanup, 60_000);
+  }, 250));
+}
+
 function openHTMLInPrintWindow(html: string) {
+  if (isMobilePrintContext()) {
+    openHTMLInCurrentWindowForMobile(html);
+    return;
+  }
+
   // Always use a hidden iframe — never open a new tab/window.
   // This shows only the browser's native print dialog without redirecting the user.
   const old = document.getElementById("__print_iframe"); if (old) old.remove();
