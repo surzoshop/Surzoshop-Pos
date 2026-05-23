@@ -83,7 +83,7 @@ export default function Installments() {
       supabase.from("products").select("id,name,price,stock,credit_extra,installment_extra").order("name"),
       supabase.from("guarantors").select("id,name,phone").order("name"),
       supabase.from("installment_payments").select("*").order("paid_at", { ascending: false }),
-      supabase.from("sale_items").select("sale_id,qty,products(installment_extra)"),
+      supabase.from("sale_items").select("sale_id,qty,product_name,products(installment_extra)"),
     ]);
     const today = todayBD();
     const enriched = (insts ?? []).map(i => ({
@@ -97,11 +97,17 @@ export default function Installments() {
     for (const p of pays ?? []) (grouped[p.installment_id] ||= []).push(p);
     setPaymentsByInst(grouped);
     const extras: Record<string, number> = {};
+    const names: Record<string, string[]> = {};
     for (const r of (siExtras ?? []) as any[]) {
       const x = Number(r.products?.installment_extra ?? 0) * Number(r.qty ?? 0);
       if (x) extras[r.sale_id] = (extras[r.sale_id] ?? 0) + x;
+      if (r.product_name) {
+        const label = `${r.product_name}${Number(r.qty) > 1 ? ` ×${r.qty}` : ""}`;
+        (names[r.sale_id] ||= []).push(label);
+      }
     }
     setExtraBySale(extras);
+    setItemsBySale(names);
   };
   useEffect(() => { load(); }, []);
 
