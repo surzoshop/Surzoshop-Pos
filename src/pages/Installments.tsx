@@ -28,6 +28,7 @@ type Plan = {
   due: number;
   installments: Inst[];
   extra_charge?: number;
+  items_text?: string;
 };
 
 const DAY = 1000 * 60 * 60 * 24;
