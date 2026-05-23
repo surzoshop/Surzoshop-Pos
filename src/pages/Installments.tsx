@@ -324,6 +324,11 @@ export default function Installments() {
                         <User className="h-4 w-4 text-primary shrink-0" />{p.customer_name}
                       </div>
                       {p.customer_phone && <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1"><Phone className="h-3 w-3" />{p.customer_phone}</div>}
+                      {p.items_text && (
+                        <div className="text-[11px] text-foreground/80 mt-1.5 line-clamp-2 leading-snug bg-[hsl(var(--surface-container-low))] rounded-md px-2 py-1" title={p.items_text}>
+                          🛒 {p.items_text}
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <StatusPill tone={tone}>{label}</StatusPill>
