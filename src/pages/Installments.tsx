@@ -149,9 +149,10 @@ export default function Installments() {
         due: Number(s.due),
         installments: sched,
         extra_charge: extraBySale[s.id] ?? 0,
+        items_text: (itemsBySale[s.id] ?? []).join(", "),
       };
     });
-  }, [items, sales, extraBySale]);
+  }, [items, sales, extraBySale, itemsBySale]);
 
   const filteredPlans = useMemo(() => {
     if (filter === "all") return plans;
