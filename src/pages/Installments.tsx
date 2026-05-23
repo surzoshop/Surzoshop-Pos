@@ -57,6 +57,7 @@ export default function Installments() {
   const [managing, setManaging] = useState<Plan | null>(null);
   const [paymentsByInst, setPaymentsByInst] = useState<Record<string, any[]>>({});
   const [extraBySale, setExtraBySale] = useState<Record<string, number>>({});
+  const [itemsBySale, setItemsBySale] = useState<Record<string, string[]>>({});
   const [editPay, setEditPay] = useState<any>(null);
   const [editPayAmount, setEditPayAmount] = useState(0);
 
