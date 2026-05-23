@@ -22,14 +22,28 @@ export default function Sales() {
   const isAdmin = role === "admin" || role === "super_admin";
 
   const [items, setItems] = useState<any[]>([]);
+  const [itemsBySale, setItemsBySale] = useState<Record<string, string[]>>({});
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<any>(null);
   const [editPaid, setEditPaid] = useState(0);
   const [editNotes, setEditNotes] = useState("");
 
-  const load = () =>
-    supabase.from("sales").select("*, customers(name, phone)").order("created_at", { ascending: false }).limit(200)
-      .then(({ data }) => setItems(data ?? []));
+  const load = async () => {
+    const { data } = await supabase.from("sales").select("*, customers(name, phone)").order("created_at", { ascending: false }).limit(200);
+    setItems(data ?? []);
+    const ids = (data ?? []).map((s: any) => s.id);
+    if (ids.length) {
+      const { data: si } = await supabase.from("sale_items").select("sale_id, product_name, qty").in("sale_id", ids);
+      const grouped: Record<string, string[]> = {};
+      for (const r of (si ?? []) as any[]) {
+        const label = `${r.product_name}${Number(r.qty) > 1 ? ` ×${r.qty}` : ""}`;
+        (grouped[r.sale_id] ||= []).push(label);
+      }
+      setItemsBySale(grouped);
+    } else {
+      setItemsBySale({});
+    }
+  };
 
   useEffect(() => {
     load();
@@ -182,6 +196,11 @@ export default function Sales() {
                       {new Date(s.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}
                       {s.customers?.name ? ` · ${s.customers.name}` : ""}
                     </div>
+                    {itemsBySale[s.id]?.length ? (
+                      <div className="text-[11px] text-foreground/80 mt-1 line-clamp-2 leading-snug" title={itemsBySale[s.id].join(", ")}>
+                        🛒 {itemsBySale[s.id].join(", ")}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="text-right shrink-0">
                     <div className="font-bold text-primary text-sm">{fmt(Number(s.total))}</div>
@@ -239,7 +258,14 @@ export default function Sales() {
                 const statusLabel = isFullDue ? (lang === "bn" ? "বকেয়া" : "Due") : t(s.status as any);
                 return (
                   <tr key={s.id} className="hover:bg-[hsl(var(--surface-container-low))] transition-colors">
-                    <td className="py-4 font-bold text-foreground">{s.invoice_no}</td>
+                    <td className="py-4 font-bold text-foreground align-top">
+                      <div>{s.invoice_no}</div>
+                      {itemsBySale[s.id]?.length ? (
+                        <div className="text-[11px] font-normal text-muted-foreground mt-1 max-w-[220px] line-clamp-2" title={itemsBySale[s.id].join(", ")}>
+                          🛒 {itemsBySale[s.id].join(", ")}
+                        </div>
+                      ) : null}
+                    </td>
                     <td className="py-4 text-muted-foreground">{new Date(s.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}</td>
                     <td className="py-4 font-medium">{s.customers?.name ?? "—"}</td>
                     <td className="py-4">{payLabel}</td>

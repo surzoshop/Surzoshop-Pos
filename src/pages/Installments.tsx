@@ -28,6 +28,7 @@ type Plan = {
   due: number;
   installments: Inst[];
   extra_charge?: number;
+  items_text?: string;
 };
 
 const DAY = 1000 * 60 * 60 * 24;
@@ -56,6 +57,7 @@ export default function Installments() {
   const [managing, setManaging] = useState<Plan | null>(null);
   const [paymentsByInst, setPaymentsByInst] = useState<Record<string, any[]>>({});
   const [extraBySale, setExtraBySale] = useState<Record<string, number>>({});
+  const [itemsBySale, setItemsBySale] = useState<Record<string, string[]>>({});
   const [editPay, setEditPay] = useState<any>(null);
   const [editPayAmount, setEditPayAmount] = useState(0);
 
@@ -81,7 +83,7 @@ export default function Installments() {
       supabase.from("products").select("id,name,price,stock,credit_extra,installment_extra").order("name"),
       supabase.from("guarantors").select("id,name,phone").order("name"),
       supabase.from("installment_payments").select("*").order("paid_at", { ascending: false }),
-      supabase.from("sale_items").select("sale_id,qty,products(installment_extra)"),
+      supabase.from("sale_items").select("sale_id,qty,product_name,products(installment_extra)"),
     ]);
     const today = todayBD();
     const enriched = (insts ?? []).map(i => ({
@@ -95,11 +97,17 @@ export default function Installments() {
     for (const p of pays ?? []) (grouped[p.installment_id] ||= []).push(p);
     setPaymentsByInst(grouped);
     const extras: Record<string, number> = {};
+    const names: Record<string, string[]> = {};
     for (const r of (siExtras ?? []) as any[]) {
       const x = Number(r.products?.installment_extra ?? 0) * Number(r.qty ?? 0);
       if (x) extras[r.sale_id] = (extras[r.sale_id] ?? 0) + x;
+      if (r.product_name) {
+        const label = `${r.product_name}${Number(r.qty) > 1 ? ` ×${r.qty}` : ""}`;
+        (names[r.sale_id] ||= []).push(label);
+      }
     }
     setExtraBySale(extras);
+    setItemsBySale(names);
   };
   useEffect(() => { load(); }, []);
 
@@ -141,9 +149,10 @@ export default function Installments() {
         due: Number(s.due),
         installments: sched,
         extra_charge: extraBySale[s.id] ?? 0,
+        items_text: (itemsBySale[s.id] ?? []).join(", "),
       };
     });
-  }, [items, sales, extraBySale]);
+  }, [items, sales, extraBySale, itemsBySale]);
 
   const filteredPlans = useMemo(() => {
     if (filter === "all") return plans;
@@ -315,6 +324,11 @@ export default function Installments() {
                         <User className="h-4 w-4 text-primary shrink-0" />{p.customer_name}
                       </div>
                       {p.customer_phone && <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1"><Phone className="h-3 w-3" />{p.customer_phone}</div>}
+                      {p.items_text && (
+                        <div className="text-[11px] text-foreground/80 mt-1.5 line-clamp-2 leading-snug bg-[hsl(var(--surface-container-low))] rounded-md px-2 py-1" title={p.items_text}>
+                          🛒 {p.items_text}
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <StatusPill tone={tone}>{label}</StatusPill>
@@ -374,6 +388,14 @@ export default function Installments() {
               <div className="bg-gradient-to-br from-[hsl(var(--surface-container-low))] to-[hsl(var(--surface-container))] rounded-2xl p-5 animate-fade-in">
                 <div className="font-bold text-xl flex items-center gap-2"><User className="h-5 w-5 text-primary" />{managing.customer_name}</div>
                 {managing.customer_phone && <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1"><Phone className="h-3 w-3" />{managing.customer_phone}</div>}
+                {managing.items_text && (
+                  <div className="mt-3 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/40 rounded-xl px-3 py-2">
+                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1">
+                      {lang === "bn" ? "ক্রয়কৃত পণ্য" : "Purchased Items"}
+                    </div>
+                    <div className="text-sm text-foreground font-medium">🛒 {managing.items_text}</div>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
                   <Stat icon={<Banknote className="h-4 w-4" />} label={t("planTotal")} value={fmt(managing.total)} accent="from-primary/15 to-primary/5" iconColor="text-primary" border="border-primary/25" delay={0} />
                   <Stat icon={<Wallet className="h-4 w-4" />} label={t("downPayment")} value={fmt(managing.down_payment)} accent="from-info/15 to-info/5" iconColor="text-info" border="border-info/25" delay={50} />
