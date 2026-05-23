@@ -388,6 +388,14 @@ export default function Installments() {
               <div className="bg-gradient-to-br from-[hsl(var(--surface-container-low))] to-[hsl(var(--surface-container))] rounded-2xl p-5 animate-fade-in">
                 <div className="font-bold text-xl flex items-center gap-2"><User className="h-5 w-5 text-primary" />{managing.customer_name}</div>
                 {managing.customer_phone && <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1"><Phone className="h-3 w-3" />{managing.customer_phone}</div>}
+                {managing.items_text && (
+                  <div className="mt-3 bg-[hsl(var(--surface-container-lowest))] border border-[hsl(var(--surface-container-high))]/40 rounded-xl px-3 py-2">
+                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1">
+                      {lang === "bn" ? "ক্রয়কৃত পণ্য" : "Purchased Items"}
+                    </div>
+                    <div className="text-sm text-foreground font-medium">🛒 {managing.items_text}</div>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
                   <Stat icon={<Banknote className="h-4 w-4" />} label={t("planTotal")} value={fmt(managing.total)} accent="from-primary/15 to-primary/5" iconColor="text-primary" border="border-primary/25" delay={0} />
                   <Stat icon={<Wallet className="h-4 w-4" />} label={t("downPayment")} value={fmt(managing.down_payment)} accent="from-info/15 to-info/5" iconColor="text-info" border="border-info/25" delay={50} />
