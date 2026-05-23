@@ -197,7 +197,7 @@ export default function Sales() {
                       {s.customers?.name ? ` · ${s.customers.name}` : ""}
                     </div>
                     {itemsBySale[s.id]?.length ? (
-                      <div className="text-[11px] text-foreground/80 mt-1 line-clamp-2 leading-snug" title={itemsBySale[s.id].join(", ")}>
+                      <div className="text-[11px] text-foreground font-semibold mt-1 line-clamp-2 leading-snug" title={itemsBySale[s.id].join(", ")}>
                         🛒 {itemsBySale[s.id].join(", ")}
                       </div>
                     ) : null}
@@ -261,7 +261,7 @@ export default function Sales() {
                     <td className="py-4 font-bold text-foreground align-top">
                       <div>{s.invoice_no}</div>
                       {itemsBySale[s.id]?.length ? (
-                        <div className="text-[11px] font-normal text-muted-foreground mt-1 max-w-[220px] line-clamp-2" title={itemsBySale[s.id].join(", ")}>
+                        <div className="text-[11px] font-semibold text-foreground mt-1 max-w-[220px] line-clamp-2" title={itemsBySale[s.id].join(", ")}>
                           🛒 {itemsBySale[s.id].join(", ")}
                         </div>
                       ) : null}

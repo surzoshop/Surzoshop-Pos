@@ -325,7 +325,7 @@ export default function Installments() {
                       </div>
                       {p.customer_phone && <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1"><Phone className="h-3 w-3" />{p.customer_phone}</div>}
                       {p.items_text && (
-                        <div className="text-[11px] text-foreground/80 mt-1.5 line-clamp-2 leading-snug bg-[hsl(var(--surface-container-low))] rounded-md px-2 py-1" title={p.items_text}>
+                        <div className="text-[11px] text-foreground font-semibold mt-1.5 line-clamp-2 leading-snug bg-[hsl(var(--surface-container-low))] rounded-md px-2 py-1" title={p.items_text}>
                           🛒 {p.items_text}
                         </div>
                       )}
