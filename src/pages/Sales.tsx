@@ -196,6 +196,11 @@ export default function Sales() {
                       {new Date(s.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}
                       {s.customers?.name ? ` · ${s.customers.name}` : ""}
                     </div>
+                    {itemsBySale[s.id]?.length ? (
+                      <div className="text-[11px] text-foreground/80 mt-1 line-clamp-2 leading-snug" title={itemsBySale[s.id].join(", ")}>
+                        🛒 {itemsBySale[s.id].join(", ")}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="text-right shrink-0">
                     <div className="font-bold text-primary text-sm">{fmt(Number(s.total))}</div>
