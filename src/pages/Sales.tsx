@@ -258,7 +258,14 @@ export default function Sales() {
                 const statusLabel = isFullDue ? (lang === "bn" ? "বকেয়া" : "Due") : t(s.status as any);
                 return (
                   <tr key={s.id} className="hover:bg-[hsl(var(--surface-container-low))] transition-colors">
-                    <td className="py-4 font-bold text-foreground">{s.invoice_no}</td>
+                    <td className="py-4 font-bold text-foreground align-top">
+                      <div>{s.invoice_no}</div>
+                      {itemsBySale[s.id]?.length ? (
+                        <div className="text-[11px] font-normal text-muted-foreground mt-1 max-w-[220px] line-clamp-2" title={itemsBySale[s.id].join(", ")}>
+                          🛒 {itemsBySale[s.id].join(", ")}
+                        </div>
+                      ) : null}
+                    </td>
                     <td className="py-4 text-muted-foreground">{new Date(s.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}</td>
                     <td className="py-4 font-medium">{s.customers?.name ?? "—"}</td>
                     <td className="py-4">{payLabel}</td>
