@@ -22,14 +22,28 @@ export default function Sales() {
   const isAdmin = role === "admin" || role === "super_admin";
 
   const [items, setItems] = useState<any[]>([]);
+  const [itemsBySale, setItemsBySale] = useState<Record<string, string[]>>({});
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<any>(null);
   const [editPaid, setEditPaid] = useState(0);
   const [editNotes, setEditNotes] = useState("");
 
-  const load = () =>
-    supabase.from("sales").select("*, customers(name, phone)").order("created_at", { ascending: false }).limit(200)
-      .then(({ data }) => setItems(data ?? []));
+  const load = async () => {
+    const { data } = await supabase.from("sales").select("*, customers(name, phone)").order("created_at", { ascending: false }).limit(200);
+    setItems(data ?? []);
+    const ids = (data ?? []).map((s: any) => s.id);
+    if (ids.length) {
+      const { data: si } = await supabase.from("sale_items").select("sale_id, product_name, qty").in("sale_id", ids);
+      const grouped: Record<string, string[]> = {};
+      for (const r of (si ?? []) as any[]) {
+        const label = `${r.product_name}${Number(r.qty) > 1 ? ` ×${r.qty}` : ""}`;
+        (grouped[r.sale_id] ||= []).push(label);
+      }
+      setItemsBySale(grouped);
+    } else {
+      setItemsBySale({});
+    }
+  };
 
   useEffect(() => {
     load();
