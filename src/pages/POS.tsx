@@ -22,6 +22,43 @@ import { printSale as printSaleUnified } from "@/lib/printSale";
 type Product = { id: string; name: string; barcode: string | null; sku: string | null; price: number; stock: number; image_url?: string | null; has_warranty?: boolean; warranty_months?: number | null };
 type CartItem = { product: Product; qty: number; warrantyMonths?: number | null };
 
+// Cart price input with local text state — ensures every keystroke commits to cart
+// and avoids controlled-input glitches (cursor jump, stale value) on mobile.
+function CartPriceInput({ value, onCommit }: { value: number; onCommit: (n: number) => void }) {
+  const [text, setText] = useState<string>(String(value ?? 0));
+  const focusedRef = useRef(false);
+  // Sync external value into local text only when not focused (avoid clobbering typing)
+  useEffect(() => {
+    if (!focusedRef.current) setText(String(value ?? 0));
+  }, [value]);
+  return (
+    <Input
+      type="text"
+      inputMode="decimal"
+      pattern="[0-9]*\.?[0-9]*"
+      value={text}
+      onFocus={(e) => { focusedRef.current = true; e.currentTarget.select(); }}
+      onBlur={() => {
+        focusedRef.current = false;
+        const n = Number(text);
+        if (!Number.isFinite(n) || text.trim() === "") setText(String(value ?? 0));
+      }}
+      onChange={(e) => {
+        const raw = e.target.value;
+        // Allow only digits + single dot
+        if (raw !== "" && !/^\d*\.?\d*$/.test(raw)) return;
+        setText(raw);
+        if (raw === "" || raw === ".") { onCommit(0); return; }
+        const n = Number(raw);
+        if (Number.isFinite(n)) onCommit(n);
+      }}
+      className="h-7 w-24 text-xs px-2 font-semibold"
+      title="প্রতি একক বিক্রয় মূল্য — এডিট করতে ক্লিক করুন"
+    />
+  );
+}
+
+
 const VAT_RATE = 0; // VAT disabled — to be configured later via dedicated VAT settings page
 const INSTALLMENT_DUE_DAY = 5;
 const roundMoney = (value: number) => Math.round(value * 100) / 100;
