@@ -544,11 +544,24 @@ export default function POS() {
                   <div className="flex items-center gap-1">
                     <span className="text-[10px] text-muted-foreground">৳</span>
                     <Input
-                      type="number"
-                      value={i.product.price}
-                      onChange={(e) => updatePrice(i.product.id, +e.target.value)}
-                      className="h-7 w-20 text-xs px-2"
-                      title="প্রতি একক বিক্রয় মূল্য"
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9]*\.?[0-9]*"
+                      value={String(i.product.price ?? "")}
+                      onFocus={(e) => e.currentTarget.select()}
+                      onChange={(e) => {
+                        const raw = e.target.value.trim();
+                        if (raw === "" || raw === ".") {
+                          // allow temporary empty/partial input — treat as 0 in cart
+                          clearTotalOverride();
+                          setCart(c => c.map(it => it.product.id === i.product.id ? { ...it, product: { ...it.product, price: 0 } } : it));
+                          return;
+                        }
+                        const n = Number(raw);
+                        if (Number.isFinite(n)) updatePrice(i.product.id, n);
+                      }}
+                      className="h-7 w-24 text-xs px-2 font-semibold"
+                      title="প্রতি একক বিক্রয় মূল্য — এডিট করতে ক্লিক করুন"
                     />
                   </div>
                   <span className="font-bold text-primary text-sm">{fmt(i.product.price * i.qty)}</span>
