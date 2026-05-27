@@ -182,6 +182,7 @@ export default function POS() {
   };
   const removeItem = (id: string) => { clearTotalOverride(); setCart(c => c.filter(i => i.product.id !== id)); };
   const updatePrice = (id: string, price: number) => {
+    if (!Number.isFinite(price)) return;
     clearTotalOverride();
     setCart(c => c.map(i => i.product.id === id ? { ...i, product: { ...i.product, price: Math.max(0, price) } } : i));
   };
