@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, Store, Languages, Sun, ShieldCheck, BarChart3,
   Wallet, ShoppingCart, Mail, Lock, User, ArrowRight, Phone,
+  Eye, EyeOff,
 } from "lucide-react";
 
 export default function Auth() {
