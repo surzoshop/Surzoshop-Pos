@@ -228,13 +228,14 @@ export default function Auth() {
   );
 }
 
-function Field({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
+function Field({ label, icon, rightAction, children }: { label: string; icon: React.ReactNode; rightAction?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div>
       <Label className="text-xs font-semibold text-foreground/80">{label}</Label>
       <div className="relative mt-1.5">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">{icon}</span>
         {children}
+        {rightAction}
       </div>
     </div>
   );
