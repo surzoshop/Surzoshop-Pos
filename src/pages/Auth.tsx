@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Loader2, Store, Languages, Sun, ShieldCheck, BarChart3,
   Wallet, ShoppingCart, Mail, Lock, User, ArrowRight, Phone,
+  Eye, EyeOff,
 } from "lucide-react";
 
 export default function Auth() {
@@ -22,6 +23,7 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,24 +177,28 @@ export default function Auth() {
               >{t("signup")}</button>
             </div>
 
-            <form onSubmit={submit} className="space-y-4">
+            <form onSubmit={submit} className="space-y-4" autoComplete="on">
               {mode === "signup" && (
                 <Field label={t("fullName")} icon={<User className="h-4 w-4" />}>
-                  <Input value={fullName} onChange={e => setFullName(e.target.value)} required className="pl-10 h-11" placeholder={lang === "bn" ? "আপনার নাম" : "Your name"} />
+                  <Input name="fullName" autoComplete="name" value={fullName} onChange={e => setFullName(e.target.value)} required className="pl-10 h-11" placeholder={lang === "bn" ? "আপনার নাম" : "Your name"} />
                 </Field>
               )}
 
               {mode === "signup" ? (
                 <Field label={t("email")} icon={<Mail className="h-4 w-4" />}>
-                  <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="pl-10 h-11" placeholder="you@shop.com" />
+                  <Input name="email" autoComplete="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required className="pl-10 h-11" placeholder="you@shop.com" />
                 </Field>
               ) : (
                 <Field label={lang === "bn" ? "মোবাইল / ইমেইল" : "Phone / Email"} icon={<Phone className="h-4 w-4" />}>
-                  <Input type="text" value={phone} onChange={e => setPhone(e.target.value)} required className="pl-10 h-11" placeholder={lang === "bn" ? "01XXXXXXXXX বা admin@gmail.com" : "01XXXXXXXXX or admin@gmail.com"} />
+                  <Input name="username" autoComplete="username" type="text" value={phone} onChange={e => setPhone(e.target.value)} required className="pl-10 h-11" placeholder={lang === "bn" ? "01XXXXXXXXX বা admin@gmail.com" : "01XXXXXXXXX or admin@gmail.com"} />
                 </Field>
               )}
-              <Field label={t("password")} icon={<Lock className="h-4 w-4" />}>
-                <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} className="pl-10 h-11" placeholder="••••••••" />
+              <Field label={t("password")} icon={<Lock className="h-4 w-4" />} rightAction={
+                <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              }>
+                <Input name="password" autoComplete={mode === "login" ? "current-password" : "new-password"} type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} required minLength={6} className="pl-10 pr-10 h-11" placeholder="••••••••" />
               </Field>
 
               <Button type="submit" className="w-full h-11 text-sm font-bold gradient-primary text-primary-foreground hover:brightness-110 shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.5)]" disabled={loading}>
@@ -222,13 +228,14 @@ export default function Auth() {
   );
 }
 
-function Field({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
+function Field({ label, icon, rightAction, children }: { label: string; icon: React.ReactNode; rightAction?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div>
       <Label className="text-xs font-semibold text-foreground/80">{label}</Label>
       <div className="relative mt-1.5">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">{icon}</span>
         {children}
+        {rightAction}
       </div>
     </div>
   );
