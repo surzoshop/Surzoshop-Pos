@@ -143,7 +143,7 @@ function buildThermalHTML(sale: any, items: any[], installments: any[], shop: Sh
       <tbody>${itemRows}</tbody>
     </table>
     <div class="dash"></div>
-    <div style="display:flex;justify-content:space-between"><span>Subtotal</span><span>${fmt(Number(sale.subtotal))}</span></div>
+    <div style="display:flex;justify-content:space-between"><span>Subtotal</span><span>${fmt(Number(sale.total) + Number(sale.discount || 0))}</span></div>
     ${Number(sale.discount) > 0 ? `<div style="display:flex;justify-content:space-between"><span>Discount</span><span>- ${fmt(Number(sale.discount))}</span></div>` : ""}
     <div class="solid"></div>
     <div style="display:flex;justify-content:space-between;font-size:14px" class="b"><span>মোট</span><span>${fmt(Number(sale.total))}</span></div>
@@ -352,7 +352,7 @@ function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, f
       <div class="gap"></div>
 
       <table class="totals">
-        <tr><td class="lbl">Subtotal</td><td class="val">${fmt(Number(sale.subtotal))}</td></tr>
+        <tr><td class="lbl">Subtotal</td><td class="val">${fmt(Number(sale.total) + Number(sale.discount || 0))}</td></tr>
         ${Number(sale.discount) > 0 ? `<tr><td class="lbl">ছাড় (Discount)</td><td class="val">- ${fmt(Number(sale.discount))}</td></tr>` : ""}
         <tr class="grand"><td class="lbl">মোট / GRAND TOTAL</td><td class="val">${fmt(Number(sale.total))}</td></tr>
         <tr class="paid"><td class="lbl">পরিশোধিত (Paid)</td><td class="val">${fmt(Number(sale.paid))}</td></tr>

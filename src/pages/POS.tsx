@@ -88,6 +88,8 @@ export default function POS() {
   const [paymentType, setPaymentType] = useState<"cash" | "installment" | "due">("cash");
   const [duePaid, setDuePaid] = useState(0); // for "বাকিতে" — how much customer pays now
   const [totalOverride, setTotalOverride] = useState<number | null>(null);
+  const [extraChargeOverride, setExtraChargeOverride] = useState<number | null>(null);
+  const [editingExtra, setEditingExtra] = useState(false);
   
   const [customers, setCustomers] = useState<any[]>([]);
   const [customerId, setCustomerId] = useState<string>("");
@@ -198,6 +200,8 @@ export default function POS() {
   });
 
   const clearTotalOverride = () => setTotalOverride(null);
+  // Reset extra-charge override whenever cart contents or payment type change
+  useEffect(() => { setExtraChargeOverride(null); setEditingExtra(false); }, [paymentType, cart.length]);
 
   const addToCart = (p: Product) => {
     const extra = originalQty[p.id] || 0;
@@ -229,12 +233,15 @@ export default function POS() {
 
   const subtotal = cart.reduce((a, i) => a + i.product.price * i.qty, 0);
   // Extra charge for credit / installment sales (per-product configured in Stock entry)
-  const extraCharge = cart.reduce((a, i) => {
+  const computedExtra = cart.reduce((a, i) => {
     const p: any = i.product;
     if (paymentType === "installment") return a + (Number(p.installment_extra) || 0) * i.qty;
     if (paymentType === "due")         return a + (Number(p.credit_extra) || 0) * i.qty;
     return a;
   }, 0);
+  const extraCharge = paymentType === "cash"
+    ? 0
+    : (extraChargeOverride !== null ? Math.max(0, extraChargeOverride) : computedExtra);
   const vat = subtotal * VAT_RATE;
   const computedBase = Math.max(0, subtotal + vat - discount + extraCharge);
   // Allow user to override grand total (for negotiation / round-off). Override applies before installment interest.
@@ -679,12 +686,16 @@ export default function POS() {
                           <Input
                             type="date"
                             value={s.date}
+                            readOnly={!isAdmin}
+                            disabled={!isAdmin}
                             onChange={e => {
+                              if (!isAdmin) return;
                               const next = [...(scheduleDates.length === installmentCount ? scheduleDates : defaultScheduleDates(installmentCount))];
                               next[idx] = e.target.value;
                               setScheduleDates(next);
                             }}
-                            className="h-7 text-xs flex-1 px-1"
+                            className={`h-7 text-xs flex-1 px-1 ${!isAdmin ? "bg-[hsl(var(--surface-container))] cursor-not-allowed opacity-100" : ""}`}
+                            title={!isAdmin ? (lang === "bn" ? "শুধু অ্যাডমিন এডিট করতে পারবে" : "Admin only") : undefined}
                           />
                           <span className="font-mono font-bold w-20 text-right">{fmt(s.amount)}</span>
                         </div>
@@ -742,14 +753,52 @@ export default function POS() {
             <div className="flex justify-between text-muted-foreground"><span>{t("subtotal")}:</span><span>{fmt(subtotal)}</span></div>
             <div className="flex justify-between text-muted-foreground"><span>{t("vat")} (0%):</span><span>{fmt(0)}</span></div>
             <div className="flex justify-between text-muted-foreground"><span>{t("discount")}:</span><span className="text-destructive">-{fmt(discount)}</span></div>
-            {extraCharge > 0 && (
-              <div className="flex justify-between items-center bg-amber-500/10 -mx-1 px-3 py-2 rounded-lg border border-amber-500/30">
-                <span className="font-bold text-amber-700 dark:text-amber-400">
+            {paymentType !== "cash" && (extraCharge > 0 || editingExtra || extraChargeOverride !== null) && (
+              <div className="flex justify-between items-center gap-2 bg-amber-500/10 -mx-1 px-3 py-2 rounded-lg border border-amber-500/30">
+                <span className="font-bold text-amber-700 dark:text-amber-400 text-xs">
                   {paymentType === "installment"
                     ? (lang === "bn" ? "কিস্তিতে অতিরিক্ত চার্জ" : "Installment Extra")
                     : (lang === "bn" ? "বাকিতে অতিরিক্ত চার্জ" : "Credit Extra")}
                 </span>
-                <span className="font-extrabold text-amber-700 dark:text-amber-400">+{fmt(extraCharge)}</span>
+                <div className="flex items-center gap-1.5">
+                  {editingExtra ? (
+                    <>
+                      <span className="font-extrabold text-amber-700 dark:text-amber-400">+</span>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        autoFocus
+                        defaultValue={String(extraCharge)}
+                        onFocus={(e) => e.currentTarget.select()}
+                        onBlur={(e) => {
+                          const n = parseFloat(e.currentTarget.value);
+                          setExtraChargeOverride(Number.isFinite(n) ? Math.max(0, n) : 0);
+                          setEditingExtra(false);
+                          clearTotalOverride();
+                        }}
+                        onKeyDown={(e) => { if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur(); }}
+                        className="h-7 w-24 text-right font-extrabold text-amber-700 dark:text-amber-400 px-2"
+                      />
+                      {extraChargeOverride !== null && (
+                        <button
+                          type="button"
+                          onClick={() => { setExtraChargeOverride(null); setEditingExtra(false); clearTotalOverride(); }}
+                          className="text-[10px] text-muted-foreground hover:text-primary underline"
+                          title={lang === "bn" ? "মূল মান" : "Reset"}
+                        >↺</button>
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setEditingExtra(true)}
+                      className="font-extrabold text-amber-700 dark:text-amber-400 hover:underline cursor-pointer"
+                      title={lang === "bn" ? "ক্লিক করে এডিট করুন" : "Click to edit"}
+                    >
+                      +{fmt(extraCharge)} ✎
+                    </button>
+                  )}
+                </div>
               </div>
             )}
             {paymentType === "installment" && downPayment > 0 && (
