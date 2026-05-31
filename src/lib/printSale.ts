@@ -352,7 +352,7 @@ function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, f
       <div class="gap"></div>
 
       <table class="totals">
-        <tr><td class="lbl">Subtotal</td><td class="val">${fmt(Number(sale.subtotal))}</td></tr>
+        <tr><td class="lbl">Subtotal</td><td class="val">${fmt(Number(sale.total) + Number(sale.discount || 0))}</td></tr>
         ${Number(sale.discount) > 0 ? `<tr><td class="lbl">ছাড় (Discount)</td><td class="val">- ${fmt(Number(sale.discount))}</td></tr>` : ""}
         <tr class="grand"><td class="lbl">মোট / GRAND TOTAL</td><td class="val">${fmt(Number(sale.total))}</td></tr>
         <tr class="paid"><td class="lbl">পরিশোধিত (Paid)</td><td class="val">${fmt(Number(sale.paid))}</td></tr>
