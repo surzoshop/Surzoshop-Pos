@@ -747,14 +747,52 @@ export default function POS() {
             <div className="flex justify-between text-muted-foreground"><span>{t("subtotal")}:</span><span>{fmt(subtotal)}</span></div>
             <div className="flex justify-between text-muted-foreground"><span>{t("vat")} (0%):</span><span>{fmt(0)}</span></div>
             <div className="flex justify-between text-muted-foreground"><span>{t("discount")}:</span><span className="text-destructive">-{fmt(discount)}</span></div>
-            {extraCharge > 0 && (
-              <div className="flex justify-between items-center bg-amber-500/10 -mx-1 px-3 py-2 rounded-lg border border-amber-500/30">
-                <span className="font-bold text-amber-700 dark:text-amber-400">
+            {paymentType !== "cash" && (extraCharge > 0 || editingExtra || extraChargeOverride !== null) && (
+              <div className="flex justify-between items-center gap-2 bg-amber-500/10 -mx-1 px-3 py-2 rounded-lg border border-amber-500/30">
+                <span className="font-bold text-amber-700 dark:text-amber-400 text-xs">
                   {paymentType === "installment"
                     ? (lang === "bn" ? "কিস্তিতে অতিরিক্ত চার্জ" : "Installment Extra")
                     : (lang === "bn" ? "বাকিতে অতিরিক্ত চার্জ" : "Credit Extra")}
                 </span>
-                <span className="font-extrabold text-amber-700 dark:text-amber-400">+{fmt(extraCharge)}</span>
+                <div className="flex items-center gap-1.5">
+                  {editingExtra ? (
+                    <>
+                      <span className="font-extrabold text-amber-700 dark:text-amber-400">+</span>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        autoFocus
+                        defaultValue={String(extraCharge)}
+                        onFocus={(e) => e.currentTarget.select()}
+                        onBlur={(e) => {
+                          const n = parseFloat(e.currentTarget.value);
+                          setExtraChargeOverride(Number.isFinite(n) ? Math.max(0, n) : 0);
+                          setEditingExtra(false);
+                          clearTotalOverride();
+                        }}
+                        onKeyDown={(e) => { if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur(); }}
+                        className="h-7 w-24 text-right font-extrabold text-amber-700 dark:text-amber-400 px-2"
+                      />
+                      {extraChargeOverride !== null && (
+                        <button
+                          type="button"
+                          onClick={() => { setExtraChargeOverride(null); setEditingExtra(false); clearTotalOverride(); }}
+                          className="text-[10px] text-muted-foreground hover:text-primary underline"
+                          title={lang === "bn" ? "মূল মান" : "Reset"}
+                        >↺</button>
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setEditingExtra(true)}
+                      className="font-extrabold text-amber-700 dark:text-amber-400 hover:underline cursor-pointer"
+                      title={lang === "bn" ? "ক্লিক করে এডিট করুন" : "Click to edit"}
+                    >
+                      +{fmt(extraCharge)} ✎
+                    </button>
+                  )}
+                </div>
               </div>
             )}
             {paymentType === "installment" && downPayment > 0 && (
