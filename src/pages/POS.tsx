@@ -88,6 +88,8 @@ export default function POS() {
   const [paymentType, setPaymentType] = useState<"cash" | "installment" | "due">("cash");
   const [duePaid, setDuePaid] = useState(0); // for "বাকিতে" — how much customer pays now
   const [totalOverride, setTotalOverride] = useState<number | null>(null);
+  const [extraChargeOverride, setExtraChargeOverride] = useState<number | null>(null);
+  const [editingExtra, setEditingExtra] = useState(false);
   
   const [customers, setCustomers] = useState<any[]>([]);
   const [customerId, setCustomerId] = useState<string>("");
