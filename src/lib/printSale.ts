@@ -143,7 +143,7 @@ function buildThermalHTML(sale: any, items: any[], installments: any[], shop: Sh
       <tbody>${itemRows}</tbody>
     </table>
     <div class="dash"></div>
-    <div style="display:flex;justify-content:space-between"><span>Subtotal</span><span>${fmt(Number(sale.subtotal))}</span></div>
+    <div style="display:flex;justify-content:space-between"><span>Subtotal</span><span>${fmt(Number(sale.total) + Number(sale.discount || 0))}</span></div>
     ${Number(sale.discount) > 0 ? `<div style="display:flex;justify-content:space-between"><span>Discount</span><span>- ${fmt(Number(sale.discount))}</span></div>` : ""}
     <div class="solid"></div>
     <div style="display:flex;justify-content:space-between;font-size:14px" class="b"><span>মোট</span><span>${fmt(Number(sale.total))}</span></div>
