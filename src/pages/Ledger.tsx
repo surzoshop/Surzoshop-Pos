@@ -422,20 +422,28 @@ export default function Ledger() {
     // স্টক ক্রয়মূল্য = প্রকৃত স্টক ক্রয় ইনভয়েসের মোট মূল্য (purchases টেবিল থেকে)
     const stockBuy = purchasesAgg.filter(p => inRange(p.date)).reduce((s, p) => s + Number(p.total || 0), 0);
 
-    // ক্যাশ ইন/আউট (নগদ পেমেন্ট মাত্র)
+    // ক্যাশ ইন/আউট (নগদ পেমেন্ট মাত্র) — পিরিয়ডের মধ্যে
     const cashbookIn = entries.filter(e => e.entry_type === "deposit" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
       .reduce((s, e) => s + Number(e.amount || 0), 0);
     const cashbookOut = entries.filter(e => e.entry_type === "withdraw" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
       .reduce((s, e) => s + Number(e.amount || 0), 0);
     const expenseCash = expensesAgg.filter(x => inRange(x.date) && (x.method || "cash") === "cash").reduce((s, x) => s + x.total, 0);
 
-    // নগদ আয় = বিক্রয় থেকে প্রাপ্ত নগদ + কিস্তি আদায় + ম্যানুয়াল নগদ জমা
     const cashIn = salesPaid + instPaid + cashbookIn;
-    // নগদ খরচ = শুধু খরচ + ম্যানুয়াল নগদ উত্তোলন (স্টক ক্রয়মূল্য বাদ — তা আলাদা কার্ডে)
     const cashOut = cashbookOut + expenseCash;
 
-    // নগদ ব্যালেন্স = নগদ আয় − নগদ খরচ (খরচ না থাকলে পুরো আয়ই ব্যালেন্স)
-    const cashBalance = cashIn - cashOut;
+    // ✅ নগদ ব্যালেন্স = হাতে থাকা প্রকৃত নগদ — পিরিয়ডের শেষ তারিখ পর্যন্ত সকল লেনদেনের
+    // সঞ্চিত যোগফল (ওপেনিং ব্যালেন্সসহ)। আগে শুধু পিরিয়ডের ভেতরের লেনদেন ধরা হতো,
+    // ফলে এই মাস/গত মাস ফিল্টারে minus দেখাতো।
+    const upTo = (d: string) => !topTo || d <= topTo;
+    const cumSalesPaid = salesAgg.filter(s => upTo(s.date)).reduce((s, x) => s + x.paid, 0);
+    const cumInstPaid  = instPayAgg.filter(p => upTo(p.date)).reduce((s, p) => s + p.amount, 0);
+    const cumCashIn    = entries.filter(e => e.entry_type === "deposit" && (e.payment_method ?? "cash") === "cash" && upTo(e.entry_date))
+      .reduce((s, e) => s + Number(e.amount || 0), 0);
+    const cumCashOut   = entries.filter(e => e.entry_type === "withdraw" && (e.payment_method ?? "cash") === "cash" && upTo(e.entry_date))
+      .reduce((s, e) => s + Number(e.amount || 0), 0);
+    const cumExpCash   = expensesAgg.filter(x => upTo(x.date) && (x.method || "cash") === "cash").reduce((s, x) => s + x.total, 0);
+    const cashBalance  = (cumSalesPaid + cumInstPaid + cumCashIn) - (cumCashOut + cumExpCash);
     const cashTxnTotal = cashIn + cashOut;
 
     // মোট আয় = বিক্রয় থেকে আসলে প্রাপ্ত নগদ = ডাউন পেমেন্ট + সম্পূর্ণ পরিশোধিত নগদ + কিস্তি আদায়
@@ -444,7 +452,7 @@ export default function Ledger() {
     const baseStats = [
       { key: "sales"    as TabKey, label: "নগদ আয়",              value: totalIncome,  icon: ArrowDownToLine, tone: "income",   hint: "বিক্রয় থেকে প্রাপ্ত নগদ = ডাউন পেমেন্ট + সম্পূর্ণ পরিশোধিত + কিস্তি আদায়" },
       { key: "expense"  as TabKey, label: "মোট খরচ",             value: expense,      icon: ArrowUpFromLine, tone: "expense",  hint: "শুধুমাত্র খরচ এন্ট্রি পেজ থেকে (জমা/উত্তোলনের কোনো প্রভাব নেই)" },
-      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",        value: cashBalance,  icon: Coins,           tone: "balance",  hint: "মোট আয় − মোট খরচ (স্টক ক্রয়মূল্য বাদ; খরচ না থাকলে পুরো আয়ই ব্যালেন্স)" },
+      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",        value: cashBalance,  icon: Coins,           tone: "balance",  hint: "হাতে থাকা প্রকৃত নগদ — পিরিয়ডের শেষ তারিখ পর্যন্ত সকল লেনদেনের সঞ্চিত হিসাব (ওপেনিং ব্যালেন্সসহ)" },
     ];
     if (isAdmin) {
       baseStats.push(
