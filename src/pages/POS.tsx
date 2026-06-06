@@ -686,17 +686,14 @@ export default function POS() {
                           <Input
                             type="date"
                             value={s.date}
-                            readOnly={!isAdmin}
-                            disabled={!isAdmin}
                             onChange={e => {
-                              if (!isAdmin) return;
                               const next = [...(scheduleDates.length === installmentCount ? scheduleDates : defaultScheduleDates(installmentCount))];
                               next[idx] = e.target.value;
                               setScheduleDates(next);
                             }}
-                            className={`h-7 text-xs flex-1 px-1 ${!isAdmin ? "bg-[hsl(var(--surface-container))] cursor-not-allowed opacity-100" : ""}`}
-                            title={!isAdmin ? (lang === "bn" ? "শুধু অ্যাডমিন এডিট করতে পারবে" : "Admin only") : undefined}
+                            className="h-7 text-xs flex-1 px-1"
                           />
+
                           <span className="font-mono font-bold w-20 text-right">{fmt(s.amount)}</span>
                         </div>
                       ))}
