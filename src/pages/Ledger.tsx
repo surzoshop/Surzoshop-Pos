@@ -452,7 +452,7 @@ export default function Ledger() {
     const baseStats = [
       { key: "sales"    as TabKey, label: "নগদ আয়",              value: totalIncome,  icon: ArrowDownToLine, tone: "income",   hint: "বিক্রয় থেকে প্রাপ্ত নগদ = ডাউন পেমেন্ট + সম্পূর্ণ পরিশোধিত + কিস্তি আদায়" },
       { key: "expense"  as TabKey, label: "মোট খরচ",             value: expense,      icon: ArrowUpFromLine, tone: "expense",  hint: "শুধুমাত্র খরচ এন্ট্রি পেজ থেকে (জমা/উত্তোলনের কোনো প্রভাব নেই)" },
-      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",        value: cashBalance,  icon: Coins,           tone: "balance",  hint: "মোট আয় − মোট খরচ (স্টক ক্রয়মূল্য বাদ; খরচ না থাকলে পুরো আয়ই ব্যালেন্স)" },
+      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",        value: cashBalance,  icon: Coins,           tone: "balance",  hint: "হাতে থাকা প্রকৃত নগদ — পিরিয়ডের শেষ তারিখ পর্যন্ত সকল লেনদেনের সঞ্চিত হিসাব (ওপেনিং ব্যালেন্সসহ)" },
     ];
     if (isAdmin) {
       baseStats.push(
