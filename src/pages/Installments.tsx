@@ -24,12 +24,14 @@ type Plan = {
   tenure_months: number;
   late_fee_pct: number;
   start_date: string;
+  sale_date: string;
   paid: number;
   due: number;
   installments: Inst[];
   extra_charge?: number;
   items_text?: string;
 };
+
 
 const DAY = 1000 * 60 * 60 * 24;
 const INSTALLMENT_DUE_DAY = 5;
