@@ -423,7 +423,7 @@ export default function Installments() {
                         <div className="w-12 h-12 rounded-xl gradient-primary text-primary-foreground flex items-center justify-center font-black text-sm shadow-md">DP</div>
                         <div>
                           <div className="font-bold text-base">{t("downPayment")}</div>
-                          <div className="text-sm text-muted-foreground">{managing.start_date ? new Date(managing.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" }) : "—"}</div>
+                          <div className="text-sm text-muted-foreground">{managing.sale_date ? new Date(managing.sale_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" }) : "—"}</div>
                         </div>
                       </div>
                       <div className="text-right">
