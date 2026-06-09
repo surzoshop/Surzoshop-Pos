@@ -422,27 +422,27 @@ export default function Ledger() {
     // স্টক ক্রয়মূল্য = প্রকৃত স্টক ক্রয় ইনভয়েসের মোট মূল্য (purchases টেবিল থেকে)
     const stockBuy = purchasesAgg.filter(p => inRange(p.date)).reduce((s, p) => s + Number(p.total || 0), 0);
 
-    // ক্যাশ ইন/আউট (নগদ পেমেন্ট মাত্র) — পিরিয়ডের মধ্যে
-    const cashbookIn = entries.filter(e => e.entry_type === "deposit" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
+    // ক্যাশ ইন/আউট — পিরিয়ডের মধ্যে (সব payment method অন্তর্ভুক্ত: নগদ/বিকাশ/নগদ/রকেট/ব্যাংক)
+    // কারণ যেকোনো মাধ্যমে উত্তোলন/জমা ব্যবসার নগদ ব্যালেন্সে প্রভাব ফেলে।
+    const cashbookIn = entries.filter(e => e.entry_type === "deposit" && inRange(e.entry_date))
       .reduce((s, e) => s + Number(e.amount || 0), 0);
-    const cashbookOut = entries.filter(e => e.entry_type === "withdraw" && (e.payment_method ?? "cash") === "cash" && inRange(e.entry_date))
+    const cashbookOut = entries.filter(e => e.entry_type === "withdraw" && inRange(e.entry_date))
       .reduce((s, e) => s + Number(e.amount || 0), 0);
-    const expenseCash = expensesAgg.filter(x => inRange(x.date) && (x.method || "cash") === "cash").reduce((s, x) => s + x.total, 0);
+    const expenseCash = expensesAgg.filter(x => inRange(x.date)).reduce((s, x) => s + x.total, 0);
 
     const cashIn = salesPaid + instPaid + cashbookIn;
     const cashOut = cashbookOut + expenseCash;
 
     // ✅ নগদ ব্যালেন্স = হাতে থাকা প্রকৃত নগদ — পিরিয়ডের শেষ তারিখ পর্যন্ত সকল লেনদেনের
-    // সঞ্চিত যোগফল (ওপেনিং ব্যালেন্সসহ)। আগে শুধু পিরিয়ডের ভেতরের লেনদেন ধরা হতো,
-    // ফলে এই মাস/গত মাস ফিল্টারে minus দেখাতো।
+    // সঞ্চিত যোগফল (ওপেনিং ব্যালেন্সসহ)। সব ধরনের জমা/উত্তোলন এবং খরচ অন্তর্ভুক্ত।
     const upTo = (d: string) => !topTo || d <= topTo;
     const cumSalesPaid = salesAgg.filter(s => upTo(s.date)).reduce((s, x) => s + x.paid, 0);
     const cumInstPaid  = instPayAgg.filter(p => upTo(p.date)).reduce((s, p) => s + p.amount, 0);
-    const cumCashIn    = entries.filter(e => e.entry_type === "deposit" && (e.payment_method ?? "cash") === "cash" && upTo(e.entry_date))
+    const cumCashIn    = entries.filter(e => e.entry_type === "deposit" && upTo(e.entry_date))
       .reduce((s, e) => s + Number(e.amount || 0), 0);
-    const cumCashOut   = entries.filter(e => e.entry_type === "withdraw" && (e.payment_method ?? "cash") === "cash" && upTo(e.entry_date))
+    const cumCashOut   = entries.filter(e => e.entry_type === "withdraw" && upTo(e.entry_date))
       .reduce((s, e) => s + Number(e.amount || 0), 0);
-    const cumExpCash   = expensesAgg.filter(x => upTo(x.date) && (x.method || "cash") === "cash").reduce((s, x) => s + x.total, 0);
+    const cumExpCash   = expensesAgg.filter(x => upTo(x.date)).reduce((s, x) => s + x.total, 0);
     const cashBalance  = (cumSalesPaid + cumInstPaid + cumCashIn) - (cumCashOut + cumExpCash);
     const cashTxnTotal = cashIn + cashOut;
 
