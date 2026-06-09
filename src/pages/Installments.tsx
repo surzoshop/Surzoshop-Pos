@@ -147,6 +147,8 @@ export default function Installments() {
         tenure_months: Number(s.tenure_months ?? sched.length),
         late_fee_pct: Number(s.late_fee_per_day ?? 0),
         start_date: sched[0]?.due_date ?? s.created_at,
+        sale_date: s.created_at,
+
         paid: Number(s.paid),
         due: Number(s.due),
         installments: sched,
