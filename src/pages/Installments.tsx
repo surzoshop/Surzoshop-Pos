@@ -24,12 +24,14 @@ type Plan = {
   tenure_months: number;
   late_fee_pct: number;
   start_date: string;
+  sale_date: string;
   paid: number;
   due: number;
   installments: Inst[];
   extra_charge?: number;
   items_text?: string;
 };
+
 
 const DAY = 1000 * 60 * 60 * 24;
 const INSTALLMENT_DUE_DAY = 5;
@@ -145,6 +147,8 @@ export default function Installments() {
         tenure_months: Number(s.tenure_months ?? sched.length),
         late_fee_pct: Number(s.late_fee_per_day ?? 0),
         start_date: sched[0]?.due_date ?? s.created_at,
+        sale_date: s.created_at,
+
         paid: Number(s.paid),
         due: Number(s.due),
         installments: sched,
@@ -419,7 +423,7 @@ export default function Installments() {
                         <div className="w-12 h-12 rounded-xl gradient-primary text-primary-foreground flex items-center justify-center font-black text-sm shadow-md">DP</div>
                         <div>
                           <div className="font-bold text-base">{t("downPayment")}</div>
-                          <div className="text-sm text-muted-foreground">{managing.start_date ? new Date(managing.start_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" }) : "—"}</div>
+                          <div className="text-sm text-muted-foreground">{managing.sale_date ? new Date(managing.sale_date).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" }) : "—"}</div>
                         </div>
                       </div>
                       <div className="text-right">

@@ -432,7 +432,9 @@ export default function POS() {
         due_date: dates[idx],
         amount: idx === installmentCount - 1 ? due - per * (installmentCount - 1) : per,
       }));
-      await supabase.from("installments").insert(schedule);
+      const { error: instErr } = await supabase.from("installments").insert(schedule);
+      if (instErr) { toast({ title: instErr.message, variant: "destructive" }); return; }
+
     }
 
     const firstDue = paymentType === "installment" && installmentCount > 0
