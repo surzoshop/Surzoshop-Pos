@@ -5,6 +5,9 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 import { Bell, Search, Sun, Moon, ChevronLeft, Store } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { GlobalSearch } from "@/components/GlobalSearch";
+
 
 const TITLES: Record<string, string> = {
   "/": "ড্যাশবোর্ড",
