@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
-import { Wallet, Calendar, AlertTriangle, CheckCircle2, Plus, Trash2, Settings2, User, Phone, CalendarDays, Percent, Banknote, Clock } from "lucide-react";
+import { Wallet, Calendar, AlertTriangle, CheckCircle2, Plus, Trash2, Settings2, User, Phone, CalendarDays, Percent, Banknote, Clock, Search, X } from "lucide-react";
 import { PageHeader, StatusPill, SurfaceCard, PrimaryButton } from "@/components/PageHeader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
