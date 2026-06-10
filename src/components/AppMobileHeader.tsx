@@ -5,6 +5,9 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 import { Bell, Search, Sun, Moon, ChevronLeft, Store } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { GlobalSearch } from "@/components/GlobalSearch";
+
 
 const TITLES: Record<string, string> = {
   "/": "ড্যাশবোর্ড",
@@ -31,7 +34,10 @@ export function AppMobileHeader() {
   const navigate = useNavigate();
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
   useEffect(() => { document.documentElement.classList.toggle("dark", dark); }, [dark]);
+  useEffect(() => { setSearchOpen(false); }, [pathname]);
+
   useEffect(() => {
     if (!user) { setAvatarUrl(null); return; }
     supabase.from("profiles").select("avatar_url").eq("user_id", user.id).maybeSingle()
@@ -69,9 +75,10 @@ export function AppMobileHeader() {
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <Link to="/products" className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground" aria-label="Search">
+          <button onClick={() => setSearchOpen(true)} className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground" aria-label="Search">
             <Search className="h-5 w-5" />
-          </Link>
+          </button>
+
           <button onClick={() => setDark(d => !d)} className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground" aria-label="Theme">
             {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
@@ -84,6 +91,19 @@ export function AppMobileHeader() {
           </Link>
         </div>
       </div>
+
+      <Sheet open={searchOpen} onOpenChange={setSearchOpen}>
+        <SheetContent side="top" className="p-4 pt-6 max-h-[90vh] overflow-y-auto">
+          <SheetHeader className="mb-3">
+            <SheetTitle className="text-base">খুঁজুন</SheetTitle>
+          </SheetHeader>
+          <div className="w-full">
+            <GlobalSearch />
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-3 text-center">ক্রেতা, ইনভয়েস, পণ্য বা ক্যাটেগরি অনুসন্ধান করুন</p>
+        </SheetContent>
+      </Sheet>
     </header>
   );
 }
+
