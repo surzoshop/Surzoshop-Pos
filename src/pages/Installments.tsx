@@ -160,12 +160,34 @@ export default function Installments() {
 
   const filteredPlans = useMemo(() => {
     if (filter === "all") return plans;
+    const today = todayBD();
+    const addDays = (d: string, n: number) => {
+      const dt = new Date(d + "T00:00:00"); dt.setDate(dt.getDate() + n);
+      return dt.toISOString().slice(0, 10);
+    };
     return plans.filter(p => {
       if (filter === "completed") return p.due <= 0;
       if (filter === "overdue") return p.installments.some(i => i.derived_status === "overdue");
-      return p.due > 0; // active
+      if (filter === "active") return p.due > 0;
+      if (filter === "due_today") {
+        return p.installments.some(i => i.derived_status !== "paid" && i.due_date === today);
+      }
+      if (filter === "due_5d") {
+        const limit = addDays(today, 5);
+        return p.installments.some(i => i.derived_status !== "paid" && i.due_date >= today && i.due_date <= limit);
+      }
+      if (filter === "overdue_5d") {
+        const start = addDays(today, -5);
+        return p.installments.some(i => i.derived_status !== "paid" && i.due_date >= start && i.due_date < today);
+      }
+      if (filter === "this_month") {
+        const ym = today.slice(0, 7);
+        return p.installments.some(i => i.derived_status !== "paid" && i.due_date.slice(0, 7) === ym);
+      }
+      return true;
     });
   }, [plans, filter]);
+
 
   // ===== Plan calculations =====
   const planSubtotal = plan.items.reduce((a: number, b: any) => a + b.subtotal, 0);
