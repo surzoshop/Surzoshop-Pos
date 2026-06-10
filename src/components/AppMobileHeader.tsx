@@ -91,6 +91,19 @@ export function AppMobileHeader() {
           </Link>
         </div>
       </div>
+
+      <Sheet open={searchOpen} onOpenChange={setSearchOpen}>
+        <SheetContent side="top" className="p-4 pt-6 max-h-[90vh] overflow-y-auto">
+          <SheetHeader className="mb-3">
+            <SheetTitle className="text-base">খুঁজুন</SheetTitle>
+          </SheetHeader>
+          <div className="w-full">
+            <GlobalSearch />
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-3 text-center">ক্রেতা, ইনভয়েস, পণ্য বা ক্যাটেগরি অনুসন্ধান করুন</p>
+        </SheetContent>
+      </Sheet>
     </header>
   );
 }
+
