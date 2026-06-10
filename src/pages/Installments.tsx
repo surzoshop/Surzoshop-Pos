@@ -160,34 +160,49 @@ export default function Installments() {
   }, [items, sales, extraBySale, itemsBySale]);
 
   const filteredPlans = useMemo(() => {
-    if (filter === "all") return plans;
     const today = todayBD();
-    const addDays = (d: string, n: number) => {
-      const dt = new Date(d + "T00:00:00"); dt.setDate(dt.getDate() + n);
-      return dt.toISOString().slice(0, 10);
-    };
-    return plans.filter(p => {
-      if (filter === "completed") return p.due <= 0;
-      if (filter === "overdue") return p.installments.some(i => i.derived_status === "overdue");
-      if (filter === "active") return p.due > 0;
-      if (filter === "due_today") {
-        return p.installments.some(i => i.derived_status !== "paid" && i.due_date === today);
-      }
-      if (filter === "due_5d") {
-        const limit = addDays(today, 5);
-        return p.installments.some(i => i.derived_status !== "paid" && i.due_date >= today && i.due_date <= limit);
-      }
-      if (filter === "overdue_5d") {
-        const start = addDays(today, -5);
-        return p.installments.some(i => i.derived_status !== "paid" && i.due_date >= start && i.due_date < today);
-      }
-      if (filter === "this_month") {
-        const ym = today.slice(0, 7);
-        return p.installments.some(i => i.derived_status !== "paid" && i.due_date.slice(0, 7) === ym);
-      }
-      return true;
-    });
-  }, [plans, filter]);
+    const q = searchQ.trim().toLowerCase();
+    let list = plans;
+
+    if (filter !== "all") {
+      list = list.filter(p => {
+        if (filter === "completed") return p.due <= 0;
+        if (filter === "overdue") return p.installments.some(i => i.derived_status === "overdue");
+        if (filter === "active") return p.due > 0;
+        if (filter === "due_today") {
+          return p.installments.some(i => i.derived_status !== "paid" && i.due_date === today);
+        }
+        if (filter === "due_yesterday") {
+          const yesterday = addDaysBDStr(today, -1);
+          return p.installments.some(i => i.derived_status !== "paid" && i.due_date === yesterday);
+        }
+        if (filter === "due_5d") {
+          const limit = addDaysBDStr(today, 5);
+          return p.installments.some(i => i.derived_status !== "paid" && i.due_date >= today && i.due_date <= limit);
+        }
+        if (filter === "overdue_5d") {
+          const start = addDaysBDStr(today, -5);
+          return p.installments.some(i => i.derived_status !== "paid" && i.due_date >= start && i.due_date < today);
+        }
+        if (filter === "this_month") {
+          const ym = today.slice(0, 7);
+          return p.installments.some(i => i.derived_status !== "paid" && i.due_date.slice(0, 7) === ym);
+        }
+        return true;
+      });
+    }
+
+    if (q) {
+      list = list.filter(p =>
+        p.customer_name.toLowerCase().includes(q) ||
+        p.invoice_no.toLowerCase().includes(q) ||
+        (p.customer_phone ?? "").toLowerCase().includes(q) ||
+        (p.items_text ?? "").toLowerCase().includes(q)
+      );
+    }
+
+    return list;
+  }, [plans, filter, searchQ]);
 
 
   // ===== Plan calculations =====
