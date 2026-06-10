@@ -55,7 +55,8 @@ export default function Installments() {
   const [sales, setSales] = useState<any[]>([]);
   const [paying, setPaying] = useState<any>(null);
   const [amount, setAmount] = useState(0);
-  const [filter, setFilter] = useState<"all" | "active" | "overdue" | "completed" | "due_today" | "due_5d" | "overdue_5d" | "this_month">("all");
+  const [filter, setFilter] = useState<"all" | "active" | "overdue" | "completed" | "due_today" | "due_yesterday" | "due_5d" | "overdue_5d" | "this_month">("all");
+  const [searchQ, setSearchQ] = useState("");
   const [managing, setManaging] = useState<Plan | null>(null);
   const [paymentsByInst, setPaymentsByInst] = useState<Record<string, any[]>>({});
   const [extraBySale, setExtraBySale] = useState<Record<string, number>>({});
