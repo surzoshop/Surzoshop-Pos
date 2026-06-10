@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { todayBD, bdDateAddMonths } from "@/lib/datetime";
+import { todayBD, bdDateAddMonths, addDaysBDStr } from "@/lib/datetime";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
-import { Wallet, Calendar, AlertTriangle, CheckCircle2, Plus, Trash2, Settings2, User, Phone, CalendarDays, Percent, Banknote, Clock } from "lucide-react";
+import { Wallet, Calendar, AlertTriangle, CheckCircle2, Plus, Trash2, Settings2, User, Phone, CalendarDays, Percent, Banknote, Clock, Search, X } from "lucide-react";
 import { PageHeader, StatusPill, SurfaceCard, PrimaryButton } from "@/components/PageHeader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -55,7 +55,8 @@ export default function Installments() {
   const [sales, setSales] = useState<any[]>([]);
   const [paying, setPaying] = useState<any>(null);
   const [amount, setAmount] = useState(0);
-  const [filter, setFilter] = useState<"all" | "active" | "overdue" | "completed" | "due_today" | "due_5d" | "overdue_5d" | "this_month">("all");
+  const [filter, setFilter] = useState<"all" | "active" | "overdue" | "completed" | "due_today" | "due_yesterday" | "due_5d" | "overdue_5d" | "this_month">("all");
+  const [searchQ, setSearchQ] = useState("");
   const [managing, setManaging] = useState<Plan | null>(null);
   const [paymentsByInst, setPaymentsByInst] = useState<Record<string, any[]>>({});
   const [extraBySale, setExtraBySale] = useState<Record<string, number>>({});
@@ -159,34 +160,49 @@ export default function Installments() {
   }, [items, sales, extraBySale, itemsBySale]);
 
   const filteredPlans = useMemo(() => {
-    if (filter === "all") return plans;
     const today = todayBD();
-    const addDays = (d: string, n: number) => {
-      const dt = new Date(d + "T00:00:00"); dt.setDate(dt.getDate() + n);
-      return dt.toISOString().slice(0, 10);
-    };
-    return plans.filter(p => {
-      if (filter === "completed") return p.due <= 0;
-      if (filter === "overdue") return p.installments.some(i => i.derived_status === "overdue");
-      if (filter === "active") return p.due > 0;
-      if (filter === "due_today") {
-        return p.installments.some(i => i.derived_status !== "paid" && i.due_date === today);
-      }
-      if (filter === "due_5d") {
-        const limit = addDays(today, 5);
-        return p.installments.some(i => i.derived_status !== "paid" && i.due_date >= today && i.due_date <= limit);
-      }
-      if (filter === "overdue_5d") {
-        const start = addDays(today, -5);
-        return p.installments.some(i => i.derived_status !== "paid" && i.due_date >= start && i.due_date < today);
-      }
-      if (filter === "this_month") {
-        const ym = today.slice(0, 7);
-        return p.installments.some(i => i.derived_status !== "paid" && i.due_date.slice(0, 7) === ym);
-      }
-      return true;
-    });
-  }, [plans, filter]);
+    const q = searchQ.trim().toLowerCase();
+    let list = plans;
+
+    if (filter !== "all") {
+      list = list.filter(p => {
+        if (filter === "completed") return p.due <= 0;
+        if (filter === "overdue") return p.installments.some(i => i.derived_status === "overdue");
+        if (filter === "active") return p.due > 0;
+        if (filter === "due_today") {
+          return p.installments.some(i => i.derived_status !== "paid" && i.due_date === today);
+        }
+        if (filter === "due_yesterday") {
+          const yesterday = addDaysBDStr(today, -1);
+          return p.installments.some(i => i.derived_status !== "paid" && i.due_date === yesterday);
+        }
+        if (filter === "due_5d") {
+          const limit = addDaysBDStr(today, 5);
+          return p.installments.some(i => i.derived_status !== "paid" && i.due_date >= today && i.due_date <= limit);
+        }
+        if (filter === "overdue_5d") {
+          const start = addDaysBDStr(today, -5);
+          return p.installments.some(i => i.derived_status !== "paid" && i.due_date >= start && i.due_date < today);
+        }
+        if (filter === "this_month") {
+          const ym = today.slice(0, 7);
+          return p.installments.some(i => i.derived_status !== "paid" && i.due_date.slice(0, 7) === ym);
+        }
+        return true;
+      });
+    }
+
+    if (q) {
+      list = list.filter(p =>
+        p.customer_name.toLowerCase().includes(q) ||
+        p.invoice_no.toLowerCase().includes(q) ||
+        (p.customer_phone ?? "").toLowerCase().includes(q) ||
+        (p.items_text ?? "").toLowerCase().includes(q)
+      );
+    }
+
+    return list;
+  }, [plans, filter, searchQ]);
 
 
   // ===== Plan calculations =====
@@ -317,25 +333,47 @@ export default function Installments() {
       </div>
 
       <SurfaceCard className="p-4 md:p-6">
-        {/* Filter chips */}
-        <div className="flex gap-2 md:gap-3 overflow-x-auto pb-2 mb-6">
-          {([
-            { k: "all", bn: "সব", en: "All" },
-            { k: "due_today", bn: "আজ কিস্তি", en: "Due Today" },
-            { k: "due_5d", bn: "আগামী ৫ দিন", en: "Next 5 days" },
-            { k: "overdue_5d", bn: "গত ৫ দিন", en: "Last 5 days" },
-            { k: "this_month", bn: "এই মাস", en: "This month" },
-            { k: "active", bn: "চলমান", en: "Active" },
-            { k: "overdue", bn: "মেয়াদ উত্তীর্ণ", en: "Overdue" },
-            { k: "completed", bn: "সম্পন্ন", en: "Completed" },
-          ] as const).map(({ k, bn, en }) => (
-            <button key={k} onClick={() => setFilter(k as any)}
-              className={`px-4 md:px-5 py-2 rounded-full font-medium whitespace-nowrap text-sm transition-all ${
-                filter === k ? "bg-primary text-primary-foreground" : "bg-[hsl(var(--surface-container-low))] text-muted-foreground hover:bg-[hsl(var(--surface-container))]"
-              }`}>
-              {lang === "bn" ? bn : en}
-            </button>
-          ))}
+        {/* Filter chips + search */}
+        <div className="flex flex-col md:flex-row md:items-center gap-3 mb-6">
+          <div className="flex gap-2 md:gap-3 overflow-x-auto pb-2">
+            {([
+              { k: "all", bn: "সব", en: "All" },
+              { k: "due_today", bn: "আজ কিস্তি", en: "Due Today" },
+              { k: "due_yesterday", bn: "গতকাল", en: "Due Yesterday" },
+              { k: "due_5d", bn: "আগামী ৫ দিন", en: "Next 5 days" },
+              { k: "overdue_5d", bn: "গত ৫ দিন", en: "Last 5 days" },
+              { k: "this_month", bn: "এই মাস", en: "This month" },
+              { k: "active", bn: "চলমান", en: "Active" },
+              { k: "overdue", bn: "মেয়াদ উত্তীর্ণ", en: "Overdue" },
+              { k: "completed", bn: "সম্পন্ন", en: "Completed" },
+            ] as const).map(({ k, bn, en }) => (
+              <button key={k} onClick={() => setFilter(k as any)}
+                className={`px-4 md:px-5 py-2 rounded-full font-medium whitespace-nowrap text-sm transition-all ${
+                  filter === k ? "bg-primary text-primary-foreground" : "bg-[hsl(var(--surface-container-low))] text-muted-foreground hover:bg-[hsl(var(--surface-container))]"
+                }`}>
+                {lang === "bn" ? bn : en}
+              </button>
+            ))}
+          </div>
+          <div className="relative w-full md:w-72 md:ml-auto shrink-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              value={searchQ}
+              onChange={e => setSearchQ(e.target.value)}
+              placeholder={lang === "bn" ? "ক্রেতা / ইনভয়েস খুঁজুন…" : "Search customer / invoice…"}
+              className="w-full rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--surface-container-lowest))] pl-9 pr-9 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+            {searchQ && (
+              <button
+                onClick={() => setSearchQ("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full hover:bg-muted flex items-center justify-center text-muted-foreground"
+                aria-label="Clear"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
         </div>
 
 
