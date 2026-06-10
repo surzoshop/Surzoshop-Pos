@@ -319,15 +319,25 @@ export default function Installments() {
       <SurfaceCard className="p-4 md:p-6">
         {/* Filter chips */}
         <div className="flex gap-2 md:gap-3 overflow-x-auto pb-2 mb-6">
-          {(["all", "active", "overdue", "completed"] as const).map(f => (
-            <button key={f} onClick={() => setFilter(f)}
+          {([
+            { k: "all", bn: "সব", en: "All" },
+            { k: "due_today", bn: "আজ কিস্তি", en: "Due Today" },
+            { k: "due_5d", bn: "আগামী ৫ দিন", en: "Next 5 days" },
+            { k: "overdue_5d", bn: "গত ৫ দিন", en: "Last 5 days" },
+            { k: "this_month", bn: "এই মাস", en: "This month" },
+            { k: "active", bn: "চলমান", en: "Active" },
+            { k: "overdue", bn: "মেয়াদ উত্তীর্ণ", en: "Overdue" },
+            { k: "completed", bn: "সম্পন্ন", en: "Completed" },
+          ] as const).map(({ k, bn, en }) => (
+            <button key={k} onClick={() => setFilter(k as any)}
               className={`px-4 md:px-5 py-2 rounded-full font-medium whitespace-nowrap text-sm transition-all ${
-                filter === f ? "bg-primary text-primary-foreground" : "bg-[hsl(var(--surface-container-low))] text-muted-foreground hover:bg-[hsl(var(--surface-container))]"
+                filter === k ? "bg-primary text-primary-foreground" : "bg-[hsl(var(--surface-container-low))] text-muted-foreground hover:bg-[hsl(var(--surface-container))]"
               }`}>
-              {f === "all" ? t("filterAll") : f === "active" ? (lang === "bn" ? "চলমান" : "Active") : t(f as any)}
+              {lang === "bn" ? bn : en}
             </button>
           ))}
         </div>
+
 
         {filteredPlans.length === 0 ? (
           <div className="py-16 text-center text-muted-foreground">{t("noResults")}</div>
