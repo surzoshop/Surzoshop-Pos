@@ -34,7 +34,10 @@ export function AppMobileHeader() {
   const navigate = useNavigate();
   const [dark, setDark] = useState(() => document.documentElement.classList.contains("dark"));
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
   useEffect(() => { document.documentElement.classList.toggle("dark", dark); }, [dark]);
+  useEffect(() => { setSearchOpen(false); }, [pathname]);
+
   useEffect(() => {
     if (!user) { setAvatarUrl(null); return; }
     supabase.from("profiles").select("avatar_url").eq("user_id", user.id).maybeSingle()
