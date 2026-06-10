@@ -75,9 +75,10 @@ export function AppMobileHeader() {
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <Link to="/products" className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground" aria-label="Search">
+          <button onClick={() => setSearchOpen(true)} className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground" aria-label="Search">
             <Search className="h-5 w-5" />
-          </Link>
+          </button>
+
           <button onClick={() => setDark(d => !d)} className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground" aria-label="Theme">
             {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
