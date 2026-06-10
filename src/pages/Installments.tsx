@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { todayBD, bdDateAddMonths } from "@/lib/datetime";
+import { todayBD, bdDateAddMonths, addDaysBDStr } from "@/lib/datetime";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
