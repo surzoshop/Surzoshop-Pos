@@ -688,6 +688,7 @@ export type Database = {
           down_payment: number
           due: number
           emi_amount: number | null
+          extra_charge: number
           guarantor_id: string | null
           id: string
           interest_rate: number
@@ -711,6 +712,7 @@ export type Database = {
           down_payment?: number
           due?: number
           emi_amount?: number | null
+          extra_charge?: number
           guarantor_id?: string | null
           id?: string
           interest_rate?: number
@@ -734,6 +736,7 @@ export type Database = {
           down_payment?: number
           due?: number
           emi_amount?: number | null
+          extra_charge?: number
           guarantor_id?: string | null
           id?: string
           interest_rate?: number

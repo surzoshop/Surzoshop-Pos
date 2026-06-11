@@ -127,10 +127,12 @@ export default function POS() {
       const orig: Record<string, number> = {};
       const newCart: CartItem[] = [];
       const savedDiscount = Number(sale.discount) || 0;
+      const savedExtraCharge = Number((sale as any).extra_charge) || 0;
       const rawSubtotal = (items ?? []).reduce((sum: number, it: any) => sum + Number(it.subtotal ?? (Number(it.unit_price) * Number(it.qty))), 0);
       const savedBaseTotal = recoverBaseTotal(sale);
-      const intendedSubtotal = savedBaseTotal + savedDiscount;
-      const shouldNormalizeItemPrices = rawSubtotal > 0 && Math.abs(intendedSubtotal - rawSubtotal) > 0.009;
+      // Item subtotal must exclude the extra charge that was added on top of the line items
+      const intendedSubtotal = savedBaseTotal + savedDiscount - savedExtraCharge;
+      const shouldNormalizeItemPrices = rawSubtotal > 0 && intendedSubtotal > 0 && Math.abs(intendedSubtotal - rawSubtotal) > 0.009;
       (items ?? []).forEach((it: any) => {
         const p = products.find(pp => pp.id === it.product_id);
         if (p) {
@@ -149,6 +151,11 @@ export default function POS() {
       setCustomerId(sale.customer_id || "");
       setDiscount(savedDiscount);
       setTotalOverride(null);
+      // Restore the exact extra-charge the cashier saved (including 0) so it does
+      // not silently get recomputed from product defaults on every reopen.
+      if (sale.payment_type !== "cash") {
+        setExtraChargeOverride(savedExtraCharge);
+      }
       if (sale.payment_type === "installment") {
         setPaymentType("installment");
         setDownPayment(Number(sale.down_payment) || 0);
@@ -200,8 +207,13 @@ export default function POS() {
   });
 
   const clearTotalOverride = () => setTotalOverride(null);
-  // Reset extra-charge override whenever cart contents or payment type change
-  useEffect(() => { setExtraChargeOverride(null); setEditingExtra(false); }, [paymentType, cart.length]);
+  // Reset extra-charge override whenever cart contents or payment type change — but
+  // NOT while loading an existing invoice for edit (the loader restores the saved value).
+  useEffect(() => {
+    if (editId && !editLoaded) return;
+    setExtraChargeOverride(null);
+    setEditingExtra(false);
+  }, [paymentType, cart.length, editId, editLoaded]);
 
   const addToCart = (p: Product) => {
     const extra = originalQty[p.id] || 0;
@@ -346,6 +358,7 @@ export default function POS() {
       const updatePayload: any = {
         customer_id: customerId || null,
         subtotal, discount, total, paid, due,
+        extra_charge: paymentType === "cash" ? 0 : extraCharge,
         payment_type: paymentType === "due" ? "cash" : paymentType,
         status: due > 0 ? "partial" : "completed",
         down_payment: paymentType === "installment" ? downPayment : 0,
@@ -391,6 +404,7 @@ export default function POS() {
     const salePayload: any = {
       customer_id: customerId || null,
       subtotal, discount, total, paid, due,
+      extra_charge: paymentType === "cash" ? 0 : extraCharge,
       payment_type: paymentType === "due" ? "cash" : paymentType,
       status: due > 0 ? "partial" : "completed",
       created_by: user!.id,
