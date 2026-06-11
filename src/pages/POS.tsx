@@ -404,6 +404,7 @@ export default function POS() {
     const salePayload: any = {
       customer_id: customerId || null,
       subtotal, discount, total, paid, due,
+      extra_charge: paymentType === "cash" ? 0 : extraCharge,
       payment_type: paymentType === "due" ? "cash" : paymentType,
       status: due > 0 ? "partial" : "completed",
       created_by: user!.id,
