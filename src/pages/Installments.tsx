@@ -343,6 +343,7 @@ export default function Installments() {
             {([
               { k: "all", bn: "সব", en: "All" },
               { k: "due_today", bn: "আজ কিস্তি", en: "Due Today" },
+              { k: "due_tomorrow", bn: "আগামীকাল", en: "Due Tomorrow" },
               { k: "due_yesterday", bn: "গতকাল", en: "Due Yesterday" },
               { k: "due_5d", bn: "আগামী ৫ দিন", en: "Next 5 days" },
               { k: "overdue_5d", bn: "গত ৫ দিন", en: "Last 5 days" },
