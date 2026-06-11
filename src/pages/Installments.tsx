@@ -172,6 +172,10 @@ export default function Installments() {
         if (filter === "due_today") {
           return p.installments.some(i => i.derived_status !== "paid" && i.due_date === today);
         }
+        if (filter === "due_tomorrow") {
+          const tomorrow = addDaysBDStr(today, 1);
+          return p.installments.some(i => i.derived_status !== "paid" && i.due_date === tomorrow);
+        }
         if (filter === "due_yesterday") {
           const yesterday = addDaysBDStr(today, -1);
           return p.installments.some(i => i.derived_status !== "paid" && i.due_date === yesterday);
