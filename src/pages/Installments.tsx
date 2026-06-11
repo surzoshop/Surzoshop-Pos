@@ -55,7 +55,7 @@ export default function Installments() {
   const [sales, setSales] = useState<any[]>([]);
   const [paying, setPaying] = useState<any>(null);
   const [amount, setAmount] = useState(0);
-  const [filter, setFilter] = useState<"all" | "active" | "overdue" | "completed" | "due_today" | "due_yesterday" | "due_5d" | "overdue_5d" | "this_month">("all");
+  const [filter, setFilter] = useState<"all" | "active" | "overdue" | "completed" | "due_today" | "due_tomorrow" | "due_yesterday" | "due_5d" | "overdue_5d" | "this_month">("all");
   const [searchQ, setSearchQ] = useState("");
   const [managing, setManaging] = useState<Plan | null>(null);
   const [paymentsByInst, setPaymentsByInst] = useState<Record<string, any[]>>({});
@@ -171,6 +171,10 @@ export default function Installments() {
         if (filter === "active") return p.due > 0;
         if (filter === "due_today") {
           return p.installments.some(i => i.derived_status !== "paid" && i.due_date === today);
+        }
+        if (filter === "due_tomorrow") {
+          const tomorrow = addDaysBDStr(today, 1);
+          return p.installments.some(i => i.derived_status !== "paid" && i.due_date === tomorrow);
         }
         if (filter === "due_yesterday") {
           const yesterday = addDaysBDStr(today, -1);
@@ -339,6 +343,7 @@ export default function Installments() {
             {([
               { k: "all", bn: "সব", en: "All" },
               { k: "due_today", bn: "আজ কিস্তি", en: "Due Today" },
+              { k: "due_tomorrow", bn: "আগামীকাল", en: "Due Tomorrow" },
               { k: "due_yesterday", bn: "গতকাল", en: "Due Yesterday" },
               { k: "due_5d", bn: "আগামী ৫ দিন", en: "Next 5 days" },
               { k: "overdue_5d", bn: "গত ৫ দিন", en: "Last 5 days" },
