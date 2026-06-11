@@ -207,8 +207,13 @@ export default function POS() {
   });
 
   const clearTotalOverride = () => setTotalOverride(null);
-  // Reset extra-charge override whenever cart contents or payment type change
-  useEffect(() => { setExtraChargeOverride(null); setEditingExtra(false); }, [paymentType, cart.length]);
+  // Reset extra-charge override whenever cart contents or payment type change — but
+  // NOT while loading an existing invoice for edit (the loader restores the saved value).
+  useEffect(() => {
+    if (editId && !editLoaded) return;
+    setExtraChargeOverride(null);
+    setEditingExtra(false);
+  }, [paymentType, cart.length, editId, editLoaded]);
 
   const addToCart = (p: Product) => {
     const extra = originalQty[p.id] || 0;
