@@ -46,6 +46,20 @@ export async function logActivity(params: {
       entity_id: params.entity_id ?? null,
       meta: params.meta ?? {},
     });
+
+    // Fire-and-forget Telegram notification
+    try {
+      const who = user.email || user.id.slice(0, 8);
+      const time = new Date().toLocaleString("bn-BD", { dateStyle: "short", timeStyle: "short" });
+      const entity = params.entity_type ? `\n📂 ${params.entity_type}` : "";
+      const metaStr = params.meta && Object.keys(params.meta).length
+        ? "\n" + Object.entries(params.meta).slice(0, 6)
+            .map(([k, v]) => `• <b>${k}</b>: ${typeof v === "object" ? JSON.stringify(v) : String(v)}`)
+            .join("\n")
+        : "";
+      const text = `🔔 <b>${params.action}</b>${entity}\n👤 ${who}\n🕐 ${time}${metaStr}`;
+      supabase.functions.invoke("telegram-notify", { body: { text } }).catch(() => {});
+    } catch { /* ignore */ }
   } catch {
     // swallow
   }
