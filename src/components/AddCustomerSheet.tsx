@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/components/ImageUpload";
 import { supabase } from "@/integrations/supabase/client";
+import { logActivity } from "@/lib/activityLog";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, IdCard, Briefcase, MapPin, Camera, FileImage, Phone, PhoneCall } from "lucide-react";
 
