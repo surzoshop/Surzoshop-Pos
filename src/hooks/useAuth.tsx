@@ -66,6 +66,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
+      // Best-effort logout log before token is gone
+      try {
+        const { logActivity } = await import("@/lib/activityLog");
+        await logActivity({ action: "auth.logout" });
+      } catch { /* ignore */ }
       await supabase.auth.signOut();
     } catch (e) {
       console.warn("signOut error", e);
