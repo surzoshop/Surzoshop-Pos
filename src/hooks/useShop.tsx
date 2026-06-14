@@ -20,7 +20,7 @@ export type ShopMembership = {
 export const ALL_PAGES = [
   "dashboard","pos","sales","customers","contacts","installments","products",
   "warranty","suppliers","purchases","stock-adjustments","expenses","reports",
-  "staff","attendance","shops","stock-ledger","customer-ledger","supplier-ledger","sales-returns","ledger",
+  "staff","attendance","shops","stock-ledger","customer-ledger","supplier-ledger","sales-returns","ledger","activity-logs",
 ] as const;
 export type PageKey = typeof ALL_PAGES[number];
 
