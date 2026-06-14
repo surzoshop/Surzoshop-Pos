@@ -370,6 +370,7 @@ export default function POS() {
       };
       const { error: uerr } = await supabase.from("sales").update(updatePayload).eq("id", editingSaleId);
       if (uerr) { toast({ title: uerr.message, variant: "destructive" }); return; }
+      logActivity({ action: "sale.update", entity_type: "sale", entity_id: editingSaleId, meta: { amount: total } });
 
       // 4) Insert new sale_items (trigger will decrement stock)
       const newItems = cart.map(i => {
