@@ -37,7 +37,7 @@ const DEFAULT_STAFF_PERMS: Partial<Record<PageKey, boolean>> = {
 };
 
 // Pages a Staff is NEVER allowed to see (admin-only / sensitive)
-const STAFF_RESTRICTED: PageKey[] = ["shops", "staff", "reports", "expenses"];
+const STAFF_RESTRICTED: PageKey[] = ["shops", "staff", "reports", "expenses", "activity-logs"];
 
 type ShopStats = {
   shop_id: string | null;
