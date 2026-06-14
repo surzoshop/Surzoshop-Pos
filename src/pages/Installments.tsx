@@ -120,6 +120,7 @@ export default function Installments() {
     const { error } = await supabase.from("installment_payments")
       .update({ amount: editPayAmount }).eq("id", editPay.id);
     if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({ action: "installment.edit", entity_type: "installment_payment", entity_id: editPay.id, meta: { amount: editPayAmount } });
     setEditPay(null); setEditPayAmount(0); await load();
     toast({ title: lang === "bn" ? "পরিশোধ আপডেট হয়েছে ✓" : "Payment updated ✓" });
   };
@@ -128,6 +129,7 @@ export default function Installments() {
     if (!confirm(lang === "bn" ? `${fmt(Number(p.amount))} টাকার পরিশোধ মুছে ফেলবেন?` : `Delete payment of ${fmt(Number(p.amount))}?`)) return;
     const { error } = await supabase.from("installment_payments").delete().eq("id", p.id);
     if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({ action: "installment.delete", entity_type: "installment_payment", entity_id: p.id, meta: { amount: Number(p.amount) } });
     await load();
     toast({ title: lang === "bn" ? "পরিশোধ মুছে ফেলা হয়েছে" : "Payment deleted" });
   };
