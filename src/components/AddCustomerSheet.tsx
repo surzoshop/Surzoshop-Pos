@@ -95,6 +95,12 @@ export function AddCustomerSheet({ open, onOpenChange, onSaved, customer }: Prop
       : await supabase.from("customers").insert(payload as any);
     setSaving(false);
     if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({
+      action: isEdit ? "customer.update" : "customer.create",
+      entity_type: "customer",
+      entity_id: isEdit ? customer.id : null,
+      meta: { customer_name: payload.name, phone: payload.phone },
+    });
     toast({ title: isEdit ? "ক্রেতা আপডেট হয়েছে" : "ক্রেতা যোগ হয়েছে" });
     onOpenChange(false);
     onSaved?.();
