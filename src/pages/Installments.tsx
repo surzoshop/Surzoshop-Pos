@@ -270,6 +270,7 @@ export default function Installments() {
     });
     await supabase.from("installments").insert(schedule);
 
+    logActivity({ action: "installment.create", entity_type: "sale", entity_id: sale.id, meta: { amount: Number(planTotal), tenure_months: plan.tenure_months } });
     toast({ title: lang === "bn" ? "কিস্তি প্ল্যান তৈরি হয়েছে" : "Installment plan created" });
     setOpenNew(false);
     setPlan({ customer_id: "", guarantor_id: "", items: [], pid: "", qty: 1, price: 0,
