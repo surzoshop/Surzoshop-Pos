@@ -41,8 +41,10 @@ export default function Customers() {
 
   const del = async (id: string) => {
     if (!confirm(t("confirmDelete"))) return;
+    const name = items.find(c => c.id === id)?.name;
     const { error } = await supabase.from("customers").delete().eq("id", id);
     if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({ action: "customer.delete", entity_type: "customer", entity_id: id, meta: { customer_name: name } });
     load();
   };
 
