@@ -66,6 +66,7 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
     { url: "/staff", icon: UserCog, label: "স্টাফ", key: "staff", tone: "pink" },
     { url: "/attendance", icon: CalendarCheck, label: "হাজিরা", key: "attendance", tone: "emerald" },
     { url: "/activity-logs", icon: Activity, label: "বিস্তারিত Activity Log", key: "activity-logs", tone: "slate" },
+    { url: "/telegram", icon: Send, label: "Telegram Notification", key: "telegram", tone: "sky" },
   ];
   const items = allItems.filter(i => canAccess(i.key));
 
