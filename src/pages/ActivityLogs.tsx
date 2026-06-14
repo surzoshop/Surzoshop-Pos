@@ -226,7 +226,7 @@ export default function ActivityLogs() {
       <PageHeader
         title="বিস্তারিত Activity Log"
         subtitle="অ্যাডমিন ও স্টাফদের সমস্ত কার্যকলাপ এক জায়গায়"
-        right={
+        actions={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={load} disabled={loading}>
               <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />Refresh
