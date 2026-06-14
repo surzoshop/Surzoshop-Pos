@@ -446,6 +446,7 @@ export default function Purchases() {
   const del = async (id: string) => {
     if (!confirm(t("confirmDelete"))) return;
     await supabase.from("purchases").delete().eq("id", id);
+    logActivity({ action: "purchase.delete", entity_type: "purchase", entity_id: id });
     load();
   };
 
@@ -461,6 +462,12 @@ export default function Purchases() {
       created_by: user!.id, shop_id: currentShop?.id ?? null,
     });
     if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({
+      action: "purchase.pay",
+      entity_type: "purchase",
+      entity_id: payTarget.id,
+      meta: { amount: payAmt, invoice_no: payTarget.bill_no, payment_method: paymentMethod },
+    });
     toast({ title: "পরিশোধ সংরক্ষিত ✓" });
     setPayOpen(false); setPayTarget(null); setPayAmt(0); load();
   };
