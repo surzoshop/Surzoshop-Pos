@@ -28,6 +28,7 @@ const PAGE_LABELS: Record<PageKey, string> = {
   "stock-ledger": "স্টক ম্যানেজমেন্ট", "customer-ledger": "বাকি ম্যানেজমেন্ট",
   "supplier-ledger": "সরবরাহকারী লেজার", "sales-returns": "বিক্রয় ফেরত", ledger: "হিসাব ব্যবস্থাপনা",
   "activity-logs": "Activity Log",
+  telegram: "Telegram Notification",
 };
 
 // Default access for a new Staff (per user requirement)
@@ -37,7 +38,7 @@ const DEFAULT_STAFF_PERMS: Partial<Record<PageKey, boolean>> = {
 };
 
 // Pages a Staff is NEVER allowed to see (admin-only / sensitive)
-const STAFF_RESTRICTED: PageKey[] = ["shops", "staff", "reports", "expenses", "activity-logs"];
+const STAFF_RESTRICTED: PageKey[] = ["shops", "staff", "reports", "expenses", "activity-logs", "telegram"];
 
 type ShopStats = {
   shop_id: string | null;
