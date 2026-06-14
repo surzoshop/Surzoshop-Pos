@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, Receipt, Warehouse, Users, ShoppingCart,
   HelpCircle, LogOut, Truck, ShoppingBag, Wallet, ClipboardList,
   UserCog, CalendarCheck, BarChart3, Store, X, Smartphone, Printer, Contact, ShieldCheck,
-  RotateCcw, BookOpen, Layers, Activity,
+  RotateCcw, BookOpen, Layers, Activity, Send,
 } from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -66,6 +66,7 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
     { url: "/staff", icon: UserCog, label: "স্টাফ", key: "staff", tone: "pink" },
     { url: "/attendance", icon: CalendarCheck, label: "হাজিরা", key: "attendance", tone: "emerald" },
     { url: "/activity-logs", icon: Activity, label: "বিস্তারিত Activity Log", key: "activity-logs", tone: "slate" },
+    { url: "/telegram", icon: Send, label: "Telegram Notification", key: "telegram", tone: "sky" },
   ];
   const items = allItems.filter(i => canAccess(i.key));
 
