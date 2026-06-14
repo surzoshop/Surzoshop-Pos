@@ -27,6 +27,7 @@ const PAGE_LABELS: Record<PageKey, string> = {
   attendance: "হাজিরা", shops: "শপ",
   "stock-ledger": "স্টক ম্যানেজমেন্ট", "customer-ledger": "বাকি ম্যানেজমেন্ট",
   "supplier-ledger": "সরবরাহকারী লেজার", "sales-returns": "বিক্রয় ফেরত", ledger: "হিসাব ব্যবস্থাপনা",
+  "activity-logs": "Activity Log",
 };
 
 // Default access for a new Staff (per user requirement)
