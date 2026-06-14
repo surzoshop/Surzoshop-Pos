@@ -15,6 +15,7 @@ import Dashboard from "./pages/Dashboard";
 import StaffDashboard from "./pages/StaffDashboard";
 import StaffHistory from "./pages/StaffHistory";
 import ActivityLogs from "./pages/ActivityLogs";
+import TelegramSettings from "./pages/TelegramSettings";
 import { useAuth } from "@/hooks/useAuth";
 import POS from "./pages/POS";
 import Products from "./pages/Products";
