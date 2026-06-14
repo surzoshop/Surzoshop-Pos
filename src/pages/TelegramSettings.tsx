@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import { Loader2, Send, Copy, ExternalLink, CheckCircle2, BellOff, Bell, RefreshCw } from "lucide-react";
-import PageHeader from "@/components/PageHeader";
+import { PageHeader } from "@/components/PageHeader";
 
 type Subscriber = {
   id: string;
