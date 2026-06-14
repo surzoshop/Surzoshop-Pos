@@ -85,7 +85,7 @@ export default function TelegramSettings() {
     <div className="space-y-6">
       <PageHeader
         title="Telegram Notifications"
-        description="অ্যাপের যাবতীয় action-এর notification আপনার Telegram-এ পান"
+        subtitle="অ্যাপের যাবতীয় action-এর notification আপনার Telegram-এ পান"
       />
 
       <Card>
