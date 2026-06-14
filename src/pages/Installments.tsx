@@ -300,6 +300,7 @@ export default function Installments() {
       installment_id: paying.id, amount: finalAmount, received_by: user!.id,
     });
     if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({ action: "installment.pay", entity_type: "installment", entity_id: paying.id, meta: { amount: finalAmount, invoice_no: managing?.invoice_no, customer_name: managing?.customer_name } });
     setPaying(null); setAmount(0); await load();
     toast({ title: t("paid") });
     if (managing) {
