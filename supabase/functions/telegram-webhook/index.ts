@@ -233,10 +233,15 @@ Deno.serve(async (req) => {
           await tgSend(chatId, welcomeMessage(msg.from?.first_name));
         }
       } else {
-        // Already linked? show welcome anyway
+        // Already linked? Re-activate and show welcome
         const { data: existing } = await supabase
           .from("telegram_subscribers").select("is_active").eq("chat_id", chatId).maybeSingle();
         if (existing) {
+          if (!existing.is_active) {
+            await supabase.from("telegram_subscribers")
+              .update({ is_active: true, notify_all: true })
+              .eq("chat_id", chatId);
+          }
           await tgSend(chatId, welcomeMessage(msg.from?.first_name));
         } else {
           await tgSend(chatId, [
