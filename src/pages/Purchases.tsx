@@ -208,6 +208,12 @@ export default function Purchases() {
     const { error: e2 } = await supabase.from("purchase_items").insert(rows);
     if (e2) return toast({ title: e2.message, variant: "destructive" });
 
+    logActivity({
+      action: editingId ? "purchase.update" : "purchase.create",
+      entity_type: "purchase",
+      entity_id: purchaseRow.id,
+      meta: { invoice_no: purchaseRow.bill_no, amount: Number(total) },
+    });
     // NOTE: ক্রয় পরিশোধ আলাদা cash_book এন্ট্রি করি না — Ledger ইতিমধ্যে purchases.paid
     // থেকে নগদ খরচ গণনা করে। দুবার insert করলে হিসাব double-count হবে।
 
