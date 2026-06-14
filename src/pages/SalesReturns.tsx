@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { logActivity } from "@/lib/activityLog";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/i18n/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
@@ -51,6 +52,13 @@ export default function SalesReturns() {
     }));
     const { error: e2 } = await supabase.from("sales_return_items").insert(rows);
     if (e2) return toast({ title: e2.message, variant: "destructive" });
+    logActivity({
+      action: "sale.return",
+      entity_type: "sales_return",
+      entity_id: ret.id,
+      shop_id: sale.shop_id ?? null,
+      meta: { invoice_no: sale.invoice_no, amount: totalRefund, note: reason || undefined },
+    });
     toast({ title: "ফেরত সংরক্ষিত ✓" });
     setOpen(false); setSale(null); setSaleItems([]); setInvSearch(""); setReason(""); load();
   };

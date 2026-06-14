@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/components/ImageUpload";
 import { supabase } from "@/integrations/supabase/client";
+import { logActivity } from "@/lib/activityLog";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, IdCard, Briefcase, MapPin, Camera, FileImage, Phone, PhoneCall } from "lucide-react";
 
@@ -94,6 +95,12 @@ export function AddCustomerSheet({ open, onOpenChange, onSaved, customer }: Prop
       : await supabase.from("customers").insert(payload as any);
     setSaving(false);
     if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({
+      action: isEdit ? "customer.update" : "customer.create",
+      entity_type: "customer",
+      entity_id: isEdit ? customer.id : null,
+      meta: { customer_name: payload.name, phone: payload.phone },
+    });
     toast({ title: isEdit ? "ক্রেতা আপডেট হয়েছে" : "ক্রেতা যোগ হয়েছে" });
     onOpenChange(false);
     onSaved?.();

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { logActivity } from "@/lib/activityLog";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -95,6 +96,12 @@ export default function Products() {
       ? await supabase.from("products").update(payload).eq("id", editing.id)
       : await supabase.from("products").insert(payload);
     if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({
+      action: editing ? "product.update" : "product.create",
+      entity_type: "product",
+      entity_id: editing?.id ?? null,
+      meta: { product_name: payload.name, price: payload.price, stock: payload.stock },
+    });
     toast({ title: editing ? "পণ্য আপডেট হয়েছে" : "পণ্য যোগ হয়েছে" });
     setOpen(false); load();
   };
@@ -104,12 +111,14 @@ export default function Products() {
       if (!editCat.name.trim()) return;
       const { error } = await supabase.from("categories").update({ name: editCat.name.trim() }).eq("id", editCat.id);
       if (error) return toast({ title: error.message, variant: "destructive" });
+      logActivity({ action: "category.update", entity_type: "category", entity_id: editCat.id, meta: { name: editCat.name } });
       setEditCat(null); load();
       return toast({ title: "ক্যাটাগরি আপডেট হয়েছে" });
     }
     if (!newCat.trim()) return;
     const { error } = await supabase.from("categories").insert({ name: newCat.trim() });
     if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({ action: "category.create", entity_type: "category", meta: { name: newCat.trim() } });
     setNewCat(""); load();
     toast({ title: "ক্যাটাগরি যোগ হয়েছে" });
   };
@@ -118,6 +127,7 @@ export default function Products() {
     if (!confirm("ক্যাটাগরি মুছবেন?")) return;
     const { error } = await supabase.from("categories").delete().eq("id", id);
     if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({ action: "category.delete", entity_type: "category", entity_id: id });
     load();
   };
 
@@ -136,11 +146,13 @@ export default function Products() {
       if (!ok) return;
       const { error } = await supabase.from("products").update({ is_active: false, stock: 0 }).eq("id", id);
       if (error) return toast({ title: error.message, variant: "destructive" });
+      logActivity({ action: "product.delete", entity_type: "product", entity_id: id, meta: { archived: true } });
       toast({ title: "পণ্য আর্কাইভ করা হয়েছে (লেনদেন রক্ষা)" });
       return load();
     }
     const { error } = await supabase.from("products").delete().eq("id", id);
     if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({ action: "product.delete", entity_type: "product", entity_id: id });
     toast({ title: "পণ্য মুছে ফেলা হয়েছে" });
     load();
   };

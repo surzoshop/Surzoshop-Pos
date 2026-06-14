@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { todayBD, bdDateAddMonths, addDaysBDStr } from "@/lib/datetime";
 import { supabase } from "@/integrations/supabase/client";
+import { logActivity } from "@/lib/activityLog";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -119,6 +120,7 @@ export default function Installments() {
     const { error } = await supabase.from("installment_payments")
       .update({ amount: editPayAmount }).eq("id", editPay.id);
     if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({ action: "installment.edit", entity_type: "installment_payment", entity_id: editPay.id, meta: { amount: editPayAmount } });
     setEditPay(null); setEditPayAmount(0); await load();
     toast({ title: lang === "bn" ? "পরিশোধ আপডেট হয়েছে ✓" : "Payment updated ✓" });
   };
@@ -127,6 +129,7 @@ export default function Installments() {
     if (!confirm(lang === "bn" ? `${fmt(Number(p.amount))} টাকার পরিশোধ মুছে ফেলবেন?` : `Delete payment of ${fmt(Number(p.amount))}?`)) return;
     const { error } = await supabase.from("installment_payments").delete().eq("id", p.id);
     if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({ action: "installment.delete", entity_type: "installment_payment", entity_id: p.id, meta: { amount: Number(p.amount) } });
     await load();
     toast({ title: lang === "bn" ? "পরিশোধ মুছে ফেলা হয়েছে" : "Payment deleted" });
   };
@@ -267,6 +270,7 @@ export default function Installments() {
     });
     await supabase.from("installments").insert(schedule);
 
+    logActivity({ action: "installment.create", entity_type: "sale", entity_id: sale.id, meta: { amount: Number(planTotal), tenure_months: plan.tenure_months } });
     toast({ title: lang === "bn" ? "কিস্তি প্ল্যান তৈরি হয়েছে" : "Installment plan created" });
     setOpenNew(false);
     setPlan({ customer_id: "", guarantor_id: "", items: [], pid: "", qty: 1, price: 0,
@@ -296,6 +300,7 @@ export default function Installments() {
       installment_id: paying.id, amount: finalAmount, received_by: user!.id,
     });
     if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({ action: "installment.pay", entity_type: "installment", entity_id: paying.id, meta: { amount: finalAmount, invoice_no: managing?.invoice_no, customer_name: managing?.customer_name } });
     setPaying(null); setAmount(0); await load();
     toast({ title: t("paid") });
     if (managing) {

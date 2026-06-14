@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { logActivity } from "@/lib/activityLog";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -40,8 +41,10 @@ export default function Customers() {
 
   const del = async (id: string) => {
     if (!confirm(t("confirmDelete"))) return;
+    const name = items.find(c => c.id === id)?.name;
     const { error } = await supabase.from("customers").delete().eq("id", id);
     if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({ action: "customer.delete", entity_type: "customer", entity_id: id, meta: { customer_name: name } });
     load();
   };
 

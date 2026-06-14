@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { todayBD } from "@/lib/datetime";
 import { supabase } from "@/integrations/supabase/client";
+import { logActivity } from "@/lib/activityLog";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useShop } from "@/hooks/useShop";
@@ -207,6 +208,12 @@ export default function Purchases() {
     const { error: e2 } = await supabase.from("purchase_items").insert(rows);
     if (e2) return toast({ title: e2.message, variant: "destructive" });
 
+    logActivity({
+      action: editingId ? "purchase.update" : "purchase.create",
+      entity_type: "purchase",
+      entity_id: purchaseRow.id,
+      meta: { invoice_no: purchaseRow.bill_no, amount: Number(total) },
+    });
     // NOTE: ক্রয় পরিশোধ আলাদা cash_book এন্ট্রি করি না — Ledger ইতিমধ্যে purchases.paid
     // থেকে নগদ খরচ গণনা করে। দুবার insert করলে হিসাব double-count হবে।
 
@@ -439,6 +446,7 @@ export default function Purchases() {
   const del = async (id: string) => {
     if (!confirm(t("confirmDelete"))) return;
     await supabase.from("purchases").delete().eq("id", id);
+    logActivity({ action: "purchase.delete", entity_type: "purchase", entity_id: id });
     load();
   };
 
@@ -454,6 +462,12 @@ export default function Purchases() {
       created_by: user!.id, shop_id: currentShop?.id ?? null,
     });
     if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({
+      action: "purchase.pay",
+      entity_type: "purchase",
+      entity_id: payTarget.id,
+      meta: { amount: payAmt, invoice_no: payTarget.bill_no, payment_method: paymentMethod },
+    });
     toast({ title: "পরিশোধ সংরক্ষিত ✓" });
     setPayOpen(false); setPayTarget(null); setPayAmt(0); load();
   };

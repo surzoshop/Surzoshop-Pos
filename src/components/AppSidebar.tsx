@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, Receipt, Warehouse, Users, ShoppingCart,
   HelpCircle, LogOut, Truck, ShoppingBag, Wallet, ClipboardList,
   UserCog, CalendarCheck, BarChart3, Store, X, Smartphone, Printer, Contact, ShieldCheck,
-  RotateCcw, BookOpen, Layers,
+  RotateCcw, BookOpen, Layers, Activity,
 } from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -43,7 +43,7 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
   // close mobile drawer on route change
   useEffect(() => { if (mobileOpen) onCloseMobile?.(); /* eslint-disable-next-line */ }, [pathname]);
 
-  type Tone = "emerald" | "violet" | "sky" | "amber" | "indigo" | "teal" | "pink" | "rose" | "cyan" | "lime" | "fuchsia" | "orange" | "blue" | "purple";
+  type Tone = "emerald" | "violet" | "sky" | "amber" | "indigo" | "teal" | "pink" | "rose" | "cyan" | "lime" | "fuchsia" | "orange" | "blue" | "purple" | "slate";
   const allItems: { url: string; icon: any; label: string; key: PageKey; tone: Tone }[] = [
     { url: "/", icon: LayoutDashboard, label: "ড্যাশবোর্ড", key: "dashboard", tone: "indigo" },
     { url: "/pos", icon: ShoppingCart, label: "বিক্রি করুন (POS)", key: "pos", tone: "emerald" },
@@ -65,6 +65,7 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
     { url: "/reports", icon: BarChart3, label: "রিপোর্ট", key: "reports", tone: "purple" },
     { url: "/staff", icon: UserCog, label: "স্টাফ", key: "staff", tone: "pink" },
     { url: "/attendance", icon: CalendarCheck, label: "হাজিরা", key: "attendance", tone: "emerald" },
+    { url: "/activity-logs", icon: Activity, label: "বিস্তারিত Activity Log", key: "activity-logs", tone: "slate" },
   ];
   const items = allItems.filter(i => canAccess(i.key));
 

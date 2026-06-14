@@ -14,6 +14,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import StaffDashboard from "./pages/StaffDashboard";
 import StaffHistory from "./pages/StaffHistory";
+import ActivityLogs from "./pages/ActivityLogs";
 import { useAuth } from "@/hooks/useAuth";
 import POS from "./pages/POS";
 import Products from "./pages/Products";
@@ -81,6 +82,7 @@ const App = () => (
                     <Route path="/stock-adjustments" element={<PageGate page="stock-adjustments"><StockAdjustments /></PageGate>} />
                     <Route path="/staff" element={<PageGate page="staff"><Staff /></PageGate>} />
                     <Route path="/staff/:id/history" element={<PageGate page="staff"><StaffHistory /></PageGate>} />
+                    <Route path="/activity-logs" element={<PageGate page="activity-logs"><ActivityLogs /></PageGate>} />
                     <Route path="/attendance" element={<PageGate page="attendance"><Attendance /></PageGate>} />
                     <Route path="/contacts" element={<Contacts />} />
                     <Route path="/warranty" element={<Warranty />} />
