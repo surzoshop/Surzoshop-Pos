@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { logActivity } from "@/lib/activityLog";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/i18n/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
