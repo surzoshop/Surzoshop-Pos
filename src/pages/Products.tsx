@@ -146,11 +146,13 @@ export default function Products() {
       if (!ok) return;
       const { error } = await supabase.from("products").update({ is_active: false, stock: 0 }).eq("id", id);
       if (error) return toast({ title: error.message, variant: "destructive" });
+      logActivity({ action: "product.delete", entity_type: "product", entity_id: id, meta: { archived: true } });
       toast({ title: "পণ্য আর্কাইভ করা হয়েছে (লেনদেন রক্ষা)" });
       return load();
     }
     const { error } = await supabase.from("products").delete().eq("id", id);
     if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({ action: "product.delete", entity_type: "product", entity_id: id });
     toast({ title: "পণ্য মুছে ফেলা হয়েছে" });
     load();
   };
