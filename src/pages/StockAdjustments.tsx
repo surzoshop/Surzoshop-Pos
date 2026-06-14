@@ -56,6 +56,12 @@ export default function StockAdjustments() {
     } as any);
     setSaving(false);
     if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({
+      action: "stock.adjustment",
+      entity_type: "product",
+      entity_id: editing.id,
+      meta: { product_name: editing.name, qty, type: "count", note: reason || `${editing.stock} → ${qty}` },
+    });
     toast({ title: "স্টক আপডেট হয়েছে" });
     setEditing(null);
     load();
