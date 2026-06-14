@@ -43,7 +43,7 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
   // close mobile drawer on route change
   useEffect(() => { if (mobileOpen) onCloseMobile?.(); /* eslint-disable-next-line */ }, [pathname]);
 
-  type Tone = "emerald" | "violet" | "sky" | "amber" | "indigo" | "teal" | "pink" | "rose" | "cyan" | "lime" | "fuchsia" | "orange" | "blue" | "purple";
+  type Tone = "emerald" | "violet" | "sky" | "amber" | "indigo" | "teal" | "pink" | "rose" | "cyan" | "lime" | "fuchsia" | "orange" | "blue" | "purple" | "slate";
   const allItems: { url: string; icon: any; label: string; key: PageKey; tone: Tone }[] = [
     { url: "/", icon: LayoutDashboard, label: "ড্যাশবোর্ড", key: "dashboard", tone: "indigo" },
     { url: "/pos", icon: ShoppingCart, label: "বিক্রি করুন (POS)", key: "pos", tone: "emerald" },
