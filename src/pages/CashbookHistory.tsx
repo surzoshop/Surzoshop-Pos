@@ -230,8 +230,9 @@ export default function CashbookHistory() {
               <BookOpen className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs text-muted-foreground font-bold">নীট ব্যালেন্স</p>
+              <p className="text-xs text-muted-foreground font-bold">নীট ব্যালেন্স (এই ফিল্টার)</p>
               <p className="text-xl font-black truncate">{fmt(totals.balance)}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">সামগ্রিক নগদ: <span className="font-bold text-foreground">{fmt(totals.overall)}</span></p>
             </div>
           </CardContent>
         </Card>
