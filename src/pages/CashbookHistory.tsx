@@ -133,7 +133,8 @@ export default function CashbookHistory() {
   }), [entries, from, to, filter, search]);
 
   // Running balance across ALL entries (chronological, oldest first).
-  // Maps entry.id -> { before, after } snapshot of manual cashbook balance.
+  // "before" = balance at the START of that entry_date (previous day's closing).
+  // "after"  = running balance immediately after this entry.
   const balanceMap = useMemo(() => {
     const asc = [...entries].sort((a, b) => {
       const d = a.entry_date.localeCompare(b.entry_date);
@@ -142,10 +143,15 @@ export default function CashbookHistory() {
     });
     const map: Record<string, { before: number; after: number }> = {};
     let run = 0;
+    let currentDate = "";
+    let dayOpen = 0;
     asc.forEach(e => {
-      const before = run;
+      if (e.entry_date !== currentDate) {
+        currentDate = e.entry_date;
+        dayOpen = run; // balance at the start of this day
+      }
       run += e.entry_type === "deposit" ? Number(e.amount || 0) : -Number(e.amount || 0);
-      map[e.id] = { before, after: run };
+      map[e.id] = { before: dayOpen, after: run };
     });
     return { map, overall: run };
   }, [entries]);
