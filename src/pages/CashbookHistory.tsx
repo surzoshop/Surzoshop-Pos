@@ -132,11 +132,29 @@ export default function CashbookHistory() {
     return true;
   }), [entries, from, to, filter, search]);
 
+  // Running balance across ALL entries (chronological, oldest first).
+  // Maps entry.id -> { before, after } snapshot of manual cashbook balance.
+  const balanceMap = useMemo(() => {
+    const asc = [...entries].sort((a, b) => {
+      const d = a.entry_date.localeCompare(b.entry_date);
+      if (d !== 0) return d;
+      return (a.created_at || "").localeCompare(b.created_at || "");
+    });
+    const map: Record<string, { before: number; after: number }> = {};
+    let run = 0;
+    asc.forEach(e => {
+      const before = run;
+      run += e.entry_type === "deposit" ? Number(e.amount || 0) : -Number(e.amount || 0);
+      map[e.id] = { before, after: run };
+    });
+    return { map, overall: run };
+  }, [entries]);
+
   const totals = useMemo(() => {
     const cr = filtered.filter(e => e.entry_type === "deposit").reduce((s, e) => s + Number(e.amount || 0), 0);
     const dr = filtered.filter(e => e.entry_type === "withdraw").reduce((s, e) => s + Number(e.amount || 0), 0);
-    return { cr, dr, balance: cr - dr };
-  }, [filtered]);
+    return { cr, dr, balance: cr - dr, overall: balanceMap.overall };
+  }, [filtered, balanceMap.overall]);
 
   const remove = async (id: string) => {
     if (!confirm("এই এন্ট্রি মুছে ফেলবেন?")) return;
