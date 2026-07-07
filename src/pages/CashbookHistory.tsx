@@ -354,6 +354,8 @@ export default function CashbookHistory() {
                       <th className="p-3">রেফ</th>
                       <th className="p-3 text-right">জমা</th>
                       <th className="p-3 text-right">উত্তোলন</th>
+                      <th className="p-3 text-right">আগের ব্যালেন্স</th>
+                      <th className="p-3 text-right">পরের ব্যালেন্স</th>
                       <th className="p-3"></th>
                     </tr>
                   </thead>
@@ -361,6 +363,7 @@ export default function CashbookHistory() {
                     {filtered.map(e => {
                       const c = e.created_by ? creators[e.created_by] : null;
                       const src = c?.source ?? "admin";
+                      const b = balanceMap.map[e.id];
                       return (
                       <tr key={e.id} className="border-t border-border/40 hover:bg-muted/20">
                         <td className="p-3 whitespace-nowrap">{fmtDateTimeBD(e.created_at || e.entry_date)}</td>
