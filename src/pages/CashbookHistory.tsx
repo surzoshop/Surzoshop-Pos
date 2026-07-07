@@ -324,6 +324,16 @@ export default function CashbookHistory() {
                         <div className={`font-black text-sm ${e.entry_type === "deposit" ? "text-emerald-600" : "text-rose-600"}`}>
                           {e.entry_type === "deposit" ? "+" : "-"}{fmt(e.amount)}
                         </div>
+                        {(() => {
+                          const b = balanceMap.map[e.id];
+                          if (!b) return null;
+                          return (
+                            <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                              <div>আগে: <span className="font-bold text-foreground">{fmt(b.before)}</span></div>
+                              <div>পরে: <span className={`font-bold ${b.after >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmt(b.after)}</span></div>
+                            </div>
+                          );
+                        })()}
                         <button onClick={() => remove(e.id)} className="text-rose-500 mt-1"><Trash2 className="h-3.5 w-3.5" /></button>
                       </div>
                     </div>
