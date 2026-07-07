@@ -132,11 +132,29 @@ export default function CashbookHistory() {
     return true;
   }), [entries, from, to, filter, search]);
 
+  // Running balance across ALL entries (chronological, oldest first).
+  // Maps entry.id -> { before, after } snapshot of manual cashbook balance.
+  const balanceMap = useMemo(() => {
+    const asc = [...entries].sort((a, b) => {
+      const d = a.entry_date.localeCompare(b.entry_date);
+      if (d !== 0) return d;
+      return (a.created_at || "").localeCompare(b.created_at || "");
+    });
+    const map: Record<string, { before: number; after: number }> = {};
+    let run = 0;
+    asc.forEach(e => {
+      const before = run;
+      run += e.entry_type === "deposit" ? Number(e.amount || 0) : -Number(e.amount || 0);
+      map[e.id] = { before, after: run };
+    });
+    return { map, overall: run };
+  }, [entries]);
+
   const totals = useMemo(() => {
     const cr = filtered.filter(e => e.entry_type === "deposit").reduce((s, e) => s + Number(e.amount || 0), 0);
     const dr = filtered.filter(e => e.entry_type === "withdraw").reduce((s, e) => s + Number(e.amount || 0), 0);
-    return { cr, dr, balance: cr - dr };
-  }, [filtered]);
+    return { cr, dr, balance: cr - dr, overall: balanceMap.overall };
+  }, [filtered, balanceMap.overall]);
 
   const remove = async (id: string) => {
     if (!confirm("এই এন্ট্রি মুছে ফেলবেন?")) return;
@@ -212,8 +230,9 @@ export default function CashbookHistory() {
               <BookOpen className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs text-muted-foreground font-bold">নীট ব্যালেন্স</p>
+              <p className="text-xs text-muted-foreground font-bold">নীট ব্যালেন্স (এই ফিল্টার)</p>
               <p className="text-xl font-black truncate">{fmt(totals.balance)}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">সামগ্রিক নগদ: <span className="font-bold text-foreground">{fmt(totals.overall)}</span></p>
             </div>
           </CardContent>
         </Card>
@@ -305,6 +324,16 @@ export default function CashbookHistory() {
                         <div className={`font-black text-sm ${e.entry_type === "deposit" ? "text-emerald-600" : "text-rose-600"}`}>
                           {e.entry_type === "deposit" ? "+" : "-"}{fmt(e.amount)}
                         </div>
+                        {(() => {
+                          const b = balanceMap.map[e.id];
+                          if (!b) return null;
+                          return (
+                            <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                              <div>আগে: <span className="font-bold text-foreground">{fmt(b.before)}</span></div>
+                              <div>পরে: <span className={`font-bold ${b.after >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmt(b.after)}</span></div>
+                            </div>
+                          );
+                        })()}
                         <button onClick={() => remove(e.id)} className="text-rose-500 mt-1"><Trash2 className="h-3.5 w-3.5" /></button>
                       </div>
                     </div>
@@ -325,6 +354,8 @@ export default function CashbookHistory() {
                       <th className="p-3">রেফ</th>
                       <th className="p-3 text-right">জমা</th>
                       <th className="p-3 text-right">উত্তোলন</th>
+                      <th className="p-3 text-right">আগের ব্যালেন্স</th>
+                      <th className="p-3 text-right">পরের ব্যালেন্স</th>
                       <th className="p-3"></th>
                     </tr>
                   </thead>
@@ -332,6 +363,7 @@ export default function CashbookHistory() {
                     {filtered.map(e => {
                       const c = e.created_by ? creators[e.created_by] : null;
                       const src = c?.source ?? "admin";
+                      const b = balanceMap.map[e.id];
                       return (
                       <tr key={e.id} className="border-t border-border/40 hover:bg-muted/20">
                         <td className="p-3 whitespace-nowrap">{fmtDateTimeBD(e.created_at || e.entry_date)}</td>
@@ -355,6 +387,8 @@ export default function CashbookHistory() {
                         <td className="p-3">{e.reference_no ?? "-"}</td>
                         <td className="p-3 text-right font-bold text-emerald-600">{e.entry_type === "deposit" ? fmt(e.amount) : "-"}</td>
                         <td className="p-3 text-right font-bold text-rose-600">{e.entry_type === "withdraw" ? fmt(e.amount) : "-"}</td>
+                        <td className="p-3 text-right text-muted-foreground whitespace-nowrap">{b ? fmt(b.before) : "-"}</td>
+                        <td className={`p-3 text-right font-bold whitespace-nowrap ${b && b.after < 0 ? "text-rose-600" : "text-foreground"}`}>{b ? fmt(b.after) : "-"}</td>
                         <td className="p-3">
                           <button onClick={() => remove(e.id)} className="text-rose-500 hover:text-rose-700"><Trash2 className="h-4 w-4" /></button>
                         </td>
