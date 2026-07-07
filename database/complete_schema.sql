@@ -1,8 +1,14 @@
 -- ============================================================
 -- COMPLETE DATABASE SCHEMA (Easy Kisti Shop)
--- Generated: 2026-07-07T07:07:31Z
+-- Updated: 2026-07-07
 -- Source: consolidated Supabase migrations
--- Usage: Run this on a fresh Supabase project (SQL Editor)
+-- Usage: Run this on a fresh Supabase project's PRIMARY/WRITABLE database
+--
+-- IMPORTANT:
+--   If Supabase returns: ERROR 25006 cannot execute CREATE TYPE in a read-only transaction,
+--   the SQL Editor is connected to a read-only database/replica. Select the primary database
+--   or a writable project, then run this file again. SQL code cannot override a read-only
+--   database connection.
 -- ============================================================
 
 
@@ -10,7 +16,13 @@
 -- Migration: 20260503052859_d3c9135a-9f73-43cd-ad4c-e48643a4c75c.sql
 -- ============================================================
 -- ROLES
-CREATE TYPE public.app_role AS ENUM ('admin', 'cashier');
+-- ENUMS are created defensively so this file is safer to run on a fresh or partially-created DB.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace WHERE n.nspname = 'public' AND t.typname = 'app_role') THEN
+    CREATE TYPE public.app_role AS ENUM ('admin', 'cashier', 'super_admin', 'staff');
+  END IF;
+END $$;
 
 CREATE TABLE public.user_roles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -121,8 +133,15 @@ CREATE POLICY "Admin delete customers" ON public.customers FOR DELETE TO authent
 CREATE TRIGGER trg_customers_updated BEFORE UPDATE ON public.customers FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- SALES
-CREATE TYPE public.payment_type AS ENUM ('cash','installment');
-CREATE TYPE public.sale_status AS ENUM ('completed','partial','cancelled');
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace WHERE n.nspname = 'public' AND t.typname = 'payment_type') THEN
+    CREATE TYPE public.payment_type AS ENUM ('cash','installment');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace WHERE n.nspname = 'public' AND t.typname = 'sale_status') THEN
+    CREATE TYPE public.sale_status AS ENUM ('completed','partial','cancelled');
+  END IF;
+END $$;
 
 CREATE SEQUENCE public.invoice_seq START 1000;
 
@@ -174,7 +193,12 @@ END; $$;
 CREATE TRIGGER trg_decrement_stock AFTER INSERT ON public.sale_items FOR EACH ROW EXECUTE FUNCTION public.decrement_stock();
 
 -- INSTALLMENTS
-CREATE TYPE public.installment_status AS ENUM ('pending','paid','overdue');
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace WHERE n.nspname = 'public' AND t.typname = 'installment_status') THEN
+    CREATE TYPE public.installment_status AS ENUM ('pending','paid','overdue');
+  END IF;
+END $$;
 
 CREATE TABLE public.installments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -368,14 +392,14 @@ CREATE POLICY "Admin manage expenses" ON public.expenses FOR ALL TO authenticate
 
 -- ============ STOCK ADJUSTMENTS ============
 DO $$ BEGIN
-  CREATE TYPE adjustment_type AS ENUM ('damage','return','count','transfer_in','transfer_out');
+  CREATE TYPE public.adjustment_type AS ENUM ('damage','return','count','transfer_in','transfer_out');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 CREATE TABLE IF NOT EXISTS public.stock_adjustments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id uuid NOT NULL,
   product_name text NOT NULL,
-  type adjustment_type NOT NULL,
+  type public.adjustment_type NOT NULL,
   qty integer NOT NULL,
   reason text,
   created_by uuid,
@@ -420,14 +444,14 @@ CREATE POLICY "Admin manage staff" ON public.staff FOR ALL TO authenticated USIN
 CREATE TRIGGER staff_updated BEFORE UPDATE ON public.staff FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 DO $$ BEGIN
-  CREATE TYPE attendance_status AS ENUM ('present','absent','leave','half_day');
+  CREATE TYPE public.attendance_status AS ENUM ('present','absent','leave','half_day');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 CREATE TABLE IF NOT EXISTS public.attendance (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   staff_id uuid NOT NULL REFERENCES public.staff(id) ON DELETE CASCADE,
   date date NOT NULL DEFAULT CURRENT_DATE,
-  status attendance_status NOT NULL DEFAULT 'present',
+  status public.attendance_status NOT NULL DEFAULT 'present',
   check_in time,
   check_out time,
   notes text,
@@ -1625,29 +1649,11 @@ USING (bucket_id = 'kyc-docs');
 
 
 -- ============================================================
--- Migration: 20260513052110_ce8b0afd-10a8-438d-b058-770bcc738bed.sql
+-- Optional keep-alive cron from the original project intentionally removed.
+-- Reason: it contains project-specific Supabase URLs/keys and pg_cron/pg_net setup that may
+-- not be enabled in a brand new Supabase project. Recreate it manually only after deploying
+-- your own Edge Function and using your new project's anon key.
 -- ============================================================
-CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA extensions;
-CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
-
--- ============================================================
--- Migration: 20260513052238_4bfd5785-3fc2-45d6-866d-ad75939958ba.sql
--- ============================================================
--- Remove any existing job with the same name to avoid duplicates
-SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname = 'keep-alive-every-3-days';
-
--- Schedule keep-alive to run every 3 days at 3:00 AM UTC
-SELECT cron.schedule(
-  'keep-alive-every-3-days',
-  '0 3 */3 * *',
-  $$
-  SELECT net.http_post(
-    url := 'https://fxjjqjqnuryixsonnkzx.supabase.co/functions/v1/keep-alive',
-    headers := '{"Content-Type": "application/json", "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4ampxanFudXJ5aXhzb25ua3p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3ODUzMzksImV4cCI6MjA5MzM2MTMzOX0.WtWTplXUJ61t9hTWskg5_EBmO0GkZp3XPpBGfEXJEZc"}'::jsonb,
-    body := jsonb_build_object('triggered_at', now())
-  ) AS request_id;
-  $$
-);
 
 -- ============================================================
 -- Migration: 20260611053738_7f811f5f-69bb-4a71-8df9-2aa146748bd3.sql
@@ -1753,4 +1759,21 @@ WITH CHECK (auth.uid() = user_id);
 CREATE TRIGGER update_telegram_subscribers_updated_at
 BEFORE UPDATE ON public.telegram_subscribers
 FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+-- ============================================================
+-- FINAL DATA API GRANTS
+-- ============================================================
+-- Supabase/PostgREST requires explicit privileges in addition to RLS policies.
+-- These grants keep the copied database reachable from the client app while RLS still
+-- controls which rows each signed-in user can access.
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role;
 
