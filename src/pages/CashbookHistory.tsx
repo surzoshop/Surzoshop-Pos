@@ -387,6 +387,8 @@ export default function CashbookHistory() {
                         <td className="p-3">{e.reference_no ?? "-"}</td>
                         <td className="p-3 text-right font-bold text-emerald-600">{e.entry_type === "deposit" ? fmt(e.amount) : "-"}</td>
                         <td className="p-3 text-right font-bold text-rose-600">{e.entry_type === "withdraw" ? fmt(e.amount) : "-"}</td>
+                        <td className="p-3 text-right text-muted-foreground whitespace-nowrap">{b ? fmt(b.before) : "-"}</td>
+                        <td className={`p-3 text-right font-bold whitespace-nowrap ${b && b.after < 0 ? "text-rose-600" : "text-foreground"}`}>{b ? fmt(b.after) : "-"}</td>
                         <td className="p-3">
                           <button onClick={() => remove(e.id)} className="text-rose-500 hover:text-rose-700"><Trash2 className="h-4 w-4" /></button>
                         </td>
