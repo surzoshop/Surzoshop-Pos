@@ -1,8 +1,14 @@
 -- ============================================================
 -- COMPLETE DATABASE SCHEMA (Easy Kisti Shop)
--- Generated: 2026-07-07T07:07:31Z
+-- Updated: 2026-07-07
 -- Source: consolidated Supabase migrations
--- Usage: Run this on a fresh Supabase project (SQL Editor)
+-- Usage: Run this on a fresh Supabase project's PRIMARY/WRITABLE database
+--
+-- IMPORTANT:
+--   If Supabase returns: ERROR 25006 cannot execute CREATE TYPE in a read-only transaction,
+--   the SQL Editor is connected to a read-only database/replica. Select the primary database
+--   or a writable project, then run this file again. SQL code cannot override a read-only
+--   database connection.
 -- ============================================================
 
 
@@ -10,7 +16,13 @@
 -- Migration: 20260503052859_d3c9135a-9f73-43cd-ad4c-e48643a4c75c.sql
 -- ============================================================
 -- ROLES
-CREATE TYPE public.app_role AS ENUM ('admin', 'cashier');
+-- ENUMS are created defensively so this file is safer to run on a fresh or partially-created DB.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace WHERE n.nspname = 'public' AND t.typname = 'app_role') THEN
+    CREATE TYPE public.app_role AS ENUM ('admin', 'cashier', 'super_admin', 'staff');
+  END IF;
+END $$;
 
 CREATE TABLE public.user_roles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -121,8 +133,15 @@ CREATE POLICY "Admin delete customers" ON public.customers FOR DELETE TO authent
 CREATE TRIGGER trg_customers_updated BEFORE UPDATE ON public.customers FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- SALES
-CREATE TYPE public.payment_type AS ENUM ('cash','installment');
-CREATE TYPE public.sale_status AS ENUM ('completed','partial','cancelled');
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace WHERE n.nspname = 'public' AND t.typname = 'payment_type') THEN
+    CREATE TYPE public.payment_type AS ENUM ('cash','installment');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace WHERE n.nspname = 'public' AND t.typname = 'sale_status') THEN
+    CREATE TYPE public.sale_status AS ENUM ('completed','partial','cancelled');
+  END IF;
+END $$;
 
 CREATE SEQUENCE public.invoice_seq START 1000;
 
@@ -174,7 +193,12 @@ END; $$;
 CREATE TRIGGER trg_decrement_stock AFTER INSERT ON public.sale_items FOR EACH ROW EXECUTE FUNCTION public.decrement_stock();
 
 -- INSTALLMENTS
-CREATE TYPE public.installment_status AS ENUM ('pending','paid','overdue');
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace WHERE n.nspname = 'public' AND t.typname = 'installment_status') THEN
+    CREATE TYPE public.installment_status AS ENUM ('pending','paid','overdue');
+  END IF;
+END $$;
 
 CREATE TABLE public.installments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -368,14 +392,14 @@ CREATE POLICY "Admin manage expenses" ON public.expenses FOR ALL TO authenticate
 
 -- ============ STOCK ADJUSTMENTS ============
 DO $$ BEGIN
-  CREATE TYPE adjustment_type AS ENUM ('damage','return','count','transfer_in','transfer_out');
+  CREATE TYPE public.adjustment_type AS ENUM ('damage','return','count','transfer_in','transfer_out');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 CREATE TABLE IF NOT EXISTS public.stock_adjustments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id uuid NOT NULL,
   product_name text NOT NULL,
-  type adjustment_type NOT NULL,
+  type public.adjustment_type NOT NULL,
   qty integer NOT NULL,
   reason text,
   created_by uuid,
@@ -420,14 +444,14 @@ CREATE POLICY "Admin manage staff" ON public.staff FOR ALL TO authenticated USIN
 CREATE TRIGGER staff_updated BEFORE UPDATE ON public.staff FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 DO $$ BEGIN
-  CREATE TYPE attendance_status AS ENUM ('present','absent','leave','half_day');
+  CREATE TYPE public.attendance_status AS ENUM ('present','absent','leave','half_day');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 CREATE TABLE IF NOT EXISTS public.attendance (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   staff_id uuid NOT NULL REFERENCES public.staff(id) ON DELETE CASCADE,
   date date NOT NULL DEFAULT CURRENT_DATE,
-  status attendance_status NOT NULL DEFAULT 'present',
+  status public.attendance_status NOT NULL DEFAULT 'present',
   check_in time,
   check_out time,
   notes text,
