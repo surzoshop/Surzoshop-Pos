@@ -1649,29 +1649,11 @@ USING (bucket_id = 'kyc-docs');
 
 
 -- ============================================================
--- Migration: 20260513052110_ce8b0afd-10a8-438d-b058-770bcc738bed.sql
+-- Optional keep-alive cron from the original project intentionally removed.
+-- Reason: it contains project-specific Supabase URLs/keys and pg_cron/pg_net setup that may
+-- not be enabled in a brand new Supabase project. Recreate it manually only after deploying
+-- your own Edge Function and using your new project's anon key.
 -- ============================================================
-CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA extensions;
-CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
-
--- ============================================================
--- Migration: 20260513052238_4bfd5785-3fc2-45d6-866d-ad75939958ba.sql
--- ============================================================
--- Remove any existing job with the same name to avoid duplicates
-SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname = 'keep-alive-every-3-days';
-
--- Schedule keep-alive to run every 3 days at 3:00 AM UTC
-SELECT cron.schedule(
-  'keep-alive-every-3-days',
-  '0 3 */3 * *',
-  $$
-  SELECT net.http_post(
-    url := 'https://fxjjqjqnuryixsonnkzx.supabase.co/functions/v1/keep-alive',
-    headers := '{"Content-Type": "application/json", "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4ampxanFudXJ5aXhzb25ua3p4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3ODUzMzksImV4cCI6MjA5MzM2MTMzOX0.WtWTplXUJ61t9hTWskg5_EBmO0GkZp3XPpBGfEXJEZc"}'::jsonb,
-    body := jsonb_build_object('triggered_at', now())
-  ) AS request_id;
-  $$
-);
 
 -- ============================================================
 -- Migration: 20260611053738_7f811f5f-69bb-4a71-8df9-2aa146748bd3.sql
@@ -1777,4 +1759,21 @@ WITH CHECK (auth.uid() = user_id);
 CREATE TRIGGER update_telegram_subscribers_updated_at
 BEFORE UPDATE ON public.telegram_subscribers
 FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+-- ============================================================
+-- FINAL DATA API GRANTS
+-- ============================================================
+-- Supabase/PostgREST requires explicit privileges in addition to RLS policies.
+-- These grants keep the copied database reachable from the client app while RLS still
+-- controls which rows each signed-in user can access.
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO service_role;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role;
 
