@@ -631,27 +631,77 @@ export default function Installments() {
       <Dialog open={!!paying} onOpenChange={o => !o && setPaying(null)}>
         <DialogContent className="bg-[hsl(var(--surface-container-lowest))]">
           <DialogHeader><DialogTitle>{t("payInstallment")}</DialogTitle></DialogHeader>
-          {paying && (
-            <div className="space-y-3">
-              <div className="text-sm text-muted-foreground">{paying.sales?.invoice_no} • {t("amount")}: {fmt(Number(paying.amount))}</div>
-              <div>
-                <Label>{t("amount")}</Label>
-                <Input
-                  type="number"
-                  value={amount}
-                  onChange={e => isAdmin && setAmount(+e.target.value)}
-                  readOnly={!isAdmin}
-                  disabled={!isAdmin}
-                  className={!isAdmin ? "bg-[hsl(var(--surface-container))] cursor-not-allowed font-bold text-foreground opacity-100" : ""}
-                />
-                {!isAdmin && (
-                  <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-                    🔒 {lang === "bn" ? "পরিমাণ নির্ধারিত — শুধু অ্যাডমিন পরিবর্তন করতে পারবেন।" : "Amount is fixed — only admin can edit."}
-                  </p>
-                )}
+          {paying && (() => {
+            const rem = Math.max(0, Number(paying.amount) - Number(paying.paid_amount));
+            const fee = computeLateFee(paying, managing?.late_fee_pct ?? 0);
+            const maxPay = rem + fee;
+            return (
+              <div className="space-y-3">
+                <div className="text-sm text-muted-foreground">
+                  {paying.sales?.invoice_no} • {lang === "bn" ? "কিস্তি" : "Installment"} {paying.installment_no} • {t("amount")}: {fmt(Number(paying.amount))}
+                </div>
+                <div className="bg-primary/5 border border-primary/20 rounded-lg p-2.5 text-xs space-y-0.5">
+                  <div className="flex justify-between"><span className="text-muted-foreground">{lang === "bn" ? "কিস্তির পরিমাণ" : "Instalment amount"}</span><b>{fmt(Number(paying.amount))}</b></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{lang === "bn" ? "ইতোমধ্যে পরিশোধ" : "Already paid"}</span><b className="text-primary">{fmt(Number(paying.paid_amount))}</b></div>
+                  {fee > 0 && <div className="flex justify-between"><span className="text-muted-foreground">{lang === "bn" ? "বিলম্ব ফি" : "Late fee"}</span><b className="text-destructive">+{fmt(fee)}</b></div>}
+                  <div className="flex justify-between border-t border-primary/20 pt-1 mt-1"><span className="font-semibold">{lang === "bn" ? "সর্বোচ্চ পরিশোধ্য" : "Max payable"}</span><b>{fmt(maxPay)}</b></div>
+                </div>
+                <div>
+                  <Label>{lang === "bn" ? "পরিশোধের পরিমাণ (আংশিক পরিশোধ সমর্থিত)" : "Payment amount (partial supported)"}</Label>
+                  <Input
+                    type="number"
+                    value={amount || ""}
+                    onChange={e => setAmount(+e.target.value)}
+                    min={0}
+                    max={maxPay}
+                    step="0.01"
+                    autoFocus
+                  />
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    <button type="button" onClick={() => setAmount(maxPay)}
+                      className="text-xs px-2.5 py-1 rounded bg-primary/10 text-primary hover:bg-primary/20 font-semibold">
+                      {lang === "bn" ? "সম্পূর্ণ" : "Full"} ({fmt(maxPay)})
+                    </button>
+                    <button type="button" onClick={() => setAmount(Math.round(maxPay / 2))}
+                      className="text-xs px-2.5 py-1 rounded bg-muted hover:bg-muted/70 font-semibold">
+                      {lang === "bn" ? "অর্ধেক" : "Half"}
+                    </button>
+                  </div>
+                  {amount > 0 && amount < maxPay && (
+                    <div className="text-xs mt-2 bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 rounded-lg p-2">
+                      {lang === "bn" ? "আংশিক পরিশোধের পর বাকি থাকবে: " : "Remaining after this payment: "}
+                      <b>{fmt(maxPay - amount)}</b>
+                      <div className="text-[11px] mt-0.5 opacity-90">
+                        {lang === "bn" ? "পরবর্তী মাসে এই কিস্তির বাকি অংশ আগে পরিশোধ করতে হবে।" : "The remainder of this installment must be cleared before next month's."}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <Label>{lang === "bn" ? "কাস্টমার আচরণ (মন্তব্য)" : "Customer behavior rating"}</Label>
+                  <div className="flex gap-2 mt-1.5">
+                    {([
+                      { k: "good", bn: "ভালো 😊", en: "Good 😊", cls: "bg-emerald-500/10 border-emerald-500/40 text-emerald-700 dark:text-emerald-400" },
+                      { k: "neutral", bn: "মাঝামাঝি 😐", en: "Neutral 😐", cls: "bg-amber-500/10 border-amber-500/40 text-amber-700 dark:text-amber-400" },
+                      { k: "bad", bn: "খারাপ 😞", en: "Bad 😞", cls: "bg-destructive/10 border-destructive/40 text-destructive" },
+                    ] as const).map(opt => (
+                      <button key={opt.k} type="button" onClick={() => setPayRating(opt.k)}
+                        className={`flex-1 text-sm font-bold px-3 py-2 rounded-lg border-2 transition-all ${
+                          payRating === opt.k ? `${opt.cls} ring-2 ring-offset-1 ring-current` : "bg-muted/30 border-border text-muted-foreground hover:bg-muted"
+                        }`}>
+                        {lang === "bn" ? opt.bn : opt.en}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <Label>{lang === "bn" ? "মন্তব্য (ঐচ্ছিক)" : "Remark (optional)"}</Label>
+                  <Input value={payRemark} onChange={e => setPayRemark(e.target.value)}
+                    placeholder={lang === "bn" ? "যেমন: সময়মত টাকা দিয়েছেন, ভদ্র ব্যবহার" : "e.g. Paid on time, polite behavior"} />
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
           <DialogFooter>
             <Button variant="outline" onClick={() => setPaying(null)}>{t("cancel")}</Button>
             <Button onClick={pay} className="gradient-primary">{t("pay")}</Button>
