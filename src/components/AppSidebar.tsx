@@ -59,6 +59,7 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
     { url: "/warranty", icon: ShieldCheck, label: "ওয়ারেন্টি ম্যানেজমেন্ট", key: "warranty", tone: "lime" },
     { url: "/customers", icon: Users, label: "কাস্টমার ম্যানেজমেন্ট", key: "customers", tone: "sky" },
     { url: "/customers/ledger", icon: BookOpen, label: "বাকি ম্যানেজমেন্ট", key: "customer-ledger", tone: "cyan" },
+    { url: "/customers/report", icon: ShieldCheck, label: "কাস্টমার রিপোর্ট", key: "customer-report", tone: "emerald" },
     { url: "/suppliers", icon: Truck, label: "সরবরাহকারী", key: "suppliers", tone: "orange" },
     { url: "/suppliers/ledger", icon: BookOpen, label: "সরবরাহকারী লেজার", key: "supplier-ledger", tone: "amber" },
     { url: "/contacts", icon: Contact, label: "যোগাযোগ", key: "contacts", tone: "cyan" },
