@@ -64,13 +64,16 @@ export type Database = {
           category: string | null
           created_at: string
           created_by: string | null
+          customer_id: string | null
           entry_date: string
           entry_type: string
           id: string
           notes: string | null
           party_name: string | null
           payment_method: string | null
+          rating: Database["public"]["Enums"]["customer_rating"] | null
           reference_no: string | null
+          remark: string | null
           shop_id: string | null
         }
         Insert: {
@@ -78,13 +81,16 @@ export type Database = {
           category?: string | null
           created_at?: string
           created_by?: string | null
+          customer_id?: string | null
           entry_date?: string
           entry_type: string
           id?: string
           notes?: string | null
           party_name?: string | null
           payment_method?: string | null
+          rating?: Database["public"]["Enums"]["customer_rating"] | null
           reference_no?: string | null
+          remark?: string | null
           shop_id?: string | null
         }
         Update: {
@@ -92,16 +98,27 @@ export type Database = {
           category?: string | null
           created_at?: string
           created_by?: string | null
+          customer_id?: string | null
           entry_date?: string
           entry_type?: string
           id?: string
           notes?: string | null
           party_name?: string | null
           payment_method?: string | null
+          rating?: Database["public"]["Enums"]["customer_rating"] | null
           reference_no?: string | null
+          remark?: string | null
           shop_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cash_book_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       categories: {
         Row: {
@@ -315,7 +332,9 @@ export type Database = {
           installment_id: string
           note: string | null
           paid_at: string
+          rating: Database["public"]["Enums"]["customer_rating"] | null
           received_by: string | null
+          remark: string | null
           shop_id: string | null
         }
         Insert: {
@@ -324,7 +343,9 @@ export type Database = {
           installment_id: string
           note?: string | null
           paid_at?: string
+          rating?: Database["public"]["Enums"]["customer_rating"] | null
           received_by?: string | null
+          remark?: string | null
           shop_id?: string | null
         }
         Update: {
@@ -333,7 +354,9 @@ export type Database = {
           installment_id?: string
           note?: string | null
           paid_at?: string
+          rating?: Database["public"]["Enums"]["customer_rating"] | null
           received_by?: string | null
+          remark?: string | null
           shop_id?: string | null
         }
         Relationships: [
@@ -1240,6 +1263,7 @@ export type Database = {
         | "transfer_out"
       app_role: "admin" | "cashier" | "super_admin" | "staff"
       attendance_status: "present" | "absent" | "leave" | "half_day"
+      customer_rating: "good" | "neutral" | "bad"
       installment_status: "pending" | "paid" | "overdue"
       payment_type: "cash" | "installment"
       sale_status: "completed" | "partial" | "cancelled"
@@ -1379,6 +1403,7 @@ export const Constants = {
       ],
       app_role: ["admin", "cashier", "super_admin", "staff"],
       attendance_status: ["present", "absent", "leave", "half_day"],
+      customer_rating: ["good", "neutral", "bad"],
       installment_status: ["pending", "paid", "overdue"],
       payment_type: ["cash", "installment"],
       sale_status: ["completed", "partial", "cancelled"],

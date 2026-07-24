@@ -30,6 +30,7 @@ import Reports from "./pages/Reports";
 import Suppliers from "./pages/Suppliers";
 import SupplierLedger from "./pages/SupplierLedger";
 import CustomerLedger from "./pages/CustomerLedger";
+import CustomerReport from "./pages/CustomerReport";
 import StockLedger from "./pages/StockLedger";
 import Purchases from "./pages/Purchases";
 import Ledger from "./pages/Ledger";
@@ -75,6 +76,7 @@ const App = () => (
                     <Route path="/suppliers" element={<PageGate page="suppliers"><Suppliers /></PageGate>} />
                     <Route path="/suppliers/ledger" element={<PageGate page="supplier-ledger"><SupplierLedger /></PageGate>} />
                     <Route path="/customers/ledger" element={<PageGate page="customer-ledger"><CustomerLedger /></PageGate>} />
+                    <Route path="/customers/report" element={<PageGate page="customer-report"><CustomerReport /></PageGate>} />
                     <Route path="/stock-ledger" element={<PageGate page="stock-ledger"><StockLedger /></PageGate>} />
                     <Route path="/purchases" element={<PageGate page="purchases"><Purchases /></PageGate>} />
                     <Route path="/ledger" element={<Ledger />} />

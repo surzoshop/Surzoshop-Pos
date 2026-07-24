@@ -56,6 +56,8 @@ export default function Installments() {
   const [sales, setSales] = useState<any[]>([]);
   const [paying, setPaying] = useState<any>(null);
   const [amount, setAmount] = useState(0);
+  const [payRemark, setPayRemark] = useState("");
+  const [payRating, setPayRating] = useState<"good" | "neutral" | "bad">("good");
   const [filter, setFilter] = useState<"all" | "active" | "overdue" | "completed" | "due_today" | "due_tomorrow" | "due_yesterday" | "due_5d" | "overdue_5d" | "this_month">("all");
   const [searchQ, setSearchQ] = useState("");
   const [managing, setManaging] = useState<Plan | null>(null);
@@ -290,18 +292,21 @@ export default function Installments() {
 
   const pay = async () => {
     if (!paying) return;
-    // For staff: amount is fixed (remaining + late fee). Only admin can override.
     const remaining = Math.max(0, Number(paying.amount) - Number(paying.paid_amount));
     const fee = computeLateFee(paying, managing?.late_fee_pct ?? 0);
-    const fixedPayable = remaining + fee;
-    const finalAmount = isAdmin ? amount : fixedPayable;
-    if (finalAmount <= 0) return;
+    const maxPayable = remaining + fee;
+    const finalAmount = Math.min(Math.max(0, Number(amount) || 0), maxPayable);
+    if (finalAmount <= 0) {
+      toast({ title: lang === "bn" ? "সঠিক পরিমাণ দিন" : "Enter valid amount", variant: "destructive" });
+      return;
+    }
     const { error } = await supabase.from("installment_payments").insert({
       installment_id: paying.id, amount: finalAmount, received_by: user!.id,
-    });
+      remark: payRemark || null, rating: payRating,
+    } as any);
     if (error) return toast({ title: error.message, variant: "destructive" });
-    logActivity({ action: "installment.pay", entity_type: "installment", entity_id: paying.id, meta: { amount: finalAmount, invoice_no: managing?.invoice_no, customer_name: managing?.customer_name } });
-    setPaying(null); setAmount(0); await load();
+    logActivity({ action: "installment.pay", entity_type: "installment", entity_id: paying.id, meta: { amount: finalAmount, invoice_no: managing?.invoice_no, customer_name: managing?.customer_name, rating: payRating, remark: payRemark } });
+    setPaying(null); setAmount(0); setPayRemark(""); setPayRating("good"); await load();
     toast({ title: t("paid") });
     if (managing) {
       const fresh = plans.find(p => p.sale_id === managing.sale_id);
@@ -552,18 +557,37 @@ export default function Installments() {
                             <StatusPill tone={tone}>{t(status as any)}</StatusPill>
                           </div>
                         </div>
-                        {status !== "paid" && (
-                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-[hsl(var(--surface-container-high))]/50">
-                            <div className="text-sm">
-                              <span className="text-muted-foreground">{t("payable")}: </span>
-                              <span className="font-black text-foreground">{fmt(payable)}</span>
+                        {status !== "paid" && (() => {
+                          const earlierUnpaid = managing.installments.find(x => x.installment_no < i.installment_no && x.derived_status !== "paid" && (Number(x.amount) - Number(x.paid_amount)) > 0);
+                          const paidSoFar = Number(i.paid_amount) || 0;
+                          return (
+                            <div className="mt-3 pt-3 border-t border-[hsl(var(--surface-container-high))]/50">
+                              <div className="flex items-center justify-between flex-wrap gap-2">
+                                <div className="text-sm">
+                                  <span className="text-muted-foreground">{t("payable")}: </span>
+                                  <span className="font-black text-foreground">{fmt(payable)}</span>
+                                  {paidSoFar > 0 && (
+                                    <span className="ml-2 text-xs text-primary font-bold">
+                                      ({lang === "bn" ? "আংশিক পরিশোধ" : "Partial paid"}: {fmt(paidSoFar)} / {fmt(Number(i.amount))})
+                                    </span>
+                                  )}
+                                </div>
+                                <Button size="sm" className="gradient-primary text-primary-foreground shadow-md hover:brightness-110"
+                                  disabled={!!earlierUnpaid}
+                                  onClick={() => { setPaying(i); setAmount(payable); setPayRemark(""); setPayRating("good"); }}>
+                                  <Wallet className="h-4 w-4 mr-1" />{lang === "bn" ? "কিস্তি পরিশোধ করুন" : "Pay Installment"}
+                                </Button>
+                              </div>
+                              {earlierUnpaid && (
+                                <div className="mt-2 text-xs bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2 text-destructive font-semibold">
+                                  ⚠ {lang === "bn"
+                                    ? `আগে কিস্তি ${earlierUnpaid.installment_no} পরিশোধ করুন (বাকি: ${fmt(Number(earlierUnpaid.amount) - Number(earlierUnpaid.paid_amount))})`
+                                    : `Pay installment #${earlierUnpaid.installment_no} first (remaining: ${fmt(Number(earlierUnpaid.amount) - Number(earlierUnpaid.paid_amount))})`}
+                                </div>
+                              )}
                             </div>
-                            <Button size="sm" className="gradient-primary text-primary-foreground shadow-md hover:brightness-110"
-                              onClick={() => { setPaying(i); setAmount(payable); }}>
-                              <Wallet className="h-4 w-4 mr-1" />{lang === "bn" ? "কিস্তি পরিশোধ করুন" : "Pay Installment"}
-                            </Button>
-                          </div>
-                        )}
+                          );
+                        })()}
                         {isAdmin && (paymentsByInst[i.id]?.length ?? 0) > 0 && (
                           <div className="mt-3 pt-3 border-t border-[hsl(var(--surface-container-high))]/50">
                             <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2">
@@ -607,27 +631,77 @@ export default function Installments() {
       <Dialog open={!!paying} onOpenChange={o => !o && setPaying(null)}>
         <DialogContent className="bg-[hsl(var(--surface-container-lowest))]">
           <DialogHeader><DialogTitle>{t("payInstallment")}</DialogTitle></DialogHeader>
-          {paying && (
-            <div className="space-y-3">
-              <div className="text-sm text-muted-foreground">{paying.sales?.invoice_no} • {t("amount")}: {fmt(Number(paying.amount))}</div>
-              <div>
-                <Label>{t("amount")}</Label>
-                <Input
-                  type="number"
-                  value={amount}
-                  onChange={e => isAdmin && setAmount(+e.target.value)}
-                  readOnly={!isAdmin}
-                  disabled={!isAdmin}
-                  className={!isAdmin ? "bg-[hsl(var(--surface-container))] cursor-not-allowed font-bold text-foreground opacity-100" : ""}
-                />
-                {!isAdmin && (
-                  <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-                    🔒 {lang === "bn" ? "পরিমাণ নির্ধারিত — শুধু অ্যাডমিন পরিবর্তন করতে পারবেন।" : "Amount is fixed — only admin can edit."}
-                  </p>
-                )}
+          {paying && (() => {
+            const rem = Math.max(0, Number(paying.amount) - Number(paying.paid_amount));
+            const fee = computeLateFee(paying, managing?.late_fee_pct ?? 0);
+            const maxPay = rem + fee;
+            return (
+              <div className="space-y-3">
+                <div className="text-sm text-muted-foreground">
+                  {paying.sales?.invoice_no} • {lang === "bn" ? "কিস্তি" : "Installment"} {paying.installment_no} • {t("amount")}: {fmt(Number(paying.amount))}
+                </div>
+                <div className="bg-primary/5 border border-primary/20 rounded-lg p-2.5 text-xs space-y-0.5">
+                  <div className="flex justify-between"><span className="text-muted-foreground">{lang === "bn" ? "কিস্তির পরিমাণ" : "Instalment amount"}</span><b>{fmt(Number(paying.amount))}</b></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{lang === "bn" ? "ইতোমধ্যে পরিশোধ" : "Already paid"}</span><b className="text-primary">{fmt(Number(paying.paid_amount))}</b></div>
+                  {fee > 0 && <div className="flex justify-between"><span className="text-muted-foreground">{lang === "bn" ? "বিলম্ব ফি" : "Late fee"}</span><b className="text-destructive">+{fmt(fee)}</b></div>}
+                  <div className="flex justify-between border-t border-primary/20 pt-1 mt-1"><span className="font-semibold">{lang === "bn" ? "সর্বোচ্চ পরিশোধ্য" : "Max payable"}</span><b>{fmt(maxPay)}</b></div>
+                </div>
+                <div>
+                  <Label>{lang === "bn" ? "পরিশোধের পরিমাণ (আংশিক পরিশোধ সমর্থিত)" : "Payment amount (partial supported)"}</Label>
+                  <Input
+                    type="number"
+                    value={amount || ""}
+                    onChange={e => setAmount(+e.target.value)}
+                    min={0}
+                    max={maxPay}
+                    step="0.01"
+                    autoFocus
+                  />
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    <button type="button" onClick={() => setAmount(maxPay)}
+                      className="text-xs px-2.5 py-1 rounded bg-primary/10 text-primary hover:bg-primary/20 font-semibold">
+                      {lang === "bn" ? "সম্পূর্ণ" : "Full"} ({fmt(maxPay)})
+                    </button>
+                    <button type="button" onClick={() => setAmount(Math.round(maxPay / 2))}
+                      className="text-xs px-2.5 py-1 rounded bg-muted hover:bg-muted/70 font-semibold">
+                      {lang === "bn" ? "অর্ধেক" : "Half"}
+                    </button>
+                  </div>
+                  {amount > 0 && amount < maxPay && (
+                    <div className="text-xs mt-2 bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 rounded-lg p-2">
+                      {lang === "bn" ? "আংশিক পরিশোধের পর বাকি থাকবে: " : "Remaining after this payment: "}
+                      <b>{fmt(maxPay - amount)}</b>
+                      <div className="text-[11px] mt-0.5 opacity-90">
+                        {lang === "bn" ? "পরবর্তী মাসে এই কিস্তির বাকি অংশ আগে পরিশোধ করতে হবে।" : "The remainder of this installment must be cleared before next month's."}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <Label>{lang === "bn" ? "কাস্টমার আচরণ (মন্তব্য)" : "Customer behavior rating"}</Label>
+                  <div className="flex gap-2 mt-1.5">
+                    {([
+                      { k: "good", bn: "ভালো 😊", en: "Good 😊", cls: "bg-emerald-500/10 border-emerald-500/40 text-emerald-700 dark:text-emerald-400" },
+                      { k: "neutral", bn: "মাঝামাঝি 😐", en: "Neutral 😐", cls: "bg-amber-500/10 border-amber-500/40 text-amber-700 dark:text-amber-400" },
+                      { k: "bad", bn: "খারাপ 😞", en: "Bad 😞", cls: "bg-destructive/10 border-destructive/40 text-destructive" },
+                    ] as const).map(opt => (
+                      <button key={opt.k} type="button" onClick={() => setPayRating(opt.k)}
+                        className={`flex-1 text-sm font-bold px-3 py-2 rounded-lg border-2 transition-all ${
+                          payRating === opt.k ? `${opt.cls} ring-2 ring-offset-1 ring-current` : "bg-muted/30 border-border text-muted-foreground hover:bg-muted"
+                        }`}>
+                        {lang === "bn" ? opt.bn : opt.en}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <Label>{lang === "bn" ? "মন্তব্য (ঐচ্ছিক)" : "Remark (optional)"}</Label>
+                  <Input value={payRemark} onChange={e => setPayRemark(e.target.value)}
+                    placeholder={lang === "bn" ? "যেমন: সময়মত টাকা দিয়েছেন, ভদ্র ব্যবহার" : "e.g. Paid on time, polite behavior"} />
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
           <DialogFooter>
             <Button variant="outline" onClick={() => setPaying(null)}>{t("cancel")}</Button>
             <Button onClick={pay} className="gradient-primary">{t("pay")}</Button>

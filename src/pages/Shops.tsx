@@ -25,7 +25,7 @@ const PAGE_LABELS: Record<PageKey, string> = {
   suppliers: "সরবরাহকারী", purchases: "ক্রয়", "stock-adjustments": "স্টক সমন্বয়",
   expenses: "খরচ", reports: "রিপোর্ট", staff: "কর্মী",
   attendance: "হাজিরা", shops: "শপ",
-  "stock-ledger": "স্টক ম্যানেজমেন্ট", "customer-ledger": "বাকি ম্যানেজমেন্ট",
+  "stock-ledger": "স্টক ম্যানেজমেন্ট", "customer-ledger": "বাকি ম্যানেজমেন্ট", "customer-report": "কাস্টমার রিপোর্ট",
   "supplier-ledger": "সরবরাহকারী লেজার", "sales-returns": "বিক্রয় ফেরত", ledger: "হিসাব ব্যবস্থাপনা",
   "activity-logs": "Activity Log",
   telegram: "Telegram Notification",
