@@ -292,18 +292,21 @@ export default function Installments() {
 
   const pay = async () => {
     if (!paying) return;
-    // For staff: amount is fixed (remaining + late fee). Only admin can override.
     const remaining = Math.max(0, Number(paying.amount) - Number(paying.paid_amount));
     const fee = computeLateFee(paying, managing?.late_fee_pct ?? 0);
-    const fixedPayable = remaining + fee;
-    const finalAmount = isAdmin ? amount : fixedPayable;
-    if (finalAmount <= 0) return;
+    const maxPayable = remaining + fee;
+    const finalAmount = Math.min(Math.max(0, Number(amount) || 0), maxPayable);
+    if (finalAmount <= 0) {
+      toast({ title: lang === "bn" ? "সঠিক পরিমাণ দিন" : "Enter valid amount", variant: "destructive" });
+      return;
+    }
     const { error } = await supabase.from("installment_payments").insert({
       installment_id: paying.id, amount: finalAmount, received_by: user!.id,
-    });
+      remark: payRemark || null, rating: payRating,
+    } as any);
     if (error) return toast({ title: error.message, variant: "destructive" });
-    logActivity({ action: "installment.pay", entity_type: "installment", entity_id: paying.id, meta: { amount: finalAmount, invoice_no: managing?.invoice_no, customer_name: managing?.customer_name } });
-    setPaying(null); setAmount(0); await load();
+    logActivity({ action: "installment.pay", entity_type: "installment", entity_id: paying.id, meta: { amount: finalAmount, invoice_no: managing?.invoice_no, customer_name: managing?.customer_name, rating: payRating, remark: payRemark } });
+    setPaying(null); setAmount(0); setPayRemark(""); setPayRating("good"); await load();
     toast({ title: t("paid") });
     if (managing) {
       const fresh = plans.find(p => p.sale_id === managing.sale_id);
