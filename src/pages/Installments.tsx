@@ -557,18 +557,37 @@ export default function Installments() {
                             <StatusPill tone={tone}>{t(status as any)}</StatusPill>
                           </div>
                         </div>
-                        {status !== "paid" && (
-                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-[hsl(var(--surface-container-high))]/50">
-                            <div className="text-sm">
-                              <span className="text-muted-foreground">{t("payable")}: </span>
-                              <span className="font-black text-foreground">{fmt(payable)}</span>
+                        {status !== "paid" && (() => {
+                          const earlierUnpaid = managing.installments.find(x => x.installment_no < i.installment_no && x.derived_status !== "paid" && (Number(x.amount) - Number(x.paid_amount)) > 0);
+                          const paidSoFar = Number(i.paid_amount) || 0;
+                          return (
+                            <div className="mt-3 pt-3 border-t border-[hsl(var(--surface-container-high))]/50">
+                              <div className="flex items-center justify-between flex-wrap gap-2">
+                                <div className="text-sm">
+                                  <span className="text-muted-foreground">{t("payable")}: </span>
+                                  <span className="font-black text-foreground">{fmt(payable)}</span>
+                                  {paidSoFar > 0 && (
+                                    <span className="ml-2 text-xs text-primary font-bold">
+                                      ({lang === "bn" ? "আংশিক পরিশোধ" : "Partial paid"}: {fmt(paidSoFar)} / {fmt(Number(i.amount))})
+                                    </span>
+                                  )}
+                                </div>
+                                <Button size="sm" className="gradient-primary text-primary-foreground shadow-md hover:brightness-110"
+                                  disabled={!!earlierUnpaid}
+                                  onClick={() => { setPaying(i); setAmount(payable); setPayRemark(""); setPayRating("good"); }}>
+                                  <Wallet className="h-4 w-4 mr-1" />{lang === "bn" ? "কিস্তি পরিশোধ করুন" : "Pay Installment"}
+                                </Button>
+                              </div>
+                              {earlierUnpaid && (
+                                <div className="mt-2 text-xs bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2 text-destructive font-semibold">
+                                  ⚠ {lang === "bn"
+                                    ? `আগে কিস্তি ${earlierUnpaid.installment_no} পরিশোধ করুন (বাকি: ${fmt(Number(earlierUnpaid.amount) - Number(earlierUnpaid.paid_amount))})`
+                                    : `Pay installment #${earlierUnpaid.installment_no} first (remaining: ${fmt(Number(earlierUnpaid.amount) - Number(earlierUnpaid.paid_amount))})`}
+                                </div>
+                              )}
                             </div>
-                            <Button size="sm" className="gradient-primary text-primary-foreground shadow-md hover:brightness-110"
-                              onClick={() => { setPaying(i); setAmount(payable); }}>
-                              <Wallet className="h-4 w-4 mr-1" />{lang === "bn" ? "কিস্তি পরিশোধ করুন" : "Pay Installment"}
-                            </Button>
-                          </div>
-                        )}
+                          );
+                        })()}
                         {isAdmin && (paymentsByInst[i.id]?.length ?? 0) > 0 && (
                           <div className="mt-3 pt-3 border-t border-[hsl(var(--surface-container-high))]/50">
                             <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2">
