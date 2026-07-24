@@ -30,6 +30,7 @@ import Reports from "./pages/Reports";
 import Suppliers from "./pages/Suppliers";
 import SupplierLedger from "./pages/SupplierLedger";
 import CustomerLedger from "./pages/CustomerLedger";
+import CustomerReport from "./pages/CustomerReport";
 import StockLedger from "./pages/StockLedger";
 import Purchases from "./pages/Purchases";
 import Ledger from "./pages/Ledger";
