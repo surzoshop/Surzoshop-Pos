@@ -76,6 +76,7 @@ const App = () => (
                     <Route path="/suppliers" element={<PageGate page="suppliers"><Suppliers /></PageGate>} />
                     <Route path="/suppliers/ledger" element={<PageGate page="supplier-ledger"><SupplierLedger /></PageGate>} />
                     <Route path="/customers/ledger" element={<PageGate page="customer-ledger"><CustomerLedger /></PageGate>} />
+                    <Route path="/customers/report" element={<PageGate page="customer-report"><CustomerReport /></PageGate>} />
                     <Route path="/stock-ledger" element={<PageGate page="stock-ledger"><StockLedger /></PageGate>} />
                     <Route path="/purchases" element={<PageGate page="purchases"><Purchases /></PageGate>} />
                     <Route path="/ledger" element={<Ledger />} />
