@@ -405,7 +405,12 @@ export default function Products() {
                       )}
                     </div>
                   </td>
-                  <td className="py-2 font-bold text-foreground">{p.name}</td>
+                  <td className="py-2 font-bold text-foreground">
+                    {p.name}
+                    {p.supplier_voucher && (
+                      <div className="text-[10px] font-bold text-info mt-0.5">📄 ভাউচার: <span className="font-mono">{p.supplier_voucher}</span></div>
+                    )}
+                  </td>
                   <td className="py-2 text-foreground/80 font-semibold">{catName(p.category_id)}</td>
                   <td className="py-2 text-foreground/70 font-mono text-xs font-bold">{p.barcode || "—"}</td>
                   <td className="py-2 font-extrabold text-primary">{fmt(p.price)}</td>
