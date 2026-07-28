@@ -234,6 +234,7 @@ function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, f
       <td class="center">${idx + 1}</td>
       <td>
         <div style="font-weight:700;color:#0f172a">${escapeHtml(it.product_name)}</div>
+        ${it.supplier_voucher ? `<div style="font-size:10px;color:#1e40af;font-weight:700;margin-top:2px">📄 সরবরাহকারী ভাউচার: <span style="font-family:monospace">${escapeHtml(it.supplier_voucher)}</span></div>` : ""}
         ${it.warranty_until ? `<div class="warr-tag">⛨ ওয়ারেন্টি ${it.warranty_months || ""} মাস · ${fmtBDDate(it.warranty_until, lang)}</div>` : ""}
       </td>
       <td class="qty">${it.qty}</td>
