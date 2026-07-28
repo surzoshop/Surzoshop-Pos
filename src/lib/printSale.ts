@@ -89,7 +89,7 @@ function buildThermalHTML(sale: any, items: any[], installments: any[], shop: Sh
   const fallbackLogo = defaultLogoUrl();
   const itemRows = items.map((it: any) => `
     <tr>
-      <td style="padding:2px 0">${escapeHtml(it.product_name)}${it.warranty_until ? `<div style="font-size:9px;color:#000">⛨ ওয়ারেন্টি ${it.warranty_months || ""} মাস (${fmtBDDate(it.warranty_until, lang)})</div>` : ""}</td>
+      <td style="padding:2px 0">${escapeHtml(it.product_name)}${it.supplier_voucher ? `<div style="font-size:9px;color:#000">📄 ভাউচার: ${escapeHtml(it.supplier_voucher)}</div>` : ""}${it.warranty_until ? `<div style="font-size:9px;color:#000">⛨ ওয়ারেন্টি ${it.warranty_months || ""} মাস (${fmtBDDate(it.warranty_until, lang)})</div>` : ""}</td>
       <td style="text-align:center">${it.qty}</td>
       <td style="text-align:right">${fmt(Number(it.unit_price))}</td>
       <td style="text-align:right;font-weight:700">${fmt(Number(it.subtotal))}</td>
