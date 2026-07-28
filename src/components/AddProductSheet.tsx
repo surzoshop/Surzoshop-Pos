@@ -94,6 +94,7 @@ export function AddProductSheet({ open, onOpenChange, onSaved, editing }: Props)
     const payload: any = {
       name: productName,
       sku: form.sku?.trim() || null,
+      supplier_voucher: form.supplier_voucher?.trim() || null,
       price,
       cost,
       stock: Number(form.stock) || 0,
