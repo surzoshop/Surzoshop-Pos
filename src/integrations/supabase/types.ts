@@ -431,6 +431,7 @@ export type Database = {
           shop_id: string | null
           sku: string | null
           stock: number
+          supplier_voucher: string | null
           unit: string | null
           updated_at: string
           warranty_months: number | null
@@ -452,6 +453,7 @@ export type Database = {
           shop_id?: string | null
           sku?: string | null
           stock?: number
+          supplier_voucher?: string | null
           unit?: string | null
           updated_at?: string
           warranty_months?: number | null
@@ -473,6 +475,7 @@ export type Database = {
           shop_id?: string | null
           sku?: string | null
           stock?: number
+          supplier_voucher?: string | null
           unit?: string | null
           updated_at?: string
           warranty_months?: number | null
