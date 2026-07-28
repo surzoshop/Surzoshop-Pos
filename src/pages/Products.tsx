@@ -165,6 +165,7 @@ export default function Products() {
     return p.name.toLowerCase().includes(q)
       || p.barcode?.toLowerCase().includes(q)
       || p.sku?.toLowerCase().includes(q)
+      || p.supplier_voucher?.toLowerCase().includes(q)
       || cName.includes(q);
   });
 
