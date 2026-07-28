@@ -72,10 +72,14 @@ async function imageUrlToDataUrl(src?: string | null) {
 async function loadSale(saleId: string) {
   const [{ data: sale }, { data: items }, { data: installments }] = await Promise.all([
     supabase.from("sales").select("*, customers(name, phone, address)").eq("id", saleId).maybeSingle(),
-    supabase.from("sale_items").select("*").eq("sale_id", saleId).order("created_at", { ascending: true }),
+    supabase.from("sale_items").select("*, products(supplier_voucher)").eq("sale_id", saleId).order("created_at", { ascending: true }),
     supabase.from("installments").select("*").eq("sale_id", saleId).order("installment_no", { ascending: true }),
   ]);
-  return { sale, items: items ?? [], installments: installments ?? [] };
+  const normalizedItems = (items ?? []).map((it: any) => ({
+    ...it,
+    supplier_voucher: it.products?.supplier_voucher ?? null,
+  }));
+  return { sale, items: normalizedItems, installments: installments ?? [] };
 }
 
 // ---------- 58mm thermal ----------
@@ -85,7 +89,7 @@ function buildThermalHTML(sale: any, items: any[], installments: any[], shop: Sh
   const fallbackLogo = defaultLogoUrl();
   const itemRows = items.map((it: any) => `
     <tr>
-      <td style="padding:2px 0">${escapeHtml(it.product_name)}${it.warranty_until ? `<div style="font-size:9px;color:#000">⛨ ওয়ারেন্টি ${it.warranty_months || ""} মাস (${fmtBDDate(it.warranty_until, lang)})</div>` : ""}</td>
+      <td style="padding:2px 0">${escapeHtml(it.product_name)}${it.supplier_voucher ? `<div style="font-size:9px;color:#000">📄 ভাউচার: ${escapeHtml(it.supplier_voucher)}</div>` : ""}${it.warranty_until ? `<div style="font-size:9px;color:#000">⛨ ওয়ারেন্টি ${it.warranty_months || ""} মাস (${fmtBDDate(it.warranty_until, lang)})</div>` : ""}</td>
       <td style="text-align:center">${it.qty}</td>
       <td style="text-align:right">${fmt(Number(it.unit_price))}</td>
       <td style="text-align:right;font-weight:700">${fmt(Number(it.subtotal))}</td>
@@ -230,6 +234,7 @@ function buildA4Body(sale: any, items: any[], installments: any[], shop: Shop, f
       <td class="center">${idx + 1}</td>
       <td>
         <div style="font-weight:700;color:#0f172a">${escapeHtml(it.product_name)}</div>
+        ${it.supplier_voucher ? `<div style="font-size:10px;color:#1e40af;font-weight:700;margin-top:2px">📄 সরবরাহকারী ভাউচার: <span style="font-family:monospace">${escapeHtml(it.supplier_voucher)}</span></div>` : ""}
         ${it.warranty_until ? `<div class="warr-tag">⛨ ওয়ারেন্টি ${it.warranty_months || ""} মাস · ${fmtBDDate(it.warranty_until, lang)}</div>` : ""}
       </td>
       <td class="qty">${it.qty}</td>

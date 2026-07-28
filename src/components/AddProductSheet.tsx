@@ -52,7 +52,7 @@ export function AddProductSheet({ open, onOpenChange, onSaved, editing }: Props)
   const [cats, setCats] = useState<any[]>([]);
   const empty = {
     name: "", category_id: "", price: "", cost: "", stock: "", unit: "pcs",
-    image_url: "", sku: "",
+    image_url: "", sku: "", supplier_voucher: "",
     credit_extra: "", installment_extra: "",
     has_warranty: false, warranty_months: "" as string | number, warranty_type: "ম্যানুফ্যাকচারার",
   };
@@ -94,6 +94,7 @@ export function AddProductSheet({ open, onOpenChange, onSaved, editing }: Props)
     const payload: any = {
       name: productName,
       sku: form.sku?.trim() || null,
+      supplier_voucher: form.supplier_voucher?.trim() || null,
       price,
       cost,
       stock: Number(form.stock) || 0,
@@ -175,6 +176,17 @@ export function AddProductSheet({ open, onOpenChange, onSaved, editing }: Props)
                 </Select>
               </div>
               <div><Label>SKU / মডেল</Label><Input value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} placeholder="optional" /></div>
+            </div>
+            <div>
+              <Label>সরবরাহকারী ভাউচার নং (Supplier Voucher / Challan No.)</Label>
+              <Input
+                value={form.supplier_voucher}
+                onChange={e => setForm({ ...form, supplier_voucher: e.target.value })}
+                placeholder="যেমন: VCH-1023 / কোম্পানির চালান নম্বর"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                কোম্পানি/ফ্যাক্টরি থেকে দেওয়া ভাউচার নম্বর — সার্চ ও ইনভয়েসে দেখাবে।
+              </p>
             </div>
           </section>
 

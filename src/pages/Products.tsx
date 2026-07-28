@@ -165,6 +165,7 @@ export default function Products() {
     return p.name.toLowerCase().includes(q)
       || p.barcode?.toLowerCase().includes(q)
       || p.sku?.toLowerCase().includes(q)
+      || p.supplier_voucher?.toLowerCase().includes(q)
       || cName.includes(q);
   });
 
@@ -274,7 +275,7 @@ export default function Products() {
             onChange={e => { setSearch(e.target.value); setShowCatSuggest(true); }}
             onFocus={() => setShowCatSuggest(true)}
             onBlur={() => setTimeout(() => setShowCatSuggest(false), 150)}
-            placeholder={t("productSearch")}
+            placeholder={t("productSearch") + " · ভাউচার নং"}
             className="w-full h-12 pl-12 pr-4 rounded-xl bg-[hsl(var(--surface-container-low))] border-none focus:outline-none focus:ring-2 focus:ring-primary/30 text-sm"
           />
           {showCatSuggest && catSuggestions.length > 0 && (
@@ -345,6 +346,9 @@ export default function Products() {
                   <div className="min-w-0 flex-1">
                     <p className="font-bold text-foreground truncate">{p.name}</p>
                     <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{catName(p.category_id)} · {p.barcode ?? "—"}</p>
+                    {p.supplier_voucher && (
+                      <p className="text-[10px] mt-0.5 truncate font-bold text-info">📄 ভাউচার: <span className="font-mono">{p.supplier_voucher}</span></p>
+                    )}
                   </div>
                   {isAdmin && (
                     <div className="flex shrink-0">
@@ -401,7 +405,12 @@ export default function Products() {
                       )}
                     </div>
                   </td>
-                  <td className="py-2 font-bold text-foreground">{p.name}</td>
+                  <td className="py-2 font-bold text-foreground">
+                    {p.name}
+                    {p.supplier_voucher && (
+                      <div className="text-[10px] font-bold text-info mt-0.5">📄 ভাউচার: <span className="font-mono">{p.supplier_voucher}</span></div>
+                    )}
+                  </td>
                   <td className="py-2 text-foreground/80 font-semibold">{catName(p.category_id)}</td>
                   <td className="py-2 text-foreground/70 font-mono text-xs font-bold">{p.barcode || "—"}</td>
                   <td className="py-2 font-extrabold text-primary">{fmt(p.price)}</td>
