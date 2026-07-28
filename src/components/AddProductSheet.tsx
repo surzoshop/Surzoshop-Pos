@@ -177,6 +177,16 @@ export function AddProductSheet({ open, onOpenChange, onSaved, editing }: Props)
               </div>
               <div><Label>SKU / মডেল</Label><Input value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} placeholder="optional" /></div>
             </div>
+            <div>
+              <Label>সরবরাহকারী ভাউচার নং (Supplier Voucher / Challan No.)</Label>
+              <Input
+                value={form.supplier_voucher}
+                onChange={e => setForm({ ...form, supplier_voucher: e.target.value })}
+                placeholder="যেমন: VCH-1023 / কোম্পানির চালান নম্বর"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                কোম্পানি/ফ্যাক্টরি থেকে দেওয়া ভাউচার নম্বর — সার্চ ও ইনভয়েসে দেখাবে।
+              </p>
           </section>
 
           {/* Pricing + Profit */}
