@@ -52,7 +52,7 @@ export function AddProductSheet({ open, onOpenChange, onSaved, editing }: Props)
   const [cats, setCats] = useState<any[]>([]);
   const empty = {
     name: "", category_id: "", price: "", cost: "", stock: "", unit: "pcs",
-    image_url: "", sku: "",
+    image_url: "", sku: "", supplier_voucher: "",
     credit_extra: "", installment_extra: "",
     has_warranty: false, warranty_months: "" as string | number, warranty_type: "ম্যানুফ্যাকচারার",
   };
