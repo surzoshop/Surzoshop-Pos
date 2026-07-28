@@ -346,6 +346,9 @@ export default function Products() {
                   <div className="min-w-0 flex-1">
                     <p className="font-bold text-foreground truncate">{p.name}</p>
                     <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{catName(p.category_id)} · {p.barcode ?? "—"}</p>
+                    {p.supplier_voucher && (
+                      <p className="text-[10px] mt-0.5 truncate font-bold text-info">📄 ভাউচার: <span className="font-mono">{p.supplier_voucher}</span></p>
+                    )}
                   </div>
                   {isAdmin && (
                     <div className="flex shrink-0">
