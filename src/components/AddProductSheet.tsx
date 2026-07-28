@@ -187,6 +187,7 @@ export function AddProductSheet({ open, onOpenChange, onSaved, editing }: Props)
               <p className="text-[11px] text-muted-foreground mt-1">
                 কোম্পানি/ফ্যাক্টরি থেকে দেওয়া ভাউচার নম্বর — সার্চ ও ইনভয়েসে দেখাবে।
               </p>
+            </div>
           </section>
 
           {/* Pricing + Profit */}
