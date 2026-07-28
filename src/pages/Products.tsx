@@ -275,7 +275,7 @@ export default function Products() {
             onChange={e => { setSearch(e.target.value); setShowCatSuggest(true); }}
             onFocus={() => setShowCatSuggest(true)}
             onBlur={() => setTimeout(() => setShowCatSuggest(false), 150)}
-            placeholder={t("productSearch")}
+            placeholder={t("productSearch") + " · ভাউচার নং"}
             className="w-full h-12 pl-12 pr-4 rounded-xl bg-[hsl(var(--surface-container-low))] border-none focus:outline-none focus:ring-2 focus:ring-primary/30 text-sm"
           />
           {showCatSuggest && catSuggestions.length > 0 && (
