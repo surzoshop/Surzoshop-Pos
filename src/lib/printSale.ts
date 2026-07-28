@@ -72,10 +72,14 @@ async function imageUrlToDataUrl(src?: string | null) {
 async function loadSale(saleId: string) {
   const [{ data: sale }, { data: items }, { data: installments }] = await Promise.all([
     supabase.from("sales").select("*, customers(name, phone, address)").eq("id", saleId).maybeSingle(),
-    supabase.from("sale_items").select("*").eq("sale_id", saleId).order("created_at", { ascending: true }),
+    supabase.from("sale_items").select("*, products(supplier_voucher)").eq("sale_id", saleId).order("created_at", { ascending: true }),
     supabase.from("installments").select("*").eq("sale_id", saleId).order("installment_no", { ascending: true }),
   ]);
-  return { sale, items: items ?? [], installments: installments ?? [] };
+  const normalizedItems = (items ?? []).map((it: any) => ({
+    ...it,
+    supplier_voucher: it.products?.supplier_voucher ?? null,
+  }));
+  return { sale, items: normalizedItems, installments: installments ?? [] };
 }
 
 // ---------- 58mm thermal ----------
