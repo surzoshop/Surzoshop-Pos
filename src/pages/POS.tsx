@@ -114,9 +114,6 @@ export default function POS() {
   const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
   const [originalQty, setOriginalQty] = useState<Record<string, number>>({});
   const [editLoaded, setEditLoaded] = useState(false);
-  // Existing installment rows of the sale being edited (with real collected amounts)
-  const [existingInstallments, setExistingInstallments] = useState<any[]>([]);
-  const collectedInstallments = existingInstallments.reduce((a, i) => a + (Number(i.paid_amount) || 0), 0);
 
   useEffect(() => { inputRef.current?.focus(); load(); }, []);
 
@@ -169,12 +166,10 @@ export default function POS() {
         setInstallmentCount(Number(sale.tenure_months) || 3);
         setLateFeePerDay(Number(sale.late_fee_per_day) || 5);
         const { data: existingInst } = await supabase
-          .from("installments").select("id, installment_no, due_date, amount, paid_amount, status")
+          .from("installments").select("installment_no, due_date")
           .eq("sale_id", editId).order("installment_no");
-        setExistingInstallments(existingInst ?? []);
         if (existingInst && existingInst.length) {
           setScheduleDates(existingInst.map((i: any) => i.due_date));
-          setInstallmentCount(existingInst.length);
         }
         setGuarantorId(sale.guarantor_id || "");
       } else if (Number(sale.due) > 0) {
@@ -276,15 +271,12 @@ export default function POS() {
     : 0;
   const total = baseTotal + interestAmount;
   const financed = principal + interestAmount;
-  // Already-collected installment money (edit mode only) must be respected so the
-  // real remaining due is shown instead of the whole financed amount again.
-  const collected = paymentType === "installment" ? Math.min(collectedInstallments, financed) : 0;
   const due =
-    paymentType === "installment" ? Math.max(financed - collected, 0)
+    paymentType === "installment" ? financed
     : paymentType === "due" ? Math.max(total - duePaid, 0)
     : 0;
   const paid =
-    paymentType === "installment" ? downPayment + collected
+    paymentType === "installment" ? downPayment
     : paymentType === "due" ? Math.min(duePaid, total)
     : total;
   const emi = paymentType === "installment" && installmentCount > 0 ? financed / installmentCount : 0;
@@ -359,37 +351,22 @@ export default function POS() {
         const { data: prod } = await supabase.from("products").select("stock").eq("id", pid).maybeSingle();
         if (prod) await supabase.from("products").update({ stock: Number(prod.stock) + Number(qty) }).eq("id", pid);
       }
-      // 2) Reload the latest installment state (another user may have collected money meanwhile)
-      const { data: insts } = await supabase
-        .from("installments").select("id, installment_no, amount, paid_amount")
-        .eq("sale_id", editingSaleId).order("installment_no");
-      const liveInsts = insts ?? [];
-      const liveCollected = liveInsts.reduce((a: number, i: any) => a + (Number(i.paid_amount) || 0), 0);
-
-      if (liveCollected > 0 && paymentType !== "installment") {
-        toast({
-          title: lang === "bn"
-            ? "এই বিক্রয়ে কিস্তি পরিশোধ হয়েছে — পেমেন্ট টাইপ পরিবর্তন করা যাবে না"
-            : "Installment payments already collected — payment type can't be changed",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (paymentType !== "installment" && liveInsts.length) {
-        await supabase.from("installments").delete().in("id", liveInsts.map((i: any) => i.id));
+      // 2) Delete existing installments + payments + items
+      const { data: insts } = await supabase.from("installments").select("id").eq("sale_id", editingSaleId);
+      const instIds = (insts ?? []).map((i: any) => i.id);
+      if (instIds.length) {
+        await supabase.from("installment_payments").delete().in("installment_id", instIds);
+        await supabase.from("installments").delete().in("id", instIds);
       }
       await supabase.from("sale_items").delete().eq("sale_id", editingSaleId);
 
-      // 3) Update sales row — respect money already collected via installments
-      const appliedCollected = paymentType === "installment" ? Math.min(liveCollected, financed) : 0;
-      const livePaid = paymentType === "installment" ? downPayment + appliedCollected : paid;
-      const liveDue = paymentType === "installment" ? Math.max(financed - appliedCollected, 0) : due;
+      // 3) Update sales row
       const updatePayload: any = {
         customer_id: customerId || null,
-        subtotal, discount, total, paid: livePaid, due: liveDue,
+        subtotal, discount, total, paid, due,
         extra_charge: paymentType === "cash" ? 0 : extraCharge,
         payment_type: paymentType === "due" ? "cash" : paymentType,
-        status: liveDue > 0 ? "partial" : "completed",
+        status: due > 0 ? "partial" : "completed",
         down_payment: paymentType === "installment" ? downPayment : 0,
         interest_rate: paymentType === "installment" ? interestRate : 0,
         tenure_months: paymentType === "installment" ? installmentCount : null,
@@ -413,33 +390,16 @@ export default function POS() {
       });
       await supabase.from("sale_items").insert(newItems);
 
-      // 5) Reconcile installments in place — NEVER delete rows that already have
-      // collected payments, so the paid history survives every edit.
-      if (paymentType === "installment" && financed > 0) {
-        const per = Math.round((financed / installmentCount) * 100) / 100;
+      // 5) Recreate installments if installment type
+      if (paymentType === "installment" && due > 0) {
+        const per = Math.round((due / installmentCount) * 100) / 100;
         const dates = scheduleDates.length === installmentCount ? scheduleDates : defaultScheduleDates(installmentCount);
-        for (let idx = 0; idx < installmentCount; idx++) {
-          const amount = idx === installmentCount - 1 ? roundMoney(financed - per * (installmentCount - 1)) : per;
-          const existing = liveInsts.find((i: any) => Number(i.installment_no) === idx + 1);
-          if (existing) {
-            const pa = Number(existing.paid_amount) || 0;
-            await supabase.from("installments").update({
-              due_date: dates[idx],
-              amount,
-              status: pa >= amount - 0.009 ? "paid" : "pending",
-            }).eq("id", existing.id);
-          } else {
-            await supabase.from("installments").insert({
-              sale_id: editingSaleId, installment_no: idx + 1,
-              due_date: dates[idx], amount, paid_amount: 0, status: "pending",
-            } as any);
-          }
-        }
-        // Drop only surplus installments that carry no payment
-        const surplus = liveInsts.filter((i: any) => Number(i.installment_no) > installmentCount && (Number(i.paid_amount) || 0) <= 0);
-        if (surplus.length) {
-          await supabase.from("installments").delete().in("id", surplus.map((i: any) => i.id));
-        }
+        const schedule = Array.from({ length: installmentCount }).map((_, idx) => ({
+          sale_id: editingSaleId, installment_no: idx + 1,
+          due_date: dates[idx],
+          amount: idx === installmentCount - 1 ? due - per * (installmentCount - 1) : per,
+        }));
+        await supabase.from("installments").insert(schedule);
       }
 
       toast({ title: lang === "bn" ? "ইনভয়েস আপডেট হয়েছে ✓" : "Sale updated" });
@@ -863,12 +823,6 @@ export default function POS() {
             )}
             {paymentType === "installment" && downPayment > 0 && (
               <div className="flex justify-between text-muted-foreground"><span>{lang === "bn" ? "ডাউন পেমেন্ট" : "Down Payment"}:</span><span className="text-success">-{fmt(downPayment)}</span></div>
-            )}
-            {paymentType === "installment" && collected > 0 && (
-              <div className="flex justify-between text-muted-foreground"><span>{lang === "bn" ? "কিস্তি পরিশোধ হয়েছে" : "Installments Collected"}:</span><span className="text-success">-{fmt(collected)}</span></div>
-            )}
-            {paymentType === "installment" && collected > 0 && (
-              <div className="flex justify-between text-muted-foreground"><span>{lang === "bn" ? "মোট জমা" : "Total Received"}:</span><span className="text-success font-bold">{fmt(downPayment + collected)}</span></div>
             )}
             {due > 0 && (
               <div className="flex justify-between items-center bg-destructive/10 -mx-1 px-3 py-2 rounded-lg">
