@@ -169,10 +169,12 @@ export default function POS() {
         setInstallmentCount(Number(sale.tenure_months) || 3);
         setLateFeePerDay(Number(sale.late_fee_per_day) || 5);
         const { data: existingInst } = await supabase
-          .from("installments").select("installment_no, due_date")
+          .from("installments").select("id, installment_no, due_date, amount, paid_amount, status")
           .eq("sale_id", editId).order("installment_no");
+        setExistingInstallments(existingInst ?? []);
         if (existingInst && existingInst.length) {
           setScheduleDates(existingInst.map((i: any) => i.due_date));
+          setInstallmentCount(existingInst.length);
         }
         setGuarantorId(sale.guarantor_id || "");
       } else if (Number(sale.due) > 0) {
