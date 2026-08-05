@@ -276,12 +276,15 @@ export default function POS() {
     : 0;
   const total = baseTotal + interestAmount;
   const financed = principal + interestAmount;
+  // Already-collected installment money (edit mode only) must be respected so the
+  // real remaining due is shown instead of the whole financed amount again.
+  const collected = paymentType === "installment" ? Math.min(collectedInstallments, financed) : 0;
   const due =
-    paymentType === "installment" ? financed
+    paymentType === "installment" ? Math.max(financed - collected, 0)
     : paymentType === "due" ? Math.max(total - duePaid, 0)
     : 0;
   const paid =
-    paymentType === "installment" ? downPayment
+    paymentType === "installment" ? downPayment + collected
     : paymentType === "due" ? Math.min(duePaid, total)
     : total;
   const emi = paymentType === "installment" && installmentCount > 0 ? financed / installmentCount : 0;
