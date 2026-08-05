@@ -114,6 +114,9 @@ export default function POS() {
   const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
   const [originalQty, setOriginalQty] = useState<Record<string, number>>({});
   const [editLoaded, setEditLoaded] = useState(false);
+  // Existing installment rows of the sale being edited (with real collected amounts)
+  const [existingInstallments, setExistingInstallments] = useState<any[]>([]);
+  const collectedInstallments = existingInstallments.reduce((a, i) => a + (Number(i.paid_amount) || 0), 0);
 
   useEffect(() => { inputRef.current?.focus(); load(); }, []);
 
