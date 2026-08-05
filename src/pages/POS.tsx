@@ -380,13 +380,16 @@ export default function POS() {
       }
       await supabase.from("sale_items").delete().eq("sale_id", editingSaleId);
 
-      // 3) Update sales row
+      // 3) Update sales row — respect money already collected via installments
+      const appliedCollected = paymentType === "installment" ? Math.min(liveCollected, financed) : 0;
+      const livePaid = paymentType === "installment" ? downPayment + appliedCollected : paid;
+      const liveDue = paymentType === "installment" ? Math.max(financed - appliedCollected, 0) : due;
       const updatePayload: any = {
         customer_id: customerId || null,
-        subtotal, discount, total, paid, due,
+        subtotal, discount, total, paid: livePaid, due: liveDue,
         extra_charge: paymentType === "cash" ? 0 : extraCharge,
         payment_type: paymentType === "due" ? "cash" : paymentType,
-        status: due > 0 ? "partial" : "completed",
+        status: liveDue > 0 ? "partial" : "completed",
         down_payment: paymentType === "installment" ? downPayment : 0,
         interest_rate: paymentType === "installment" ? interestRate : 0,
         tenure_months: paymentType === "installment" ? installmentCount : null,
@@ -410,16 +413,33 @@ export default function POS() {
       });
       await supabase.from("sale_items").insert(newItems);
 
-      // 5) Recreate installments if installment type
-      if (paymentType === "installment" && due > 0) {
-        const per = Math.round((due / installmentCount) * 100) / 100;
+      // 5) Reconcile installments in place — NEVER delete rows that already have
+      // collected payments, so the paid history survives every edit.
+      if (paymentType === "installment" && financed > 0) {
+        const per = Math.round((financed / installmentCount) * 100) / 100;
         const dates = scheduleDates.length === installmentCount ? scheduleDates : defaultScheduleDates(installmentCount);
-        const schedule = Array.from({ length: installmentCount }).map((_, idx) => ({
-          sale_id: editingSaleId, installment_no: idx + 1,
-          due_date: dates[idx],
-          amount: idx === installmentCount - 1 ? due - per * (installmentCount - 1) : per,
-        }));
-        await supabase.from("installments").insert(schedule);
+        for (let idx = 0; idx < installmentCount; idx++) {
+          const amount = idx === installmentCount - 1 ? roundMoney(financed - per * (installmentCount - 1)) : per;
+          const existing = liveInsts.find((i: any) => Number(i.installment_no) === idx + 1);
+          if (existing) {
+            const pa = Number(existing.paid_amount) || 0;
+            await supabase.from("installments").update({
+              due_date: dates[idx],
+              amount,
+              status: pa >= amount - 0.009 ? "paid" : "pending",
+            }).eq("id", existing.id);
+          } else {
+            await supabase.from("installments").insert({
+              sale_id: editingSaleId, installment_no: idx + 1,
+              due_date: dates[idx], amount, paid_amount: 0, status: "pending",
+            } as any);
+          }
+        }
+        // Drop only surplus installments that carry no payment
+        const surplus = liveInsts.filter((i: any) => Number(i.installment_no) > installmentCount && (Number(i.paid_amount) || 0) <= 0);
+        if (surplus.length) {
+          await supabase.from("installments").delete().in("id", surplus.map((i: any) => i.id));
+        }
       }
 
       toast({ title: lang === "bn" ? "ইনভয়েস আপডেট হয়েছে ✓" : "Sale updated" });
