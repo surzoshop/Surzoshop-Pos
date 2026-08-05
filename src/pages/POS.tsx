@@ -359,12 +359,24 @@ export default function POS() {
         const { data: prod } = await supabase.from("products").select("stock").eq("id", pid).maybeSingle();
         if (prod) await supabase.from("products").update({ stock: Number(prod.stock) + Number(qty) }).eq("id", pid);
       }
-      // 2) Delete existing installments + payments + items
-      const { data: insts } = await supabase.from("installments").select("id").eq("sale_id", editingSaleId);
-      const instIds = (insts ?? []).map((i: any) => i.id);
-      if (instIds.length) {
-        await supabase.from("installment_payments").delete().in("installment_id", instIds);
-        await supabase.from("installments").delete().in("id", instIds);
+      // 2) Reload the latest installment state (another user may have collected money meanwhile)
+      const { data: insts } = await supabase
+        .from("installments").select("id, installment_no, amount, paid_amount")
+        .eq("sale_id", editingSaleId).order("installment_no");
+      const liveInsts = insts ?? [];
+      const liveCollected = liveInsts.reduce((a: number, i: any) => a + (Number(i.paid_amount) || 0), 0);
+
+      if (liveCollected > 0 && paymentType !== "installment") {
+        toast({
+          title: lang === "bn"
+            ? "এই বিক্রয়ে কিস্তি পরিশোধ হয়েছে — পেমেন্ট টাইপ পরিবর্তন করা যাবে না"
+            : "Installment payments already collected — payment type can't be changed",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (paymentType !== "installment" && liveInsts.length) {
+        await supabase.from("installments").delete().in("id", liveInsts.map((i: any) => i.id));
       }
       await supabase.from("sale_items").delete().eq("sale_id", editingSaleId);
 
