@@ -128,29 +128,32 @@ export default function POS() {
       const newCart: CartItem[] = [];
       const savedDiscount = Number(sale.discount) || 0;
       const savedExtraCharge = Number((sale as any).extra_charge) || 0;
-      const rawSubtotal = (items ?? []).reduce((sum: number, it: any) => sum + Number(it.subtotal ?? (Number(it.unit_price) * Number(it.qty))), 0);
       const savedBaseTotal = recoverBaseTotal(sale);
-      // Item subtotal must exclude the extra charge that was added on top of the line items
-      const intendedSubtotal = savedBaseTotal + savedDiscount - savedExtraCharge;
-      const shouldNormalizeItemPrices = rawSubtotal > 0 && intendedSubtotal > 0 && Math.abs(intendedSubtotal - rawSubtotal) > 0.009;
+      // Load line items EXACTLY as saved — never scale unit prices to match the
+      // invoice total, otherwise the total/extra-charge leaks into product prices
+      // and inflates the amount on every re-edit.
       (items ?? []).forEach((it: any) => {
         const p = products.find(pp => pp.id === it.product_id);
         if (p) {
           const qty = Number(it.qty) || 1;
-          const lineSubtotal = Number(it.subtotal ?? (Number(it.unit_price) * qty));
-          const effectiveUnitPrice = shouldNormalizeItemPrices
-            ? roundMoney((lineSubtotal * (intendedSubtotal / rawSubtotal)) / qty)
-            : Number(it.unit_price);
+          const unitPrice = Number(it.unit_price) || 0;
           orig[p.id] = (orig[p.id] || 0) + qty;
-          newCart.push({ product: { ...p, price: effectiveUnitPrice }, qty, warrantyMonths: it.warranty_months ?? (p.has_warranty ? Number(p.warranty_months) || null : null) });
+          newCart.push({ product: { ...p, price: unitPrice }, qty, warrantyMonths: it.warranty_months ?? (p.has_warranty ? Number(p.warranty_months) || null : null) });
         }
       });
+      const rawSubtotal = newCart.reduce((sum, i) => sum + i.product.price * i.qty, 0);
+      const recomputedBase = Math.max(0, rawSubtotal * (1 + VAT_RATE) - savedDiscount + (sale.payment_type !== "cash" ? savedExtraCharge : 0));
       setEditingSaleId(editId);
       setOriginalQty(orig);
       setCart(newCart);
       setCustomerId(sale.customer_id || "");
       setDiscount(savedDiscount);
-      setTotalOverride(null);
+      // If the saved total was manually adjusted (round-off / negotiation), keep it as
+      // an explicit override instead of baking the difference into product prices.
+      setTotalOverride(
+        Math.abs(recomputedBase - savedBaseTotal) > 0.009 ? roundMoney(savedBaseTotal) : null
+      );
+
       // Restore the exact extra-charge the cashier saved (including 0) so it does
       // not silently get recomputed from product defaults on every reopen.
       if (sale.payment_type !== "cash") {
