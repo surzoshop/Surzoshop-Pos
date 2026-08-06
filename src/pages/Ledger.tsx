@@ -470,6 +470,25 @@ export default function Ledger() {
     return baseStats;
   }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg, profitAgg, purchaseCostAgg, topFrom, topTo, isAdmin, stockSellValue]);
 
+  // 🔍 নগদ ব্যালেন্স মিলিয়ে দেখার বিস্তারিত ভাঙানি (audit trail)
+  // যেন কখনো খাতার সাথে না মিললে কোন অংশে পার্থক্য তা সাথে সাথে ধরা যায়।
+  const cashBreakdown = useMemo(() => {
+    const upTo = (d: string) => !topTo || d <= topTo;
+    const salesCash = salesAgg.filter(s => upTo(s.date)).reduce((a, x) => a + x.paid, 0);
+    const instCash  = instPayAgg.filter(p => upTo(p.date)).reduce((a, p) => a + p.amount, 0);
+    const deposits  = entries.filter(e => e.entry_type === "deposit" && upTo(e.entry_date))
+      .reduce((a, e) => a + Number(e.amount || 0), 0);
+    const withdraws = entries.filter(e => e.entry_type === "withdraw" && upTo(e.entry_date))
+      .reduce((a, e) => a + Number(e.amount || 0), 0);
+    const expensesOut = expensesAgg.filter(x => upTo(x.date)).reduce((a, x) => a + x.total, 0);
+    const balance = salesCash + instCash + deposits - withdraws - expensesOut;
+    const lastWithdraws = entries
+      .filter(e => e.entry_type === "withdraw" && upTo(e.entry_date))
+      .sort((a, b) => (a.entry_date < b.entry_date ? 1 : -1))
+      .slice(0, 5);
+    return { salesCash, instCash, deposits, withdraws, expensesOut, balance, lastWithdraws };
+  }, [entries, salesAgg, instPayAgg, expensesAgg, topTo]);
+
   // 3 big totals (under account tabs) — based on lower range + tab + account filter
   const lowerFiltered = useMemo(() => synthEntries.filter(e => {
     if (lowFrom && e.entry_date < lowFrom) return false;
