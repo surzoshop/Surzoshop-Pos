@@ -470,6 +470,25 @@ export default function Ledger() {
     return baseStats;
   }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg, profitAgg, purchaseCostAgg, topFrom, topTo, isAdmin, stockSellValue]);
 
+  // 🔍 নগদ ব্যালেন্স মিলিয়ে দেখার বিস্তারিত ভাঙানি (audit trail)
+  // যেন কখনো খাতার সাথে না মিললে কোন অংশে পার্থক্য তা সাথে সাথে ধরা যায়।
+  const cashBreakdown = useMemo(() => {
+    const upTo = (d: string) => !topTo || d <= topTo;
+    const salesCash = salesAgg.filter(s => upTo(s.date)).reduce((a, x) => a + x.paid, 0);
+    const instCash  = instPayAgg.filter(p => upTo(p.date)).reduce((a, p) => a + p.amount, 0);
+    const deposits  = entries.filter(e => e.entry_type === "deposit" && upTo(e.entry_date))
+      .reduce((a, e) => a + Number(e.amount || 0), 0);
+    const withdraws = entries.filter(e => e.entry_type === "withdraw" && upTo(e.entry_date))
+      .reduce((a, e) => a + Number(e.amount || 0), 0);
+    const expensesOut = expensesAgg.filter(x => upTo(x.date)).reduce((a, x) => a + x.total, 0);
+    const balance = salesCash + instCash + deposits - withdraws - expensesOut;
+    const lastWithdraws = entries
+      .filter(e => e.entry_type === "withdraw" && upTo(e.entry_date))
+      .sort((a, b) => (a.entry_date < b.entry_date ? 1 : -1))
+      .slice(0, 5);
+    return { salesCash, instCash, deposits, withdraws, expensesOut, balance, lastWithdraws };
+  }, [entries, salesAgg, instPayAgg, expensesAgg, topTo]);
+
   // 3 big totals (under account tabs) — based on lower range + tab + account filter
   const lowerFiltered = useMemo(() => synthEntries.filter(e => {
     if (lowFrom && e.entry_date < lowFrom) return false;
@@ -606,6 +625,42 @@ export default function Ledger() {
           <MiniStat key={i} {...s} active={tab === s.key} onClick={() => setTab(s.key)} />
         ))}
       </div>
+
+      {/* 🔍 নগদ ব্যালেন্স মিলিয়ে দেখুন (audit) */}
+      <details className="rounded-2xl border border-border/60 bg-muted/20 overflow-hidden">
+        <summary className="cursor-pointer select-none px-4 py-3 text-sm font-bold flex items-center gap-2">
+          <Coins className="h-4 w-4 text-primary" />
+          নগদ ব্যালেন্স মিলিয়ে দেখুন (বিস্তারিত ভাঙানি)
+        </summary>
+        <div className="px-4 pb-4 space-y-1.5 text-sm">
+          <BreakRow label="বিক্রয় থেকে প্রাপ্ত নগদ (ডাউন পেমেন্ট + পূর্ণ পরিশোধ)" value={fmt(cashBreakdown.salesCash)} sign="+" />
+          <BreakRow label="কিস্তি / বাকি আদায়" value={fmt(cashBreakdown.instCash)} sign="+" />
+          <BreakRow label="ক্যাশবুক জমা" value={fmt(cashBreakdown.deposits)} sign="+" />
+          <BreakRow label="ক্যাশবুক উত্তোলন (সব মাধ্যম)" value={fmt(cashBreakdown.withdraws)} sign="−" />
+          <BreakRow label="দোকান খরচ" value={fmt(cashBreakdown.expensesOut)} sign="−" />
+          <div className="flex items-center justify-between pt-2 mt-1 border-t border-border/60 font-black">
+            <span>= হাতে নগদ ব্যালেন্স</span>
+            <span className="text-primary">{fmt(cashBreakdown.balance)}</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground pt-2 leading-relaxed">
+            ℹ️ স্টক ক্রয়ের পরিশোধ এখানে ধরা হয় না (ক্রয় হিসাব আলাদাভাবে "স্টক ক্রয়মূল্য" কার্ডে দেখানো হয়)।
+            খাতার সাথে না মিললে নিচের সাম্প্রতিক উত্তোলনগুলো আগে মিলিয়ে দেখুন — সাধারণত এখানেই পার্থক্য থাকে।
+          </p>
+          {cashBreakdown.lastWithdraws.length > 0 && (
+            <div className="pt-2 space-y-1">
+              <div className="text-[11px] font-bold uppercase text-muted-foreground">সাম্প্রতিক উত্তোলন</div>
+              {cashBreakdown.lastWithdraws.map(w => (
+                <div key={w.id} className="flex items-center justify-between text-xs bg-background/60 rounded-lg px-3 py-2">
+                  <span className="truncate">{w.entry_date} · {w.category ?? "সাধারণ"} · {w.payment_method ?? "cash"}</span>
+                  <span className="font-bold text-destructive">−{fmt(Number(w.amount || 0))}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </details>
+
+
 
       {/* Tabs row */}
       <div className="grid grid-cols-3 sm:flex sm:flex-wrap sm:justify-center gap-1.5 p-1.5 rounded-2xl bg-muted/40 border border-border/60">
@@ -1044,4 +1099,15 @@ function exportCsv(rows: Entry[]) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a"); a.href = url; a.download = `ledger-${today()}.csv`; a.click();
   URL.revokeObjectURL(url);
+}
+
+function BreakRow({ label, value, sign }: { label: string; value: string; sign: "+" | "−" }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-muted-foreground truncate">{label}</span>
+      <span className={`font-bold shrink-0 ${sign === "+" ? "text-emerald-600" : "text-destructive"}`}>
+        {sign}{value}
+      </span>
+    </div>
+  );
 }
