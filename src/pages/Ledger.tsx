@@ -626,6 +626,42 @@ export default function Ledger() {
         ))}
       </div>
 
+      {/* 🔍 নগদ ব্যালেন্স মিলিয়ে দেখুন (audit) */}
+      <details className="rounded-2xl border border-border/60 bg-muted/20 overflow-hidden">
+        <summary className="cursor-pointer select-none px-4 py-3 text-sm font-bold flex items-center gap-2">
+          <Coins className="h-4 w-4 text-primary" />
+          নগদ ব্যালেন্স মিলিয়ে দেখুন (বিস্তারিত ভাঙানি)
+        </summary>
+        <div className="px-4 pb-4 space-y-1.5 text-sm">
+          <BreakRow label="বিক্রয় থেকে প্রাপ্ত নগদ (ডাউন পেমেন্ট + পূর্ণ পরিশোধ)" value={fmt(cashBreakdown.salesCash)} sign="+" />
+          <BreakRow label="কিস্তি / বাকি আদায়" value={fmt(cashBreakdown.instCash)} sign="+" />
+          <BreakRow label="ক্যাশবুক জমা" value={fmt(cashBreakdown.deposits)} sign="+" />
+          <BreakRow label="ক্যাশবুক উত্তোলন (সব মাধ্যম)" value={fmt(cashBreakdown.withdraws)} sign="−" />
+          <BreakRow label="দোকান খরচ" value={fmt(cashBreakdown.expensesOut)} sign="−" />
+          <div className="flex items-center justify-between pt-2 mt-1 border-t border-border/60 font-black">
+            <span>= হাতে নগদ ব্যালেন্স</span>
+            <span className="text-primary">{fmt(cashBreakdown.balance)}</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground pt-2 leading-relaxed">
+            ℹ️ স্টক ক্রয়ের পরিশোধ এখানে ধরা হয় না (ক্রয় হিসাব আলাদাভাবে "স্টক ক্রয়মূল্য" কার্ডে দেখানো হয়)।
+            খাতার সাথে না মিললে নিচের সাম্প্রতিক উত্তোলনগুলো আগে মিলিয়ে দেখুন — সাধারণত এখানেই পার্থক্য থাকে।
+          </p>
+          {cashBreakdown.lastWithdraws.length > 0 && (
+            <div className="pt-2 space-y-1">
+              <div className="text-[11px] font-bold uppercase text-muted-foreground">সাম্প্রতিক উত্তোলন</div>
+              {cashBreakdown.lastWithdraws.map(w => (
+                <div key={w.id} className="flex items-center justify-between text-xs bg-background/60 rounded-lg px-3 py-2">
+                  <span className="truncate">{w.entry_date} · {w.category ?? "সাধারণ"} · {w.payment_method ?? "cash"}</span>
+                  <span className="font-bold text-destructive">−{fmt(Number(w.amount || 0))}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </details>
+
+
+
       {/* Tabs row */}
       <div className="grid grid-cols-3 sm:flex sm:flex-wrap sm:justify-center gap-1.5 p-1.5 rounded-2xl bg-muted/40 border border-border/60">
         {TABS.map(t => {
