@@ -1100,3 +1100,14 @@ function exportCsv(rows: Entry[]) {
   const a = document.createElement("a"); a.href = url; a.download = `ledger-${today()}.csv`; a.click();
   URL.revokeObjectURL(url);
 }
+
+function BreakRow({ label, value, sign }: { label: string; value: string; sign: "+" | "−" }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-muted-foreground truncate">{label}</span>
+      <span className={`font-bold shrink-0 ${sign === "+" ? "text-emerald-600" : "text-destructive"}`}>
+        {sign}{value}
+      </span>
+    </div>
+  );
+}
