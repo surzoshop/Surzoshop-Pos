@@ -198,6 +198,56 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_closings: {
+        Row: {
+          carry_forward: number
+          close_date: string
+          closed_by: string | null
+          closing_amount: number
+          created_at: string
+          expense_total: number
+          id: string
+          notes: string | null
+          sales_cash: number
+          shop_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          carry_forward?: number
+          close_date: string
+          closed_by?: string | null
+          closing_amount?: number
+          created_at?: string
+          expense_total?: number
+          id?: string
+          notes?: string | null
+          sales_cash?: number
+          shop_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          carry_forward?: number
+          close_date?: string
+          closed_by?: string | null
+          closing_amount?: number
+          created_at?: string
+          expense_total?: number
+          id?: string
+          notes?: string | null
+          sales_cash?: number
+          shop_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_closings_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_categories: {
         Row: {
           created_at: string
