@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, Receipt, Warehouse, Users, ShoppingCart,
   HelpCircle, LogOut, Truck, ShoppingBag, Wallet, ClipboardList,
   UserCog, CalendarCheck, BarChart3, Store, X, Smartphone, Printer, Contact, ShieldCheck,
-  RotateCcw, BookOpen, Layers, Activity, Send,
+  RotateCcw, BookOpen, Layers, Activity, Send, Lock,
 } from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -126,6 +126,8 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
           const active = pathname === item.url;
           const isProducts = item.url === "/products";
           const productsActive = pathname.startsWith("/products");
+          const isLedger = item.url === "/ledger";
+          const ledgerActive = pathname.startsWith("/ledger");
           const T = ICON_THEMES[item.tone] ?? ICON_THEMES.indigo;
           return (
             <div key={item.url}>
@@ -142,6 +144,33 @@ export function AppSidebar({ mobileOpen = false, onCloseMobile }: Props) {
                 </span>
                 <span className="truncate">{item.label}</span>
               </NavLink>
+              {isLedger && ledgerActive && (
+                <div className="ml-6 mt-1 space-y-1">
+                  {[
+                    { to: "/ledger/daily-close", label: "দৈনিক হিসাব ক্লোজ", icon: Lock, tone: "emerald" as const },
+                  ].map(sub => {
+                    const ST = ICON_THEMES[sub.tone];
+                    const subActive = pathname === sub.to;
+                    const Icon = sub.icon;
+                    return (
+                      <NavLink
+                        key={sub.to}
+                        to={sub.to}
+                        className={`group flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300 text-[13px] ${
+                          subActive
+                            ? "bg-primary/10 text-primary font-extrabold ring-1 ring-primary/30"
+                            : "text-foreground/85 font-bold hover:bg-muted/60 hover:-translate-y-0.5 hover:shadow-md"
+                        }`}
+                      >
+                        <span className={`shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-lg text-white shadow-md transition-all duration-300 ${ST.grad} ${ST.shadow} group-hover:scale-110 group-hover:-rotate-6`}>
+                          <Icon className="h-[14px] w-[14px]" />
+                        </span>
+                        <span className="truncate">{sub.label}</span>
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              )}
               {isProducts && productsActive && (
                 <div className="ml-6 mt-1 space-y-1">
                   {[
