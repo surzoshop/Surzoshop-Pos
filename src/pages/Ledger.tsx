@@ -21,6 +21,7 @@ import {
   ListFilter, CalendarDays, History,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { DailyCloseStats } from "./DailyClose";
 import { todayBD, addDaysBDStr, firstOfMonthBD, prevMonthRangeBD, fmtDateBD, fmtDateTimeBD } from "@/lib/datetime";
 
 type Entry = {
@@ -662,6 +663,14 @@ export default function Ledger() {
           নগদ ব্যালেন্স মিলিয়ে দেখুন (বিস্তারিত ভাঙানি)
         </summary>
         <div className="px-4 pb-4 space-y-1.5 text-sm">
+          {/* আজকের দৈনিক হিসাব ক্লোজের ৩টি কার্ড */}
+          <div className="pb-3">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] font-bold uppercase text-muted-foreground">আজকের দৈনিক হিসাব</p>
+              <Link to="/ledger/daily-close" className="text-[11px] font-bold text-primary">বিস্তারিত →</Link>
+            </div>
+            <DailyCloseStats totals={todayClose} loading={loading} />
+          </div>
           <BreakRow label="বিক্রয় থেকে প্রাপ্ত নগদ (ডাউন পেমেন্ট + পূর্ণ পরিশোধ)" value={fmt(cashBreakdown.salesCash)} sign="+" />
           <BreakRow label="কিস্তি / বাকি আদায়" value={fmt(cashBreakdown.instCash)} sign="+" />
           <BreakRow label="ক্যাশবুক জমা" value={fmt(cashBreakdown.deposits)} sign="+" />
@@ -846,7 +855,7 @@ export default function Ledger() {
                       <div className={`font-black text-sm ${e.entry_type === "deposit" ? "text-emerald-600" : "text-rose-600"}`}>
                         {e.entry_type === "deposit" ? "+" : "-"}{fmt(e.entry_type === "deposit" ? cr : dr)}
                       </div>
-                      <div className="text-[11px] text-muted-foreground">ব্যাল: {fmt(balance)}</div>
+                      <div className="text-[11px] text-muted-foreground">ব্যাল: {balance === null ? "—" : fmt(balance)}</div>
                     </div>
                   </div>
                 </div>
@@ -919,7 +928,7 @@ export default function Ledger() {
                       </td>
                       <td className="p-3 text-right font-bold text-rose-600">{dr > 0 ? fmt(dr) : "-"}</td>
                       <td className="p-3 text-right font-bold text-emerald-600">{cr > 0 ? fmt(cr) : "-"}</td>
-                      <td className="p-3 text-right font-bold">{fmt(balance)}</td>
+                      <td className="p-3 text-right font-bold">{balance === null ? "—" : fmt(balance)}</td>
                     </tr>
                     );
                   })}
