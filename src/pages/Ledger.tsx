@@ -21,6 +21,7 @@ import {
   ListFilter, CalendarDays, History,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { DailyCloseStats } from "./DailyClose";
 import { todayBD, addDaysBDStr, firstOfMonthBD, prevMonthRangeBD, fmtDateBD, fmtDateTimeBD } from "@/lib/datetime";
 
 type Entry = {
@@ -548,20 +549,49 @@ export default function Ledger() {
     return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
   }, [lowerFiltered]);
 
+  // ✅ প্রকৃত নগদ ব্যালেন্স (running) — সব সময়ের সকল নগদ-প্রভাবিত লেনদেনের সঞ্চিত হিসাব।
+  // ফিল্টার/তারিখ পরিসর যা-ই হোক, প্রতিটি সারির "ব্যালেন্স" ওই মুহূর্তের হাতে থাকা প্রকৃত নগদ দেখাবে।
+  // (স্টক ক্রয়ের পরিশোধ এখানে ধরা হয় না — উপরের 'নগদ ব্যালেন্স' কার্ডের সাথে মিল রাখতে)
+  const cashBalanceById = useMemo(() => {
+    const isPurchase = (e: Entry) => (e.category ?? "").toLowerCase().startsWith("purchase");
+    const asc = synthEntries
+      .filter(e => !isPurchase(e))
+      .slice()
+      .sort((a, b) =>
+        (a.created_at || a.entry_date).localeCompare(b.created_at || b.entry_date) || a.id.localeCompare(b.id)
+      );
+    const m = new Map<string, number>();
+    let bal = 0;
+    for (const e of asc) {
+      bal += e.entry_type === "deposit" ? Number(e.amount || 0) : -Number(e.amount || 0);
+      m.set(e.id, bal);
+    }
+    return m;
+  }, [synthEntries]);
+
   // Running balance for detailed
   const detailedRows = useMemo(() => {
-    let bal = 0;
     const asc = [...lowerFiltered].sort((a, b) =>
       a.entry_date.localeCompare(b.entry_date) || a.created_at.localeCompare(b.created_at)
     );
     const out = asc.map(e => {
       const cr = e.entry_type === "deposit"  ? Number(e.amount || 0) : 0;
       const dr = e.entry_type === "withdraw" ? Number(e.amount || 0) : 0;
-      bal = bal + cr - dr;
-      return { e, cr, dr, balance: bal };
+      const bal = cashBalanceById.get(e.id);
+      return { e, cr, dr, balance: bal ?? null };
     });
     return out.reverse();
-  }, [lowerFiltered]);
+  }, [lowerFiltered, cashBalanceById]);
+
+  // 📅 আজকের দৈনিক হিসাব (হিসাব ক্লোজ কার্ড — শুধু আজকের)
+  const todayClose = useMemo(() => {
+    const d = todayBD();
+    const income = salesAgg.filter(s => s.date === d).reduce((a, x) => a + x.paid, 0)
+      + instPayAgg.filter(p => p.date === d).reduce((a, p) => a + p.amount, 0);
+    const expense = expensesAgg.filter(x => x.date === d).reduce((a, x) => a + x.total, 0);
+    return { income, expense, closing: income - expense };
+  }, [salesAgg, instPayAgg, expensesAgg]);
+
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-4 max-w-[1400px] mx-auto">
@@ -633,6 +663,14 @@ export default function Ledger() {
           নগদ ব্যালেন্স মিলিয়ে দেখুন (বিস্তারিত ভাঙানি)
         </summary>
         <div className="px-4 pb-4 space-y-1.5 text-sm">
+          {/* আজকের দৈনিক হিসাব ক্লোজের ৩টি কার্ড */}
+          <div className="pb-3">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] font-bold uppercase text-muted-foreground">আজকের দৈনিক হিসাব</p>
+              <Link to="/ledger/daily-close" className="text-[11px] font-bold text-primary">বিস্তারিত →</Link>
+            </div>
+            <DailyCloseStats totals={todayClose} loading={loading} />
+          </div>
           <BreakRow label="বিক্রয় থেকে প্রাপ্ত নগদ (ডাউন পেমেন্ট + পূর্ণ পরিশোধ)" value={fmt(cashBreakdown.salesCash)} sign="+" />
           <BreakRow label="কিস্তি / বাকি আদায়" value={fmt(cashBreakdown.instCash)} sign="+" />
           <BreakRow label="ক্যাশবুক জমা" value={fmt(cashBreakdown.deposits)} sign="+" />
@@ -817,7 +855,7 @@ export default function Ledger() {
                       <div className={`font-black text-sm ${e.entry_type === "deposit" ? "text-emerald-600" : "text-rose-600"}`}>
                         {e.entry_type === "deposit" ? "+" : "-"}{fmt(e.entry_type === "deposit" ? cr : dr)}
                       </div>
-                      <div className="text-[11px] text-muted-foreground">ব্যাল: {fmt(balance)}</div>
+                      <div className="text-[11px] text-muted-foreground">ব্যাল: {balance === null ? "—" : fmt(balance)}</div>
                     </div>
                   </div>
                 </div>
@@ -890,7 +928,7 @@ export default function Ledger() {
                       </td>
                       <td className="p-3 text-right font-bold text-rose-600">{dr > 0 ? fmt(dr) : "-"}</td>
                       <td className="p-3 text-right font-bold text-emerald-600">{cr > 0 ? fmt(cr) : "-"}</td>
-                      <td className="p-3 text-right font-bold">{fmt(balance)}</td>
+                      <td className="p-3 text-right font-bold">{balance === null ? "—" : fmt(balance)}</td>
                     </tr>
                     );
                   })}
