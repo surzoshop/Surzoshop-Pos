@@ -188,37 +188,52 @@ export default function Ledger() {
     });
     // Credit-payment cash_book deposits — by customer (party_name).
     // These also incremented sales.paid via CustomerLedger; subtract from salesAgg.paid
-    // so the receipt is dated by cash_book.entry_date (today), not sale.created_at.
-    const creditPaidByCustomer = new Map<string, number>();
+    // so the receipt is dated by cash_book.entry_date, not sale.created_at.
+    // গুরুত্বপূর্ণ: একটি বাকি পরিশোধ শুধুমাত্র সেই পরিশোধের তারিখের *আগে* করা বিক্রয় থেকেই
+    // বাদ যাবে (পুরোনো বিল আগে)। নাহলে পরে করা নতুন নগদ বিক্রয় ভুলভাবে কমে যায়।
+    const creditPaymentsByCustomer = new Map<string, { at: string; amount: number }[]>();
     allEntries.forEach((e: any) => {
       const cat = String(e.category ?? "").toLowerCase();
       if ((cat.includes("বাকি পরিশোধ") || cat.includes("credit payment")) && e.party_name) {
-        creditPaidByCustomer.set(e.party_name, (creditPaidByCustomer.get(e.party_name) ?? 0) + Number(e.amount || 0));
+        const list = creditPaymentsByCustomer.get(e.party_name) ?? [];
+        list.push({ at: String(e.created_at ?? e.entry_date), amount: Number(e.amount || 0) });
+        creditPaymentsByCustomer.set(e.party_name, list);
       }
     });
-    // Track customers we've already deducted credit-paid from (only deduct once total per customer)
-    const creditConsumed = new Map<string, number>();
-    setSalesAgg((sd ?? []).map((s: any) => {
-      const custName = s.customers?.name ?? null;
+
+    const salesRows = (sd ?? []).map((s: any) => {
       const inst = instBySale.get(s.id) ?? 0;
-      let basePaid = Math.max(0, Number(s.paid || 0) - inst);
-      if (custName && creditPaidByCustomer.has(custName)) {
-        const remaining = (creditPaidByCustomer.get(custName) ?? 0) - (creditConsumed.get(custName) ?? 0);
-        const sub = Math.min(basePaid, remaining);
-        if (sub > 0) {
-          basePaid -= sub;
-          creditConsumed.set(custName, (creditConsumed.get(custName) ?? 0) + sub);
-        }
-      }
       return {
+        id: s.id as string,
         date: String(s.created_at).slice(0, 10),
         at: String(s.created_at),
         total: Number(s.total || 0),
-        paid: basePaid,
-        party: custName,
+        paid: Math.max(0, Number(s.paid || 0) - inst),
+        party: (s.customers?.name ?? null) as string | null,
         created_by: s.created_by ?? null,
       };
-    }));
+    });
+
+    // প্রতি কাস্টমারের বাকি পরিশোধ পুরোনো বিল থেকে (তারিখ অনুযায়ী) বাদ দিন
+    creditPaymentsByCustomer.forEach((payments, custName) => {
+      const custSales = salesRows
+        .filter(r => r.party === custName)
+        .sort((a, b) => +new Date(a.at) - +new Date(b.at)); // পুরোনো আগে
+      payments
+        .sort((a, b) => +new Date(a.at) - +new Date(b.at))
+        .forEach(p => {
+          let remaining = p.amount;
+          for (const row of custSales) {
+            if (remaining <= 0) break;
+            if (+new Date(row.at) >= +new Date(p.at)) break; // পরিশোধের পরের বিক্রয় বাদ নয়
+            const sub = Math.min(row.paid, remaining);
+            if (sub > 0) { row.paid -= sub; remaining -= sub; }
+          }
+        });
+    });
+
+    setSalesAgg(salesRows);
+
     setPurchasesAgg((pd ?? []).map((p: any) => ({
       date: String(p.created_at).slice(0, 10),
       at: String(p.created_at),
