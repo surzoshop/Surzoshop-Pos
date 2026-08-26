@@ -217,7 +217,8 @@ export function AddProductSheet({ open, onOpenChange, onSaved, editing }: Props)
                 <TrendingUp className="h-4 w-4 text-primary" /> বাকি / কিস্তিতে অতিরিক্ত চার্জ
               </h3>
               <p className="text-[11px] text-muted-foreground -mt-1">
-                বাকিতে বা কিস্তিতে বিক্রি করলে প্রতি ইউনিটে কত টাকা অতিরিক্ত নেওয়া হবে।
+                বাকিতে বা কিস্তিতে বিক্রি করলে প্রতি ইউনিটে কত টাকা <b>অতিরিক্ত</b> নেওয়া হবে — মোট মূল্য নয়।
+                (যেমন: বিক্রয় মূল্য ২৬,০০০ ও কিস্তিতে ২৮,০০০ হলে এখানে লিখুন <b>২০০০</b>)
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -233,6 +234,19 @@ export function AddProductSheet({ open, onOpenChange, onSaved, editing }: Props)
                     placeholder="0" />
                 </div>
               </div>
+              {(() => {
+                const pr = Number(form.price) || 0;
+                const ce = Number(form.credit_extra) || 0;
+                const ie = Number(form.installment_extra) || 0;
+                if (pr <= 0 || (ce < pr && ie < pr)) return null;
+                return (
+                  <div className="rounded-xl bg-warning/10 border border-warning/40 p-3 text-[11px] text-warning-foreground space-y-1">
+                    <div className="font-bold">⚠️ সম্ভাব্য ভুল এন্ট্রি</div>
+                    {ce >= pr && <div>বাকিতে অতিরিক্ত ({ce}) বিক্রয় মূল্যের চেয়ে বেশি — সম্ভবত আপনি মোট মূল্য লিখেছেন। সঠিক হবে <b>{ce - pr}</b>।</div>}
+                    {ie >= pr && <div>কিস্তিতে অতিরিক্ত ({ie}) বিক্রয় মূল্যের চেয়ে বেশি — সম্ভবত আপনি মোট মূল্য লিখেছেন। সঠিক হবে <b>{ie - pr}</b>।</div>}
+                  </div>
+                );
+              })()}
             </section>
           )}
 
