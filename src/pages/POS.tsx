@@ -251,10 +251,19 @@ export default function POS() {
 
   const subtotal = cart.reduce((a, i) => a + i.product.price * i.qty, 0);
   // Extra charge for credit / installment sales (per-product configured in Stock entry)
+  // Safety net: কেউ ভুলে "অতিরিক্ত চার্জ" ঘরে মোট কিস্তি/বাকি মূল্য (যেমন ২৮,০০০) লিখে ফেললে
+  // সেটিকে মূল্যের সাথে তুলনা করে প্রকৃত অতিরিক্ত অংশ (২৮,০০০ − ২৬,০০০ = ২,০০০) ধরা হয়।
+  const sanitizeExtra = (raw: any, price: number) => {
+    const v = Number(raw) || 0;
+    if (v <= 0) return 0;
+    if (price > 0 && v >= price) return Math.max(0, v - price);
+    return v;
+  };
   const computedExtra = cart.reduce((a, i) => {
     const p: any = i.product;
-    if (paymentType === "installment") return a + (Number(p.installment_extra) || 0) * i.qty;
-    if (paymentType === "due")         return a + (Number(p.credit_extra) || 0) * i.qty;
+    const price = Number(p.price) || 0;
+    if (paymentType === "installment") return a + sanitizeExtra(p.installment_extra, price) * i.qty;
+    if (paymentType === "due")         return a + sanitizeExtra(p.credit_extra, price) * i.qty;
     return a;
   }, 0);
   const extraCharge = paymentType === "cash"
