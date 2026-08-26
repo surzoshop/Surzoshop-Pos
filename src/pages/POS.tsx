@@ -534,13 +534,13 @@ export default function POS() {
           ))}
         </div>
 
-        <div className="lg:flex-1 lg:overflow-y-auto pr-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 pb-4">
+        <div className="lg:flex-1 lg:overflow-y-auto pr-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 pb-4 auto-rows-min content-start">
           {visible.length === 0 && (
             <div className="col-span-full text-center text-muted-foreground py-16">{t("noResults")}</div>
           )}
           {visible.map(p => (
             <button key={p.id} onClick={() => addToCart(p)}
-              className="bg-[hsl(var(--surface-container-lowest))] p-3 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col gap-2 text-left">
+              className="self-start h-fit bg-[hsl(var(--surface-container-lowest))] p-3 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col gap-2 text-left">
               <div className="aspect-square rounded-lg overflow-hidden bg-[hsl(var(--surface-container-high))] relative flex items-center justify-center">
                 {p.image_url ? (
                   <img src={p.image_url} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
