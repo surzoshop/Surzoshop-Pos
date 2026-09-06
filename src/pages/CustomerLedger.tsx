@@ -168,10 +168,6 @@ export default function CustomerLedger() {
       setPayAmount(0);
       setPayNote("");
       await load();
-      if (selected?.id === payTarget.id) {
-        // refresh selected detail
-        setSelected(prev => prev ? { ...prev } : prev);
-      }
     } catch (e: any) {
       toast({ title: e.message ?? "Error", variant: "destructive" });
     } finally {
@@ -179,18 +175,30 @@ export default function CustomerLedger() {
     }
   };
 
+  // keep the opened history dialog in sync with freshly loaded data
+  useEffect(() => {
+    setSelected(prev => {
+      if (!prev) return prev;
+      const fresh = dueCustomers.find(c => c.id === prev.id);
+      return fresh ?? null;
+    });
+  }, [dueCustomers]);
+
   // load history (cash_book deposits + sales) for selected customer
   useEffect(() => {
     if (!selected) { setHistoryPayments([]); return; }
+    const cid = selected.id;
+    const name = selected.name;
     (async () => {
       const { data } = await supabase.from("cash_book" as any)
-        .select("id,entry_date,amount,party_name,notes,entry_type,created_at,category")
-        .eq("party_name", selected.name)
+        .select("id,entry_date,amount,party_name,notes,entry_type,created_at,category,customer_id")
         .eq("entry_type", "deposit")
+        .or(`customer_id.eq.${cid},party_name.eq.${name}`)
         .order("created_at", { ascending: false });
       setHistoryPayments((data ?? []) as any);
     })();
-  }, [selected, allSales]);
+  }, [selected?.id, allSales]);
+
 
   return (
     <div>
