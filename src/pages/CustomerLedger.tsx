@@ -124,10 +124,18 @@ export default function CustomerLedger() {
         const newPaid = Number(s.paid) + apply;
         const newDue = Math.max(sd - apply, 0);
         const newStatus = newDue <= 0 ? "completed" : "partial";
-        const { error } = await supabase.from("sales")
+        const { data: updated, error } = await supabase.from("sales")
           .update({ paid: newPaid, due: newDue, status: newStatus as any })
-          .eq("id", s.id);
+          .eq("id", s.id)
+          .select("id,paid,due");
         if (error) throw error;
+        if (!updated || updated.length === 0) {
+          throw new Error(
+            lang === "bn"
+              ? `ইনভয়েস ${s.invoice_no} হালনাগাদ করা যায়নি (অনুমতি নেই)। পরিশোধ সংরক্ষণ করা হয়নি।`
+              : `Could not update invoice ${s.invoice_no} (permission denied). Payment was not saved.`
+          );
+        }
         remaining -= apply;
       }
 
@@ -137,12 +145,14 @@ export default function CustomerLedger() {
         amount: amt,
         category: lang === "bn" ? "বাকি পরিশোধ" : "Credit Payment",
         party_name: payTarget.name,
+        customer_id: payTarget.id,
         payment_method: "cash",
         notes: payNote || (lang === "bn" ? `${payTarget.name} - বাকি পরিশোধ` : `${payTarget.name} - credit settlement`),
         created_by: user.id,
         shop_id: currentShop?.id ?? null,
       });
       if (cbErr) throw cbErr;
+
 
       await logActivity({
         action: "credit_payment",
@@ -158,10 +168,6 @@ export default function CustomerLedger() {
       setPayAmount(0);
       setPayNote("");
       await load();
-      if (selected?.id === payTarget.id) {
-        // refresh selected detail
-        setSelected(prev => prev ? { ...prev } : prev);
-      }
     } catch (e: any) {
       toast({ title: e.message ?? "Error", variant: "destructive" });
     } finally {
@@ -169,18 +175,30 @@ export default function CustomerLedger() {
     }
   };
 
+  // keep the opened history dialog in sync with freshly loaded data
+  useEffect(() => {
+    setSelected(prev => {
+      if (!prev) return prev;
+      const fresh = dueCustomers.find(c => c.id === prev.id);
+      return fresh ?? null;
+    });
+  }, [dueCustomers]);
+
   // load history (cash_book deposits + sales) for selected customer
   useEffect(() => {
     if (!selected) { setHistoryPayments([]); return; }
+    const cid = selected.id;
+    const name = selected.name;
     (async () => {
       const { data } = await supabase.from("cash_book" as any)
-        .select("id,entry_date,amount,party_name,notes,entry_type,created_at,category")
-        .eq("party_name", selected.name)
+        .select("id,entry_date,amount,party_name,notes,entry_type,created_at,category,customer_id")
         .eq("entry_type", "deposit")
+        .or(`customer_id.eq.${cid},party_name.eq.${name}`)
         .order("created_at", { ascending: false });
       setHistoryPayments((data ?? []) as any);
     })();
-  }, [selected, allSales]);
+  }, [selected?.id, allSales]);
+
 
   return (
     <div>
