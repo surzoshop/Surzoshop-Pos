@@ -124,10 +124,18 @@ export default function CustomerLedger() {
         const newPaid = Number(s.paid) + apply;
         const newDue = Math.max(sd - apply, 0);
         const newStatus = newDue <= 0 ? "completed" : "partial";
-        const { error } = await supabase.from("sales")
+        const { data: updated, error } = await supabase.from("sales")
           .update({ paid: newPaid, due: newDue, status: newStatus as any })
-          .eq("id", s.id);
+          .eq("id", s.id)
+          .select("id,paid,due");
         if (error) throw error;
+        if (!updated || updated.length === 0) {
+          throw new Error(
+            lang === "bn"
+              ? `ইনভয়েস ${s.invoice_no} হালনাগাদ করা যায়নি (অনুমতি নেই)। পরিশোধ সংরক্ষণ করা হয়নি।`
+              : `Could not update invoice ${s.invoice_no} (permission denied). Payment was not saved.`
+          );
+        }
         remaining -= apply;
       }
 
@@ -137,12 +145,14 @@ export default function CustomerLedger() {
         amount: amt,
         category: lang === "bn" ? "বাকি পরিশোধ" : "Credit Payment",
         party_name: payTarget.name,
+        customer_id: payTarget.id,
         payment_method: "cash",
         notes: payNote || (lang === "bn" ? `${payTarget.name} - বাকি পরিশোধ` : `${payTarget.name} - credit settlement`),
         created_by: user.id,
         shop_id: currentShop?.id ?? null,
       });
       if (cbErr) throw cbErr;
+
 
       await logActivity({
         action: "credit_payment",
