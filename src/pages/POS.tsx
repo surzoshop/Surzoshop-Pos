@@ -288,39 +288,46 @@ export default function POS() {
     : 0;
   const total = baseTotal + interestAmount;
   const financed = principal + interestAmount;
+  // Money already collected through installments on this invoice (edit mode only).
+  const collectedInst = editingSaleId && paymentType === "installment" ? Math.min(paidInstTotal, financed) : 0;
   const due =
-    paymentType === "installment" ? financed
+    paymentType === "installment" ? Math.max(financed - collectedInst, 0)
     : paymentType === "due" ? Math.max(total - duePaid, 0)
     : 0;
   const paid =
-    paymentType === "installment" ? downPayment
+    paymentType === "installment" ? downPayment + collectedInst
     : paymentType === "due" ? Math.min(duePaid, total)
     : total;
-  const emi = paymentType === "installment" && installmentCount > 0 ? financed / installmentCount : 0;
+  // Remaining installment slots: already-paid ones stay untouched.
+  const remainingCount = paymentType === "installment"
+    ? (due > 0 ? Math.max(installmentCount - (editingSaleId ? paidInstCount : 0), 1) : 0)
+    : 0;
+  const emi = paymentType === "installment" && remainingCount > 0 ? due / remainingCount : 0;
 
   // Default schedule dates: 5th of each upcoming month, in Asia/Dhaka tz
   const defaultScheduleDates = (count: number): string[] =>
     Array.from({ length: count }).map((_, idx) => bdDateAddMonths(idx + 1, INSTALLMENT_DUE_DAY));
 
-  // Keep scheduleDates length in sync with installmentCount (preserve user-edited dates)
+  // Keep scheduleDates length in sync with the remaining installment count (preserve user-edited dates)
   useEffect(() => {
     if (paymentType !== "installment") return;
     setScheduleDates(prev => {
-      const def = defaultScheduleDates(installmentCount);
-      return Array.from({ length: installmentCount }).map((_, i) => prev[i] || def[i]);
+      const def = defaultScheduleDates(remainingCount);
+      return Array.from({ length: remainingCount }).map((_, i) => prev[i] || def[i]);
     });
-  }, [installmentCount, paymentType]);
+  }, [remainingCount, paymentType]);
 
-  // EMI schedule preview
+  // EMI schedule preview — only the unpaid, still-to-be-created installments
   const schedulePreview = useMemo(() => {
-    if (paymentType !== "installment" || installmentCount <= 0 || financed <= 0) return [];
-    const per = Math.round((financed / installmentCount) * 100) / 100;
-    const dates = scheduleDates.length === installmentCount ? scheduleDates : defaultScheduleDates(installmentCount);
-    return Array.from({ length: installmentCount }).map((_, idx) => {
-      const amount = idx === installmentCount - 1 ? financed - per * (installmentCount - 1) : per;
-      return { no: idx + 1, date: dates[idx], amount };
+    if (paymentType !== "installment" || remainingCount <= 0 || due <= 0) return [];
+    const per = Math.round((due / remainingCount) * 100) / 100;
+    const dates = scheduleDates.length === remainingCount ? scheduleDates : defaultScheduleDates(remainingCount);
+    const offset = editingSaleId ? paidInstCount : 0;
+    return Array.from({ length: remainingCount }).map((_, idx) => {
+      const amount = idx === remainingCount - 1 ? due - per * (remainingCount - 1) : per;
+      return { no: offset + idx + 1, date: dates[idx], amount };
     });
-  }, [paymentType, installmentCount, financed, scheduleDates]);
+  }, [paymentType, remainingCount, due, scheduleDates, editingSaleId, paidInstCount]);
 
   // Subscribe to barcodes from paired mobile scanner (managed globally)
   useEffect(() => {
