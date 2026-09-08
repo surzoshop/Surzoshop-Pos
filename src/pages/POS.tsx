@@ -375,13 +375,14 @@ export default function POS() {
         const { data: prod } = await supabase.from("products").select("stock").eq("id", pid).maybeSingle();
         if (prod) await supabase.from("products").update({ stock: Number(prod.stock) + Number(qty) }).eq("id", pid);
       }
-      // 2) Delete existing installments + payments + items
-      const { data: insts } = await supabase.from("installments").select("id").eq("sale_id", editingSaleId);
-      const instIds = (insts ?? []).map((i: any) => i.id);
-      if (instIds.length) {
-        await supabase.from("installment_payments").delete().in("installment_id", instIds);
-        await supabase.from("installments").delete().in("id", instIds);
-      }
+      // 2) Keep every installment that already received money (and its payment history);
+      //    only unpaid schedule rows are removed and rebuilt.
+      const { data: insts } = await supabase
+        .from("installments").select("id, installment_no, paid_amount").eq("sale_id", editingSaleId).order("installment_no");
+      const instList = insts ?? [];
+      const keptInst = instList.filter((i: any) => (Number(i.paid_amount) || 0) > 0);
+      const unpaidIds = instList.filter((i: any) => (Number(i.paid_amount) || 0) <= 0).map((i: any) => i.id);
+      if (unpaidIds.length) await supabase.from("installments").delete().in("id", unpaidIds);
       await supabase.from("sale_items").delete().eq("sale_id", editingSaleId);
 
       // 3) Update sales row
