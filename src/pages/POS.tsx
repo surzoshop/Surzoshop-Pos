@@ -169,11 +169,16 @@ export default function POS() {
         setInstallmentCount(Number(sale.tenure_months) || 3);
         setLateFeePerDay(Number(sale.late_fee_per_day) || 5);
         const { data: existingInst } = await supabase
-          .from("installments").select("installment_no, due_date")
+          .from("installments").select("installment_no, due_date, amount, paid_amount")
           .eq("sale_id", editId).order("installment_no");
-        if (existingInst && existingInst.length) {
-          setScheduleDates(existingInst.map((i: any) => i.due_date));
-        }
+        const list = existingInst ?? [];
+        // Keep already-collected installment money out of the recalculated due.
+        const collected = list.reduce((a: number, i: any) => a + (Number(i.paid_amount) || 0), 0);
+        const paidRows = list.filter((i: any) => (Number(i.paid_amount) || 0) > 0);
+        setPaidInstTotal(collected);
+        setPaidInstCount(paidRows.length);
+        const unpaidDates = list.filter((i: any) => (Number(i.paid_amount) || 0) <= 0).map((i: any) => i.due_date);
+        if (unpaidDates.length) setScheduleDates(unpaidDates);
         setGuarantorId(sale.guarantor_id || "");
       } else if (Number(sale.due) > 0) {
         setPaymentType("due");
