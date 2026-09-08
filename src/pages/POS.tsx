@@ -114,6 +114,9 @@ export default function POS() {
   const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
   const [originalQty, setOriginalQty] = useState<Record<string, number>>({});
   const [editLoaded, setEditLoaded] = useState(false);
+  // Already-collected installment money on the invoice being edited (must never be lost)
+  const [paidInstTotal, setPaidInstTotal] = useState(0);
+  const [paidInstCount, setPaidInstCount] = useState(0);
 
   useEffect(() => { inputRef.current?.focus(); load(); }, []);
 
@@ -166,11 +169,16 @@ export default function POS() {
         setInstallmentCount(Number(sale.tenure_months) || 3);
         setLateFeePerDay(Number(sale.late_fee_per_day) || 5);
         const { data: existingInst } = await supabase
-          .from("installments").select("installment_no, due_date")
+          .from("installments").select("installment_no, due_date, amount, paid_amount")
           .eq("sale_id", editId).order("installment_no");
-        if (existingInst && existingInst.length) {
-          setScheduleDates(existingInst.map((i: any) => i.due_date));
-        }
+        const list = existingInst ?? [];
+        // Keep already-collected installment money out of the recalculated due.
+        const collected = list.reduce((a: number, i: any) => a + (Number(i.paid_amount) || 0), 0);
+        const paidRows = list.filter((i: any) => (Number(i.paid_amount) || 0) > 0);
+        setPaidInstTotal(collected);
+        setPaidInstCount(paidRows.length);
+        const unpaidDates = list.filter((i: any) => (Number(i.paid_amount) || 0) <= 0).map((i: any) => i.due_date);
+        if (unpaidDates.length) setScheduleDates(unpaidDates);
         setGuarantorId(sale.guarantor_id || "");
       } else if (Number(sale.due) > 0) {
         setPaymentType("due");
@@ -280,39 +288,46 @@ export default function POS() {
     : 0;
   const total = baseTotal + interestAmount;
   const financed = principal + interestAmount;
+  // Money already collected through installments on this invoice (edit mode only).
+  const collectedInst = editingSaleId && paymentType === "installment" ? Math.min(paidInstTotal, financed) : 0;
   const due =
-    paymentType === "installment" ? financed
+    paymentType === "installment" ? Math.max(financed - collectedInst, 0)
     : paymentType === "due" ? Math.max(total - duePaid, 0)
     : 0;
   const paid =
-    paymentType === "installment" ? downPayment
+    paymentType === "installment" ? downPayment + collectedInst
     : paymentType === "due" ? Math.min(duePaid, total)
     : total;
-  const emi = paymentType === "installment" && installmentCount > 0 ? financed / installmentCount : 0;
+  // Remaining installment slots: already-paid ones stay untouched.
+  const remainingCount = paymentType === "installment"
+    ? (due > 0 ? Math.max(installmentCount - (editingSaleId ? paidInstCount : 0), 1) : 0)
+    : 0;
+  const emi = paymentType === "installment" && remainingCount > 0 ? due / remainingCount : 0;
 
   // Default schedule dates: 5th of each upcoming month, in Asia/Dhaka tz
   const defaultScheduleDates = (count: number): string[] =>
     Array.from({ length: count }).map((_, idx) => bdDateAddMonths(idx + 1, INSTALLMENT_DUE_DAY));
 
-  // Keep scheduleDates length in sync with installmentCount (preserve user-edited dates)
+  // Keep scheduleDates length in sync with the remaining installment count (preserve user-edited dates)
   useEffect(() => {
     if (paymentType !== "installment") return;
     setScheduleDates(prev => {
-      const def = defaultScheduleDates(installmentCount);
-      return Array.from({ length: installmentCount }).map((_, i) => prev[i] || def[i]);
+      const def = defaultScheduleDates(remainingCount);
+      return Array.from({ length: remainingCount }).map((_, i) => prev[i] || def[i]);
     });
-  }, [installmentCount, paymentType]);
+  }, [remainingCount, paymentType]);
 
-  // EMI schedule preview
+  // EMI schedule preview — only the unpaid, still-to-be-created installments
   const schedulePreview = useMemo(() => {
-    if (paymentType !== "installment" || installmentCount <= 0 || financed <= 0) return [];
-    const per = Math.round((financed / installmentCount) * 100) / 100;
-    const dates = scheduleDates.length === installmentCount ? scheduleDates : defaultScheduleDates(installmentCount);
-    return Array.from({ length: installmentCount }).map((_, idx) => {
-      const amount = idx === installmentCount - 1 ? financed - per * (installmentCount - 1) : per;
-      return { no: idx + 1, date: dates[idx], amount };
+    if (paymentType !== "installment" || remainingCount <= 0 || due <= 0) return [];
+    const per = Math.round((due / remainingCount) * 100) / 100;
+    const dates = scheduleDates.length === remainingCount ? scheduleDates : defaultScheduleDates(remainingCount);
+    const offset = editingSaleId ? paidInstCount : 0;
+    return Array.from({ length: remainingCount }).map((_, idx) => {
+      const amount = idx === remainingCount - 1 ? due - per * (remainingCount - 1) : per;
+      return { no: offset + idx + 1, date: dates[idx], amount };
     });
-  }, [paymentType, installmentCount, financed, scheduleDates]);
+  }, [paymentType, remainingCount, due, scheduleDates, editingSaleId, paidInstCount]);
 
   // Subscribe to barcodes from paired mobile scanner (managed globally)
   useEffect(() => {
@@ -360,13 +375,14 @@ export default function POS() {
         const { data: prod } = await supabase.from("products").select("stock").eq("id", pid).maybeSingle();
         if (prod) await supabase.from("products").update({ stock: Number(prod.stock) + Number(qty) }).eq("id", pid);
       }
-      // 2) Delete existing installments + payments + items
-      const { data: insts } = await supabase.from("installments").select("id").eq("sale_id", editingSaleId);
-      const instIds = (insts ?? []).map((i: any) => i.id);
-      if (instIds.length) {
-        await supabase.from("installment_payments").delete().in("installment_id", instIds);
-        await supabase.from("installments").delete().in("id", instIds);
-      }
+      // 2) Keep every installment that already received money (and its payment history);
+      //    only unpaid schedule rows are removed and rebuilt.
+      const { data: insts } = await supabase
+        .from("installments").select("id, installment_no, paid_amount").eq("sale_id", editingSaleId).order("installment_no");
+      const instList = insts ?? [];
+      const keptInst = instList.filter((i: any) => (Number(i.paid_amount) || 0) > 0);
+      const unpaidIds = instList.filter((i: any) => (Number(i.paid_amount) || 0) <= 0).map((i: any) => i.id);
+      if (unpaidIds.length) await supabase.from("installments").delete().in("id", unpaidIds);
       await supabase.from("sale_items").delete().eq("sale_id", editingSaleId);
 
       // 3) Update sales row
@@ -399,14 +415,16 @@ export default function POS() {
       });
       await supabase.from("sale_items").insert(newItems);
 
-      // 5) Recreate installments if installment type
+      // 5) Rebuild ONLY the unpaid part of the schedule for the remaining due
       if (paymentType === "installment" && due > 0) {
-        const per = Math.round((due / installmentCount) * 100) / 100;
-        const dates = scheduleDates.length === installmentCount ? scheduleDates : defaultScheduleDates(installmentCount);
-        const schedule = Array.from({ length: installmentCount }).map((_, idx) => ({
-          sale_id: editingSaleId, installment_no: idx + 1,
+        const count = Math.max(installmentCount - keptInst.length, 1);
+        const per = Math.round((due / count) * 100) / 100;
+        const dates = scheduleDates.length === count ? scheduleDates : defaultScheduleDates(count);
+        const startNo = keptInst.reduce((m: number, i: any) => Math.max(m, Number(i.installment_no) || 0), 0);
+        const schedule = Array.from({ length: count }).map((_, idx) => ({
+          sale_id: editingSaleId, installment_no: startNo + idx + 1,
           due_date: dates[idx],
-          amount: idx === installmentCount - 1 ? due - per * (installmentCount - 1) : per,
+          amount: idx === count - 1 ? due - per * (count - 1) : per,
         }));
         await supabase.from("installments").insert(schedule);
       }
@@ -575,7 +593,7 @@ export default function POS() {
       <section className="lg:col-span-2 flex flex-col bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-4 sm:p-6 shadow-sm">
         {editingSaleId && (
           <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs sm:text-sm font-semibold text-primary">
-            <span>✎ এডিট মোড — ইনভয়েস আপডেট হবে</span>
+            <span>✎ এডিট মোড — ইনভয়েস আপডেট হবে{paidInstTotal > 0 ? ` · পরিশোধিত ${fmt(paidInstTotal)} অপরিবর্তিত থাকবে` : ""}</span>
             <button onClick={() => navigate("/sales")} className="underline hover:text-primary/80">বাতিল</button>
           </div>
         )}
@@ -719,7 +737,7 @@ export default function POS() {
                             type="date"
                             value={s.date}
                             onChange={e => {
-                              const next = [...(scheduleDates.length === installmentCount ? scheduleDates : defaultScheduleDates(installmentCount))];
+                              const next = [...(scheduleDates.length === remainingCount ? scheduleDates : defaultScheduleDates(remainingCount))];
                               next[idx] = e.target.value;
                               setScheduleDates(next);
                             }}
@@ -832,6 +850,12 @@ export default function POS() {
             )}
             {paymentType === "installment" && downPayment > 0 && (
               <div className="flex justify-between text-muted-foreground"><span>{lang === "bn" ? "ডাউন পেমেন্ট" : "Down Payment"}:</span><span className="text-success">-{fmt(downPayment)}</span></div>
+            )}
+            {collectedInst > 0 && (
+              <div className="flex justify-between text-muted-foreground">
+                <span>{lang === "bn" ? `পরিশোধিত কিস্তি (${paidInstCount}টি)` : `Paid installments (${paidInstCount})`}:</span>
+                <span className="text-success">-{fmt(collectedInst)}</span>
+              </div>
             )}
             {due > 0 && (
               <div className="flex justify-between items-center bg-destructive/10 -mx-1 px-3 py-2 rounded-lg">
