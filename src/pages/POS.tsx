@@ -851,6 +851,12 @@ export default function POS() {
             {paymentType === "installment" && downPayment > 0 && (
               <div className="flex justify-between text-muted-foreground"><span>{lang === "bn" ? "ডাউন পেমেন্ট" : "Down Payment"}:</span><span className="text-success">-{fmt(downPayment)}</span></div>
             )}
+            {collectedInst > 0 && (
+              <div className="flex justify-between text-muted-foreground">
+                <span>{lang === "bn" ? `পরিশোধিত কিস্তি (${paidInstCount}টি)` : `Paid installments (${paidInstCount})`}:</span>
+                <span className="text-success">-{fmt(collectedInst)}</span>
+              </div>
+            )}
             {due > 0 && (
               <div className="flex justify-between items-center bg-destructive/10 -mx-1 px-3 py-2 rounded-lg">
                 <span className="font-bold text-destructive">{lang === "bn" ? "বকেয়া" : "Due"}:</span>
