@@ -415,14 +415,16 @@ export default function POS() {
       });
       await supabase.from("sale_items").insert(newItems);
 
-      // 5) Recreate installments if installment type
+      // 5) Rebuild ONLY the unpaid part of the schedule for the remaining due
       if (paymentType === "installment" && due > 0) {
-        const per = Math.round((due / installmentCount) * 100) / 100;
-        const dates = scheduleDates.length === installmentCount ? scheduleDates : defaultScheduleDates(installmentCount);
-        const schedule = Array.from({ length: installmentCount }).map((_, idx) => ({
-          sale_id: editingSaleId, installment_no: idx + 1,
+        const count = Math.max(installmentCount - keptInst.length, 1);
+        const per = Math.round((due / count) * 100) / 100;
+        const dates = scheduleDates.length === count ? scheduleDates : defaultScheduleDates(count);
+        const startNo = keptInst.reduce((m: number, i: any) => Math.max(m, Number(i.installment_no) || 0), 0);
+        const schedule = Array.from({ length: count }).map((_, idx) => ({
+          sale_id: editingSaleId, installment_no: startNo + idx + 1,
           due_date: dates[idx],
-          amount: idx === installmentCount - 1 ? due - per * (installmentCount - 1) : per,
+          amount: idx === count - 1 ? due - per * (count - 1) : per,
         }));
         await supabase.from("installments").insert(schedule);
       }
