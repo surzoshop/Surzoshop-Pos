@@ -114,6 +114,9 @@ export default function POS() {
   const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
   const [originalQty, setOriginalQty] = useState<Record<string, number>>({});
   const [editLoaded, setEditLoaded] = useState(false);
+  // Already-collected installment money on the invoice being edited (must never be lost)
+  const [paidInstTotal, setPaidInstTotal] = useState(0);
+  const [paidInstCount, setPaidInstCount] = useState(0);
 
   useEffect(() => { inputRef.current?.focus(); load(); }, []);
 
