@@ -593,7 +593,7 @@ export default function POS() {
       <section className="lg:col-span-2 flex flex-col bg-[hsl(var(--surface-container-lowest))] rounded-2xl p-4 sm:p-6 shadow-sm">
         {editingSaleId && (
           <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs sm:text-sm font-semibold text-primary">
-            <span>✎ এডিট মোড — ইনভয়েস আপডেট হবে</span>
+            <span>✎ এডিট মোড — ইনভয়েস আপডেট হবে{paidInstTotal > 0 ? ` · পরিশোধিত ${fmt(paidInstTotal)} অপরিবর্তিত থাকবে` : ""}</span>
             <button onClick={() => navigate("/sales")} className="underline hover:text-primary/80">বাতিল</button>
           </div>
         )}
