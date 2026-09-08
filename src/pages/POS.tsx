@@ -737,7 +737,7 @@ export default function POS() {
                             type="date"
                             value={s.date}
                             onChange={e => {
-                              const next = [...(scheduleDates.length === installmentCount ? scheduleDates : defaultScheduleDates(installmentCount))];
+                              const next = [...(scheduleDates.length === remainingCount ? scheduleDates : defaultScheduleDates(remainingCount))];
                               next[idx] = e.target.value;
                               setScheduleDates(next);
                             }}
