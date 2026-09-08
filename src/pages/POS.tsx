@@ -475,7 +475,6 @@ export default function POS() {
     if (paymentType === "installment" && due > 0) {
       const per = Math.round((due / installmentCount) * 100) / 100;
       const dates = scheduleDates.length === installmentCount ? scheduleDates : defaultScheduleDates(installmentCount);
-      void remainingCount;
       const schedule = Array.from({ length: installmentCount }).map((_, idx) => ({
         sale_id: sale.id, installment_no: idx + 1,
         due_date: dates[idx],
