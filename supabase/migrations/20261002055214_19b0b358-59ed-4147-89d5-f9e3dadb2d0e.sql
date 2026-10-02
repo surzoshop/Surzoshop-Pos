@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.apply_sale_return() FROM PUBLIC, anon, authenticated;
