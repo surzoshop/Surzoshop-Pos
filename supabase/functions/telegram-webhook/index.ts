@@ -200,7 +200,12 @@ Deno.serve(async (req) => {
   );
 
   const update = await req.json();
-  const msg = update.message ?? update.edited_message;
+  // Telegram retries the same update if we were slow → process each update_id once; ignore edits
+  if (update.update_id != null) {
+    const { error: dupErr } = await supabase.from("telegram_dedupe").insert({ key: `u:${update.update_id}` });
+    if (dupErr) return new Response(JSON.stringify({ ok: true, duplicate: true }));
+  }
+  const msg = update.message;
   const chatId: number | undefined = msg?.chat?.id;
   const text: string = (msg?.text ?? "").trim();
   if (!chatId) return new Response(JSON.stringify({ ok: true }));

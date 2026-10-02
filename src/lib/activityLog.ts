@@ -52,6 +52,8 @@ const fmtVal = (k: string, v: any) => {
  * can later audit per-staff history. Also pushes a nicely formatted notification
  * to all linked Telegram subscribers. Failures are silent — never break main flow.
  */
+const recentLogs = new Map<string, number>();
+
 export async function logActivity(params: {
   action: string;
   entity_type?: string;
@@ -59,6 +61,11 @@ export async function logActivity(params: {
   shop_id?: string | null;
   meta?: Record<string, any>;
 }) {
+  // Guard against double-fire (double click / re-render) of the same action within 5s
+  const sig = JSON.stringify([params.action, params.entity_id ?? null, params.meta ?? null]);
+  const now = Date.now();
+  if ((recentLogs.get(sig) ?? 0) > now - 5000) return;
+  recentLogs.set(sig, now);
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;

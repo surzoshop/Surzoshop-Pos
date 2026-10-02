@@ -50,6 +50,18 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "text required" }), { status: 400, headers: corsHeaders });
     }
 
+    // De-duplicate: identical text within the same 2-minute window is sent only once
+    const bucket = Math.floor(Date.now() / 120000);
+    const digest = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text))))
+      .map((b) => b.toString(16).padStart(2, "0")).join("");
+    const { error: dupErr } = await supabase.from("telegram_dedupe").insert({ key: `n:${digest}:${bucket}` });
+    if (dupErr) {
+      return new Response(JSON.stringify({ ok: true, sent: 0, duplicate: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    supabase.from("telegram_dedupe").delete().lt("created_at", new Date(Date.now() - 86400000).toISOString()).then(() => {});
+
     const { data: subs, error } = await supabase
       .from("telegram_subscribers")
       .select("chat_id")
@@ -57,9 +69,10 @@ Deno.serve(async (req) => {
 
     if (error) throw error;
 
-    await Promise.all((subs ?? []).map((s: any) => tgSend(Number(s.chat_id), text)));
+    const chatIds = [...new Set((subs ?? []).map((s: any) => Number(s.chat_id)))];
+    await Promise.all(chatIds.map((id) => tgSend(id, text)));
 
-    return new Response(JSON.stringify({ ok: true, sent: subs?.length ?? 0 }), {
+    return new Response(JSON.stringify({ ok: true, sent: chatIds.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
