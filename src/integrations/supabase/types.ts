@@ -1196,6 +1196,21 @@ export type Database = {
         }
         Relationships: []
       }
+      telegram_dedupe: {
+        Row: {
+          created_at: string
+          key: string
+        }
+        Insert: {
+          created_at?: string
+          key: string
+        }
+        Update: {
+          created_at?: string
+          key?: string
+        }
+        Relationships: []
+      }
       telegram_link_codes: {
         Row: {
           code: string
