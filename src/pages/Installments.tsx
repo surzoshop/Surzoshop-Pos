@@ -84,7 +84,8 @@ export default function Installments() {
   const load = async () => {
     const [{ data: insts }, { data: salesData }, c, p, g, { data: pays }, { data: siExtras }] = await Promise.all([
       supabase.from("installments").select("*, sales(invoice_no, customers(name, phone))").order("due_date"),
-      supabase.from("sales").select("id, invoice_no, total, down_payment, tenure_months, late_fee_per_day, paid, due, created_at, customers(name, phone)").eq("payment_type", "installment" as any).order("created_at", { ascending: false }),
+      // Returned (cancelled) sales must never appear as installment plans
+      supabase.from("sales").select("id, invoice_no, total, down_payment, tenure_months, late_fee_per_day, paid, due, status, created_at, customers(name, phone)").eq("payment_type", "installment" as any).neq("status", "cancelled" as any).order("created_at", { ascending: false }),
       supabase.from("customers").select("id,name,phone").order("name"),
       supabase.from("products").select("id,name,price,stock,credit_extra,installment_extra").order("name"),
       supabase.from("guarantors").select("id,name,phone").order("name"),
@@ -136,12 +137,43 @@ export default function Installments() {
     toast({ title: lang === "bn" ? "পরিশোধ মুছে ফেলা হয়েছে" : "Payment deleted" });
   };
 
+  // ===== Admin-only: delete a single installment / whole plan =====
+  const deleteInstallment = async (i: any, plan: Plan) => {
+    if (!isAdmin) return;
+    const paidAmt = Number(i.paid_amount) || 0;
+    const msg = lang === "bn"
+      ? `${plan.customer_name} — কিস্তি ${i.installment_no} (${fmt(Number(i.amount))}) মুছে ফেলবেন?${paidAmt > 0 ? `\n\n⚠ এই কিস্তিতে ${fmt(paidAmt)} পরিশোধ আছে, সেটিও মুছে যাবে এবং নগদ ব্যালেন্স থেকে বাদ যাবে।` : ""}`
+      : `Delete installment #${i.installment_no} of ${plan.customer_name}?`;
+    if (!confirm(msg)) return;
+    const { error } = await supabase.rpc("admin_delete_installment" as any, { _installment_id: i.id });
+    if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({ action: "installment.delete", entity_type: "installment", entity_id: i.id, meta: { invoice_no: plan.invoice_no, customer_name: plan.customer_name, amount: Number(i.amount) } });
+    await load();
+    toast({ title: lang === "bn" ? "কিস্তি মুছে ফেলা হয়েছে ✓" : "Installment deleted ✓" });
+  };
+
+  const deletePlan = async (plan: Plan) => {
+    if (!isAdmin) return;
+    const collected = plan.installments.reduce((a, i) => a + (Number(i.paid_amount) || 0), 0);
+    const msg = lang === "bn"
+      ? `${plan.customer_name} (${plan.invoice_no})-এর সম্পূর্ণ কিস্তি মুছে ফেলবেন?\n\n• সব কিস্তি মুছে যাবে, বাকি শূন্য হবে।\n• ডাউন পেমেন্ট থেকে যাবে।${collected > 0 ? `\n• ⚠ আদায়কৃত ${fmt(collected)} কিস্তির টাকাও মুছে যাবে।` : ""}\n\nএটি আর ফেরানো যাবে না।`
+      : `Delete the entire installment plan of ${plan.customer_name} (${plan.invoice_no})? This cannot be undone.`;
+    if (!confirm(msg)) return;
+    const { error } = await supabase.rpc("admin_delete_installment_plan" as any, { _sale_id: plan.sale_id });
+    if (error) return toast({ title: error.message, variant: "destructive" });
+    logActivity({ action: "installment.delete", entity_type: "sale", entity_id: plan.sale_id, meta: { invoice_no: plan.invoice_no, customer_name: plan.customer_name, amount: plan.due, note: "পুরো কিস্তি প্ল্যান মুছে ফেলা" } });
+    setManaging(null);
+    await load();
+    toast({ title: lang === "bn" ? "কিস্তি প্ল্যান মুছে ফেলা হয়েছে ✓" : "Installment plan deleted ✓" });
+  };
+
 
   // Build plans from sales + grouped installments
   const plans: Plan[] = useMemo(() => {
     const byS: Record<string, Inst[]> = {};
     for (const i of items) (byS[i.sale_id] ||= []).push(i);
-    return sales.map(s => {
+    // Hide plans that no longer have any schedule and nothing due (e.g. deleted plans)
+    return sales.filter(s => (byS[s.id]?.length ?? 0) > 0 || Number(s.due) > 0).map(s => {
       const sched = (byS[s.id] ?? []).sort((a, b) => a.installment_no - b.installment_no);
       return {
         sale_id: s.id,
@@ -318,7 +350,7 @@ export default function Installments() {
   useEffect(() => {
     if (!managing) return;
     const fresh = plans.find(p => p.sale_id === managing.sale_id);
-    if (fresh) setManaging(fresh);
+    setManaging(fresh ?? null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plans]);
 
@@ -421,10 +453,18 @@ export default function Installments() {
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <StatusPill tone={tone}>{label}</StatusPill>
-                      <button onClick={() => setManaging(p)} title={t("managePlan")}
-                        className="p-2 rounded-lg gradient-primary text-primary-foreground hover:brightness-110 active:scale-95 transition-all shadow-sm">
-                        <Settings2 className="h-4 w-4" />
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        {isAdmin && (
+                          <button onClick={() => deletePlan(p)} title={lang === "bn" ? "সম্পূর্ণ কিস্তি মুছুন (অ্যাডমিন)" : "Delete plan (Admin)"}
+                            className="p-2 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 active:scale-95 transition-all">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                        <button onClick={() => setManaging(p)} title={t("managePlan")}
+                          className="p-2 rounded-lg gradient-primary text-primary-foreground hover:brightness-110 active:scale-95 transition-all shadow-sm">
+                          <Settings2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -554,7 +594,15 @@ export default function Installments() {
                           <div className="text-right shrink-0">
                             <div className="font-black text-lg">{fmt(Number(i.amount))}</div>
                             {fee > 0 && <div className="text-xs text-destructive font-bold">+{fmt(fee)} {t("lateFeeAccrued")}</div>}
-                            <StatusPill tone={tone}>{t(status as any)}</StatusPill>
+                            <div className="flex items-center justify-end gap-1">
+                              <StatusPill tone={tone}>{t(status as any)}</StatusPill>
+                              {isAdmin && (
+                                <button onClick={() => deleteInstallment(i, managing)}
+                                  className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive" title={lang === "bn" ? "কিস্তি মুছুন (অ্যাডমিন)" : "Delete installment (Admin)"}>
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                         {status !== "paid" && (() => {
