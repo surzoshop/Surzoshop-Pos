@@ -191,21 +191,6 @@ export default function Ledger() {
       if (!sid_) return;
       instBySale.set(sid_, (instBySale.get(sid_) ?? 0) + Number(p.amount || 0));
     });
-    // Credit-payment cash_book deposits — by customer (party_name).
-    // These also incremented sales.paid via CustomerLedger; subtract from salesAgg.paid
-    // so the receipt is dated by cash_book.entry_date, not sale.created_at.
-    // গুরুত্বপূর্ণ: একটি বাকি পরিশোধ শুধুমাত্র সেই পরিশোধের তারিখের *আগে* করা বিক্রয় থেকেই
-    // বাদ যাবে (পুরোনো বিল আগে)। নাহলে পরে করা নতুন নগদ বিক্রয় ভুলভাবে কমে যায়।
-    const creditPaymentsByCustomer = new Map<string, { at: string; amount: number }[]>();
-    allEntries.forEach((e: any) => {
-      const cat = String(e.category ?? "").toLowerCase();
-      if ((cat.includes("বাকি পরিশোধ") || cat.includes("credit payment")) && e.party_name) {
-        const list = creditPaymentsByCustomer.get(e.party_name) ?? [];
-        list.push({ at: String(e.created_at ?? e.entry_date), amount: Number(e.amount || 0) });
-        creditPaymentsByCustomer.set(e.party_name, list);
-      }
-    });
-
     const salesRows = (sd ?? []).map((s: any) => {
       const inst = instBySale.get(s.id) ?? 0;
       return {
@@ -217,24 +202,6 @@ export default function Ledger() {
         party: (s.customers?.name ?? null) as string | null,
         created_by: s.created_by ?? null,
       };
-    });
-
-    // প্রতি কাস্টমারের বাকি পরিশোধ পুরোনো বিল থেকে (তারিখ অনুযায়ী) বাদ দিন
-    creditPaymentsByCustomer.forEach((payments, custName) => {
-      const custSales = salesRows
-        .filter(r => r.party === custName)
-        .sort((a, b) => +new Date(a.at) - +new Date(b.at)); // পুরোনো আগে
-      payments
-        .sort((a, b) => +new Date(a.at) - +new Date(b.at))
-        .forEach(p => {
-          let remaining = p.amount;
-          for (const row of custSales) {
-            if (remaining <= 0) break;
-            if (+new Date(row.at) >= +new Date(p.at)) break; // পরিশোধের পরের বিক্রয় বাদ নয়
-            const sub = Math.min(row.paid, remaining);
-            if (sub > 0) { row.paid -= sub; remaining -= sub; }
-          }
-        });
     });
 
     setSalesAgg(salesRows);
@@ -578,6 +545,13 @@ export default function Ledger() {
     return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
   }, [lowerFiltered]);
 
+  // Canonical sort key: YYYY-MM-DD followed by time
+  const getSortKey = (e: Entry) => {
+    const date = e.entry_date || (e.created_at ? e.created_at.slice(0, 10) : "");
+    const time = e.created_at && e.created_at.length >= 19 ? e.created_at.slice(11, 19) : "00:00:00";
+    return `${date} ${time}`;
+  };
+
   // ✅ প্রকৃত নগদ ব্যালেন্স (running) — সব সময়ের সকল নগদ-প্রভাবিত লেনদেনের সঞ্চিত হিসাব।
   // ফিল্টার/তারিখ পরিসর যা-ই হোক, প্রতিটি সারির "ব্যালেন্স" ওই মুহূর্তের হাতে থাকা প্রকৃত নগদ দেখাবে।
   // (স্টক ক্রয়ের পরিশোধ এখানে ধরা হয় না — উপরের 'নগদ ব্যালেন্স' কার্ডের সাথে মিল রাখতে)
@@ -587,7 +561,7 @@ export default function Ledger() {
       .filter(e => !isPurchase(e))
       .slice()
       .sort((a, b) =>
-        (a.created_at || a.entry_date).localeCompare(b.created_at || b.entry_date) || a.id.localeCompare(b.id)
+        getSortKey(a).localeCompare(getSortKey(b)) || a.id.localeCompare(b.id)
       );
     const m = new Map<string, number>();
     let bal = 0;
@@ -601,7 +575,7 @@ export default function Ledger() {
   // Running balance for detailed
   const detailedRows = useMemo(() => {
     const asc = [...lowerFiltered].sort((a, b) =>
-      a.entry_date.localeCompare(b.entry_date) || a.created_at.localeCompare(b.created_at)
+      getSortKey(a).localeCompare(getSortKey(b)) || a.id.localeCompare(b.id)
     );
     const out = asc.map(e => {
       const cr = e.entry_type === "deposit"  ? Number(e.amount || 0) : 0;

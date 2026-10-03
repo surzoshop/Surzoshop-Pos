@@ -26,8 +26,28 @@ export default function SalesReturns() {
   const [refund, setRefund] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const load = () => supabase.from("sales_returns").select("*, sales(invoice_no, customers(name))").order("created_at", { ascending: false }).limit(200)
-    .then(({ data }) => setReturns(data ?? []));
+  const load = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("sales_returns")
+        .select("*, sales(invoice_no, customers(name))")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) {
+        console.warn("Retrying sales_returns without join:", error.message);
+        const { data: fallback } = await supabase
+          .from("sales_returns")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(200);
+        setReturns(fallback ?? []);
+      } else {
+        setReturns(data ?? []);
+      }
+    } catch (err: any) {
+      console.error("Failed to load returns:", err);
+    }
+  };
   useEffect(() => { load(); }, []);
 
   const findSale = async () => {
@@ -152,14 +172,23 @@ export default function SalesReturns() {
                 <div><Label>{t("reason")}</Label><Input value={reason} onChange={e => setReason(e.target.value)} placeholder="ত্রুটিপূর্ণ / size mismatch ইত্যাদি" /></div>
                 <div className="bg-[hsl(var(--surface-container-low))] rounded-xl p-4 space-y-2 text-sm">
                   <div className="flex justify-between"><span>ফেরত পণ্যের মূল্য {isFull && "(সম্পূর্ণ ফেরত)"}</span><b>{fmt(returnValue)}</b></div>
-                  <div className="flex justify-between"><span>গ্রাহক পরিশোধ করেছিলেন</span><b>{fmt(Number(sale.paid))}</b></div>
+                  <div className="flex justify-between">
+                    <span>{sale.payment_type === "installment" ? "ডাউন পেমেন্ট / পরিশোধিত নগদ" : "গ্রাহক পরিশোধ করেছিলেন"}</span>
+                    <b>{fmt(Number(sale.paid))}</b>
+                  </div>
                   <div className="flex justify-between items-center gap-3">
-                    <Label className="font-bold">গ্রাহককে নগদ ফেরত</Label>
+                    <Label className="font-bold">গ্রাহককে নগদ ফেরত (ক্যাশ উত্তোলন)</Label>
                     <Input className="w-36 h-9 text-right" type="number" min={0} max={Number(sale.paid)} value={totalRefund}
                       onChange={e => setRefund(Math.max(0, +e.target.value))} />
                   </div>
                   <div className="flex justify-between"><span>ফেরতের পর বাকি</span><b>{fmt(newDue)}</b></div>
-                  {sale.payment_type === "installment" && <p className="text-xs text-muted-foreground">{newDue <= 0 ? "অপরিশোধিত সব কিস্তি বাতিল হবে।" : "শেষের অপরিশোধিত কিস্তি থেকে বাকি কমানো হবে।"} নগদ ফেরত হিসাব ব্যবস্থাপনায় উত্তোলন হিসেবে যুক্ত হবে।</p>}
+                  {sale.payment_type === "installment" && (
+                    <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20 text-xs text-foreground space-y-1">
+                      <p className="font-semibold text-primary">💡 কিস্তি ও হিসাব সমন্বয়:</p>
+                      <p>গ্রাহকের ডাউন পেমেন্ট বাবদ প্রাপ্ত {fmt(Number(sale.paid))} টাকার মধ্যে {fmt(totalRefund)} টাকা ফেরত দিলে তা স্বয়ংক্রিয়ভাবে হিসাব ব্যবস্থাপনা (ক্যাশ বুক)-এ উত্তোলন হিসেবে লিপিবদ্ধ হবে।</p>
+                      <p className="text-muted-foreground">{newDue <= 0 ? "বাকি সব অপরিশোধিত কিস্তি বাতিল হয়ে চালানটি সমন্বিত হবে।" : "বাকি কিস্তিগুলোর সাথে সমন্বয় করা হবে।"}</p>
+                    </div>
+                  )}
                 </div>
               </>
             )}
