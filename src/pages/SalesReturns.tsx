@@ -24,6 +24,7 @@ export default function SalesReturns() {
   const [reason, setReason] = useState("");
   const [returnedQty, setReturnedQty] = useState<Record<string, number>>({});
   const [refund, setRefund] = useState<number | null>(null);
+  const [deduction, setDeduction] = useState<number>(0);
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
@@ -59,8 +60,11 @@ export default function SalesReturns() {
     const { data: prev } = await supabase.from("sales_return_items").select("product_id, qty, sales_returns!inner(sale_id)").eq("sales_returns.sale_id", data.id);
     const rq: Record<string, number> = {};
     (prev ?? []).forEach((r: any) => { rq[r.product_id] = (rq[r.product_id] || 0) + Number(r.qty); });
-    setReturnedQty(rq); setRefund(null);
-    setSale(data); setSaleItems(data.sale_items ?? []);
+    setReturnedQty(rq); 
+    setRefund(null); 
+    setDeduction(0);
+    setSale(data); 
+    setSaleItems(data.sale_items ?? []);
     const init: Record<string, number> = {}; (data.sale_items ?? []).forEach((it: any) => init[it.id] = 0);
     setRetQty(init);
   };
@@ -70,10 +74,26 @@ export default function SalesReturns() {
   // Full return = every remaining unit is being returned → whole sale (incl. extra charge) is reversed
   const isFull = saleItems.length > 0 && saleItems.every(it => (retQty[it.id] || 0) >= maxQty(it)) && saleItems.some(it => maxQty(it) > 0);
   const returnValue = sale ? (isFull ? Number(sale.total) : Math.min(itemsValue, Number(sale.total))) : 0;
-  // Customer only gets back what they over-paid for the remaining goods
-  const suggestedRefund = sale ? Math.max(0, Math.min(Number(sale.paid), Number(sale.paid) - (Number(sale.total) - returnValue))) : 0;
-  const totalRefund = refund ?? suggestedRefund;
+  
+  // Gross suggested refund (before deduction)
+  const grossSuggestedRefund = sale ? Math.max(0, Math.min(Number(sale.paid), Number(sale.paid) - (Number(sale.total) - returnValue))) : 0;
+  
+  // Net suggested refund after deduction
+  const netSuggestedRefund = Math.max(0, grossSuggestedRefund - Number(deduction || 0));
+  const totalRefund = refund !== null ? refund : netSuggestedRefund;
   const newDue = sale ? Math.max(0, (Number(sale.total) - returnValue) - (Number(sale.paid) - totalRefund)) : 0;
+
+  const handleDeductionChange = (val: number) => {
+    const d = Math.max(0, Math.min(grossSuggestedRefund, val));
+    setDeduction(d);
+    setRefund(Math.max(0, grossSuggestedRefund - d));
+  };
+
+  const handleRefundChange = (val: number) => {
+    const r = Math.max(0, Math.min(Number(sale?.paid || 0), val));
+    setRefund(r);
+    setDeduction(Math.max(0, grossSuggestedRefund - r));
+  };
 
   const submitReturn = async () => {
     const items = saleItems.filter(it => (retQty[it.id] || 0) > 0);
@@ -81,9 +101,14 @@ export default function SalesReturns() {
     if (saving) return;
     if (totalRefund > Number(sale.paid)) return toast({ title: "ফেরত টাকা গ্রাহকের পরিশোধিত টাকার বেশি হতে পারে না", variant: "destructive" });
     setSaving(true);
+    
+    const fullReason = deduction > 0
+      ? (reason ? `${reason} (দোকান কর্তন: ৳${deduction})` : `পণ্য ফেরত (দোকান কর্তন: ৳${deduction})`)
+      : (reason || "গ্রাহক বিক্রয় ফেরত");
+
     const { data: ret, error } = await supabase.from("sales_returns").insert({
-      sale_id: sale.id, shop_id: sale.shop_id, reason,
-      total_amount: returnValue, refund_amount: totalRefund, created_by: user!.id,
+      sale_id: sale.id, shop_id: sale.shop_id, reason: fullReason,
+      total_amount: returnValue, refund_amount: totalRefund, deduction_amount: deduction, created_by: user!.id,
       invoice_no: sale.invoice_no,
       customer_name: sale.customers?.name ?? null,
       customer_id: sale.customer_id ?? null,
@@ -101,10 +126,10 @@ export default function SalesReturns() {
       entity_type: "sales_return",
       entity_id: ret.id,
       shop_id: sale.shop_id ?? null,
-      meta: { invoice_no: sale.invoice_no, amount: totalRefund, note: reason || undefined },
+      meta: { invoice_no: sale.invoice_no, amount: totalRefund, note: fullReason || undefined },
     });
     toast({ title: "ফেরত সংরক্ষিত ✓" });
-    setOpen(false); setSale(null); setSaleItems([]); setInvSearch(""); setReason(""); load();
+    setOpen(false); setSale(null); setSaleItems([]); setInvSearch(""); setReason(""); setDeduction(0); load();
   };
 
   return (
@@ -122,11 +147,12 @@ export default function SalesReturns() {
                 <th className="pb-6 font-bold">{t("invoice")}</th>
                 <th className="pb-6 font-bold">{t("customer")}</th>
                 <th className="pb-6 font-bold">{t("reason")}</th>
-                <th className="pb-6 font-bold text-right">পরিমাণ</th>
+                <th className="pb-6 font-bold text-amber-600 dark:text-amber-400">দোকান কর্তন</th>
+                <th className="pb-6 font-bold text-right">নগদ ফেরত</th>
               </tr>
             </thead>
             <tbody className="text-sm">
-              {returns.length === 0 && <tr><td colSpan={6} className="py-12 text-center text-muted-foreground">{t("noResults")}</td></tr>}
+              {returns.length === 0 && <tr><td colSpan={7} className="py-12 text-center text-muted-foreground">{t("noResults")}</td></tr>}
               {returns.map(r => (
                 <tr key={r.id} className="hover:bg-[hsl(var(--surface-container-low))]">
                   <td className="py-4 font-bold">{r.return_no}</td>
@@ -134,6 +160,9 @@ export default function SalesReturns() {
                   <td className="py-4">{r.sales?.invoice_no || r.invoice_no || "—"}</td>
                   <td className="py-4">{r.sales?.customers?.name || r.customer_name || "—"}</td>
                   <td className="py-4 text-muted-foreground">{r.reason ?? "—"}</td>
+                  <td className="py-4 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                    {Number(r.deduction_amount) > 0 ? fmt(Number(r.deduction_amount)) : "—"}
+                  </td>
                   <td className="py-4 text-right font-bold text-destructive">{fmt(Number(r.refund_amount))}</td>
                 </tr>
               ))}
@@ -142,7 +171,7 @@ export default function SalesReturns() {
         </div>
       </SurfaceCard>
 
-      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setSale(null); setSaleItems([]); setInvSearch(""); } }}>
+      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setSale(null); setSaleItems([]); setInvSearch(""); setDeduction(0); } }}>
         <DialogContent className="bg-[hsl(var(--surface-container-lowest))] max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>নতুন বিক্রয় ফেরত</DialogTitle></DialogHeader>
           <div className="space-y-4">
@@ -170,23 +199,77 @@ export default function SalesReturns() {
                   ))}
                 </div>
                 <div><Label>{t("reason")}</Label><Input value={reason} onChange={e => setReason(e.target.value)} placeholder="ত্রুটিপূর্ণ / size mismatch ইত্যাদি" /></div>
-                <div className="bg-[hsl(var(--surface-container-low))] rounded-xl p-4 space-y-2 text-sm">
-                  <div className="flex justify-between"><span>ফেরত পণ্যের মূল্য {isFull && "(সম্পূর্ণ ফেরত)"}</span><b>{fmt(returnValue)}</b></div>
+                
+                <div className="bg-[hsl(var(--surface-container-low))] rounded-xl p-4 space-y-3 text-sm border border-border/50">
                   <div className="flex justify-between">
-                    <span>{sale.payment_type === "installment" ? "ডাউন পেমেন্ট / পরিশোধিত নগদ" : "গ্রাহক পরিশোধ করেছিলেন"}</span>
-                    <b>{fmt(Number(sale.paid))}</b>
+                    <span>ফেরত পণ্যের মোট মূল্য {isFull && "(সম্পূর্ণ ফেরত)"}</span>
+                    <b>{fmt(returnValue)}</b>
                   </div>
+                  <div className="flex justify-between">
+                    <span>{sale.payment_type === "installment" ? "গ্রাহকের ডাউন পেমেন্ট / পরিশোধিত নগদ" : "গ্রাহক পরিশোধ করেছিলেন"}</span>
+                    <b className="text-primary">{fmt(Number(sale.paid))}</b>
+                  </div>
+
+                  {/* কর্তন / সার্ভিস ফি ইনপুট */}
+                  <div className="p-3 rounded-lg bg-background/80 border border-border space-y-1.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <Label className="font-bold text-foreground text-xs sm:text-sm">দোকান কর্তন / ব্যবহার ফি (কাটা টাকা)</Label>
+                        <p className="text-[11px] text-muted-foreground">দিন হিসেবে বা ব্যবহারের জন্য ডাউন পেমেন্ট থেকে যত টাকা কেটে দোকানে রাখতে চান</p>
+                      </div>
+                      <div className="relative w-36">
+                        <Input 
+                          className="h-9 text-right pr-7 font-bold text-amber-600 dark:text-amber-400" 
+                          type="number" 
+                          min={0} 
+                          max={grossSuggestedRefund} 
+                          value={deduction || ""} 
+                          placeholder="0"
+                          onChange={e => handleDeductionChange(+e.target.value)} 
+                        />
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-bold">৳</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* গ্রাহককে প্রকৃত ক্যাশ ফেরত */}
                   <div className="flex justify-between items-center gap-3">
-                    <Label className="font-bold">গ্রাহককে নগদ ফেরত (ক্যাশ উত্তোলন)</Label>
-                    <Input className="w-36 h-9 text-right" type="number" min={0} max={Number(sale.paid)} value={totalRefund}
-                      onChange={e => setRefund(Math.max(0, +e.target.value))} />
+                    <div>
+                      <Label className="font-bold text-xs sm:text-sm">গ্রাহককে নগদ ফেরত (ক্যাশ উত্তোলন)</Label>
+                      <p className="text-[11px] text-muted-foreground">এই পরিমাণ টাকা ক্যাশ বুক থেকে উত্তোলন হয়ে কাস্টমারকে দেওয়া হবে</p>
+                    </div>
+                    <div className="relative w-36">
+                      <Input 
+                        className="h-9 text-right pr-7 font-bold text-destructive" 
+                        type="number" 
+                        min={0} 
+                        max={Number(sale.paid)} 
+                        value={totalRefund}
+                        onChange={e => handleRefundChange(+e.target.value)} 
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-bold">৳</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between"><span>ফেরতের পর বাকি</span><b>{fmt(newDue)}</b></div>
+
+                  {/* দোকানে থাকা নিট লাভ / আয় */}
+                  {deduction > 0 && (
+                    <div className="flex justify-between text-xs py-1.5 px-3 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-semibold border border-emerald-500/20">
+                      <span>দোকানে রক্ষিত আয় (কর্তন বাবদ লাভ):</span>
+                      <span className="font-bold">+{fmt(deduction)}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between">
+                    <span>ফেরতের পর অবশিষ্ট বাকি</span>
+                    <b>{fmt(newDue)}</b>
+                  </div>
+
                   {sale.payment_type === "installment" && (
                     <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20 text-xs text-foreground space-y-1">
-                      <p className="font-semibold text-primary">💡 কিস্তি ও হিসাব সমন্বয়:</p>
-                      <p>গ্রাহকের ডাউন পেমেন্ট বাবদ প্রাপ্ত {fmt(Number(sale.paid))} টাকার মধ্যে {fmt(totalRefund)} টাকা ফেরত দিলে তা স্বয়ংক্রিয়ভাবে হিসাব ব্যবস্থাপনা (ক্যাশ বুক)-এ উত্তোলন হিসেবে লিপিবদ্ধ হবে।</p>
-                      <p className="text-muted-foreground">{newDue <= 0 ? "বাকি সব অপরিশোধিত কিস্তি বাতিল হয়ে চালানটি সমন্বিত হবে।" : "বাকি কিস্তিগুলোর সাথে সমন্বয় করা হবে।"}</p>
+                      <p className="font-semibold text-primary">💡 কিস্তি ও হিসাব সমন্বয়:</p>
+                      <p>গ্রাহকের ডাউন পেমেন্ট {fmt(Number(sale.paid))} টাকার মধ্য থেকে {fmt(totalRefund)} টাকা ফেরত দেওয়া হলে শুধুমাত্র সেই পরিমাণ টাকা ক্যাশ বুক থেকে উত্তোলন হবে।</p>
+                      {deduction > 0 && <p className="text-emerald-600 font-medium">কর্তনকৃত {fmt(deduction)} টাকা দোকানে আয় হিসেবে সংরক্ষিত থাকবে।</p>}
+                      <p className="text-muted-foreground">{newDue <= 0 ? "বাকি সব অপরিশোধিত কিস্তি বাতিল হয়ে চালানটি সমন্বয় হবে।" : "বাকি কিস্তিগুলোর সাথে সমন্বয় করা হবে।"}</p>
                     </div>
                   )}
                 </div>
