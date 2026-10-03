@@ -188,11 +188,12 @@ export default function Sales() {
           {filtered.map((s, i) => {
             const due = Number(s.due);
             const total = Number(s.total);
-            const isFullDue = due > 0 && due >= total;
-            const tone = due === 0 ? "success" : isFullDue ? "destructive" : "warning";
-            const accent = due === 0 ? "from-primary to-primary-glow" : isFullDue ? "from-destructive to-destructive/70" : "from-secondary to-secondary/60";
+            const isCancelled = s.status === "cancelled";
+            const isFullDue = !isCancelled && due > 0 && due >= total;
+            const tone = isCancelled ? "warning" : due === 0 ? "success" : isFullDue ? "destructive" : "warning";
+            const accent = isCancelled ? "from-amber-500 to-amber-600/70" : due === 0 ? "from-primary to-primary-glow" : isFullDue ? "from-destructive to-destructive/70" : "from-secondary to-secondary/60";
             const payLabel = s.payment_type === "installment" ? t("installmentSale") : (due > 0 ? (lang === "bn" ? "বাকি" : "Credit") : t("cash"));
-            const statusLabel = isFullDue ? (lang === "bn" ? "বকেয়া" : "Due") : t(s.status as any);
+            const statusLabel = isCancelled ? (lang === "bn" ? "বিক্রয় ফেরত" : "Returned") : isFullDue ? (lang === "bn" ? "বকেয়া" : "Due") : t(s.status as any);
             return (
               <div key={s.id} className="relative overflow-hidden bg-[hsl(var(--surface-container-low))] rounded-xl p-3 animate-fade-in shadow-sm hover:shadow-md transition-all" style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}>
                 <div className={`absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${accent}`} />
@@ -262,10 +263,11 @@ export default function Sales() {
               {filtered.map(s => {
                 const due = Number(s.due);
                 const total = Number(s.total);
-                const isFullDue = due > 0 && due >= total;
-                const tone = due === 0 ? "success" : isFullDue ? "destructive" : "warning";
+                const isCancelled = s.status === "cancelled";
+                const isFullDue = !isCancelled && due > 0 && due >= total;
+                const tone = isCancelled ? "warning" : due === 0 ? "success" : isFullDue ? "destructive" : "warning";
                 const payLabel = s.payment_type === "installment" ? t("installmentSale") : (due > 0 ? (lang === "bn" ? "বাকি" : "Credit") : t("cash"));
-                const statusLabel = isFullDue ? (lang === "bn" ? "বকেয়া" : "Due") : t(s.status as any);
+                const statusLabel = isCancelled ? (lang === "bn" ? "বিক্রয় ফেরত" : "Returned") : isFullDue ? (lang === "bn" ? "বকেয়া" : "Due") : t(s.status as any);
                 return (
                   <tr key={s.id} className="hover:bg-[hsl(var(--surface-container-low))] transition-colors">
                     <td className="py-4 font-bold text-foreground align-top">
