@@ -1300,6 +1300,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_delete_installment: {
+        Args: { _installment_id: string }
+        Returns: undefined
+      }
+      admin_delete_installment_plan: {
+        Args: { _sale_id: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
