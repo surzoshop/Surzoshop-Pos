@@ -64,7 +64,10 @@ export default function SalesReturns() {
     const { data: ret, error } = await supabase.from("sales_returns").insert({
       sale_id: sale.id, shop_id: sale.shop_id, reason,
       total_amount: returnValue, refund_amount: totalRefund, created_by: user!.id,
-    }).select().single();
+      invoice_no: sale.invoice_no,
+      customer_name: sale.customers?.name ?? null,
+      customer_id: sale.customer_id ?? null,
+    } as any).select().single();
     if (error) { setSaving(false); return toast({ title: error.message, variant: "destructive" }); }
     const rows = items.map(it => ({
       return_id: ret.id, shop_id: sale.shop_id, product_id: it.product_id, product_name: it.product_name,
@@ -108,8 +111,8 @@ export default function SalesReturns() {
                 <tr key={r.id} className="hover:bg-[hsl(var(--surface-container-low))]">
                   <td className="py-4 font-bold">{r.return_no}</td>
                   <td className="py-4">{new Date(r.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", { timeZone: "Asia/Dhaka" })}</td>
-                  <td className="py-4">{r.sales?.invoice_no ?? "—"}</td>
-                  <td className="py-4">{r.sales?.customers?.name ?? "—"}</td>
+                  <td className="py-4">{r.sales?.invoice_no || r.invoice_no || "—"}</td>
+                  <td className="py-4">{r.sales?.customers?.name || r.customer_name || "—"}</td>
                   <td className="py-4 text-muted-foreground">{r.reason ?? "—"}</td>
                   <td className="py-4 text-right font-bold text-destructive">{fmt(Number(r.refund_amount))}</td>
                 </tr>

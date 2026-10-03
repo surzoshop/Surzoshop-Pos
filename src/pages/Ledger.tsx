@@ -18,7 +18,7 @@ import {
   ArrowDownCircle, ArrowUpCircle, Wallet, TrendingUp, TrendingDown,
   Search, Calendar as CalendarIcon, FileText, Download, BookOpen,
   Receipt, ShoppingBag, Coins, ArrowDownToLine, ArrowUpFromLine,
-  ListFilter, CalendarDays, History,
+  ListFilter, CalendarDays, History, RotateCcw,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { DailyCloseStats } from "./DailyClose";
@@ -48,6 +48,11 @@ type ViewMode = "detailed" | "daily";
 
 const today = () => todayBD();
 const fmt = (n: number) => `৳${Number(n || 0).toLocaleString("bn-BD")}`;
+const isReturnEntry = (e: Entry) => {
+  const cat = (e.category ?? "").toLowerCase();
+  const notes = (e.notes ?? "").toLowerCase();
+  return cat.includes("ফেরত") || notes.includes("ফেরত") || notes.includes("ret-");
+};
 
 function rangeDates(r: RangeKey): { from: string; to: string } {
   const to = todayBD();
@@ -494,15 +499,20 @@ export default function Ledger() {
     const instCash  = instPayAgg.filter(p => upTo(p.date)).reduce((a, p) => a + p.amount, 0);
     const deposits  = entries.filter(e => e.entry_type === "deposit" && upTo(e.entry_date))
       .reduce((a, e) => a + Number(e.amount || 0), 0);
-    const withdraws = entries.filter(e => e.entry_type === "withdraw" && upTo(e.entry_date))
+    const returnRefunds = entries
+      .filter(e => e.entry_type === "withdraw" && isReturnEntry(e) && upTo(e.entry_date))
       .reduce((a, e) => a + Number(e.amount || 0), 0);
+    const regularWithdraws = entries
+      .filter(e => e.entry_type === "withdraw" && !isReturnEntry(e) && upTo(e.entry_date))
+      .reduce((a, e) => a + Number(e.amount || 0), 0);
+    const withdraws = returnRefunds + regularWithdraws;
     const expensesOut = expensesAgg.filter(x => upTo(x.date)).reduce((a, x) => a + x.total, 0);
     const balance = salesCash + instCash + deposits - withdraws - expensesOut;
     const lastWithdraws = entries
       .filter(e => e.entry_type === "withdraw" && upTo(e.entry_date))
       .sort((a, b) => (a.entry_date < b.entry_date ? 1 : -1))
       .slice(0, 5);
-    return { salesCash, instCash, deposits, withdraws, expensesOut, balance, lastWithdraws };
+    return { salesCash, instCash, deposits, withdraws, regularWithdraws, returnRefunds, expensesOut, balance, lastWithdraws };
   }, [entries, salesAgg, instPayAgg, expensesAgg, topTo]);
 
   // 3 big totals (under account tabs) — based on lower range + tab + account filter
@@ -526,9 +536,13 @@ export default function Ledger() {
       const isSales    = cat.includes("sales")    || cat.includes("বিক্রয়");
       const isPurchase = cat.includes("purchase") || cat.includes("ক্রয়");
       const ownerKw    = ["owner", "মালিক", "ওনার"];
-      if (account === "customer" && !isSales  && !ownerKw.every(k => false) && !cat.includes("customer") && !cat.includes("কাস্টমার") && !cat.includes("ক্রেতা")) return false;
+      const isOwner    = ownerKw.some(k => cat.includes(k.toLowerCase()));
+      if (account === "customer") {
+        if (isOwner) return false;
+        if (!isSales && !cat.includes("customer") && !cat.includes("কাস্টমার") && !cat.includes("ক্রেতা")) return false;
+      }
       if (account === "supplier" && !isPurchase && !cat.includes("supplier") && !cat.includes("সাপ্লায়ার") && !cat.includes("সরবরাহ")) return false;
-      if (account === "owner"    && !ownerKw.some(k => cat.includes(k.toLowerCase()))) return false;
+      if (account === "owner" && !isOwner) return false;
     }
 
     if (rowFilter === "income"   && e.entry_type !== "deposit")  return false;
@@ -689,7 +703,10 @@ export default function Ledger() {
           <BreakRow label="বিক্রয় থেকে প্রাপ্ত নগদ (ডাউন পেমেন্ট + পূর্ণ পরিশোধ)" value={fmt(cashBreakdown.salesCash)} sign="+" />
           <BreakRow label="কিস্তি / বাকি আদায়" value={fmt(cashBreakdown.instCash)} sign="+" />
           <BreakRow label="ক্যাশবুক জমা" value={fmt(cashBreakdown.deposits)} sign="+" />
-          <BreakRow label="ক্যাশবুক উত্তোলন (সব মাধ্যম)" value={fmt(cashBreakdown.withdraws)} sign="−" />
+          {cashBreakdown.returnRefunds > 0 && (
+            <BreakRow label="বিক্রয় ফেরত রিফান্ড" value={fmt(cashBreakdown.returnRefunds)} sign="−" />
+          )}
+          <BreakRow label="ক্যাশবুক উত্তোলন (মালিক/সাধারণ)" value={fmt(cashBreakdown.regularWithdraws)} sign="−" />
           <BreakRow label="দোকান খরচ" value={fmt(cashBreakdown.expensesOut)} sign="−" />
           <div className="flex items-center justify-between pt-2 mt-1 border-t border-border/60 font-black">
             <span>= হাতে নগদ ব্যালেন্স</span>
@@ -752,9 +769,27 @@ export default function Ledger() {
 
       {/* 3 totals */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-        <BigStat label={`মোট জমা (${TAB_META[tab].rangeChip})`} value={fmt(totals.cr)}      icon={<ArrowDownToLine className="h-5 w-5" />} accent="emerald" hint={`নীচের তারিখ-পরিসর + "${TAB_META[tab].title}" ট্যাবে প্রদর্শিত সকল আয়/জমার যোগফল`} />
-        <BigStat label={`মোট খরচ (${TAB_META[tab].rangeChip})`} value={fmt(totals.dr)}      icon={<ArrowUpFromLine className="h-5 w-5" />} accent="rose"    hint={`নীচের তারিখ-পরিসর + "${TAB_META[tab].title}" ট্যাবে প্রদর্শিত সকল খরচ/উত্তোলনের যোগফল`} />
-        <BigStat label="নীট ব্যালেন্স (এই তালিকার)" value={fmt(totals.balance)} icon={<BookOpen className="h-5 w-5" />}        accent="indigo"  hint="মোট জমা − মোট খরচ (শুধু এই তালিকায় যা দেখাচ্ছে)। ⚠️ এটা হাতে নগদ নয় — উপরের 'নগদ ব্যালেন্স' কার্ডে হাতে অবশিষ্ট নগদ দেখুন।" />
+        <BigStat 
+          label={tab === "ledger" && account === "customer" ? `মোট আদায়/জমা (${TAB_META[tab].rangeChip})` : `মোট জমা (${TAB_META[tab].rangeChip})`} 
+          value={fmt(totals.cr)}      
+          icon={<ArrowDownToLine className="h-5 w-5" />} 
+          accent="emerald" 
+          hint={tab === "ledger" && account === "customer" ? "কাস্টমারদের নিকট থেকে নগদ বিক্রয় ও কিস্তি আদায়" : `নীচের তারিখ-পরিসর + "${TAB_META[tab].title}" ট্যাবে প্রদর্শিত সকল আয়/জমার যোগফল`} 
+        />
+        <BigStat 
+          label={tab === "ledger" && account === "customer" ? `মোট ফেরত রিফান্ড (${TAB_META[tab].rangeChip})` : `মোট খরচ (${TAB_META[tab].rangeChip})`} 
+          value={fmt(totals.dr)}      
+          icon={tab === "ledger" && account === "customer" ? <RotateCcw className="h-5 w-5 text-amber-600" /> : <ArrowUpFromLine className="h-5 w-5" />} 
+          accent={tab === "ledger" && account === "customer" ? "amber" : "rose"}    
+          hint={tab === "ledger" && account === "customer" ? "কাস্টমারদের বিক্রয় ফেরত বাবদ রিফান্ড" : `নীচের তারিখ-পরিসর + "${TAB_META[tab].title}" ট্যাবে প্রদর্শিত সকল খরচ/উত্তোলনের যোগফল`} 
+        />
+        <BigStat 
+          label={tab === "ledger" && account === "customer" ? "নীট বিক্রয় আদায়" : "নীট ব্যালেন্স (এই তালিকার)"} 
+          value={fmt(totals.balance)} 
+          icon={<BookOpen className="h-5 w-5" />}        
+          accent="indigo"  
+          hint={tab === "ledger" && account === "customer" ? "মোট প্রাপ্তি থেকে বিক্রয় ফেরত বাদে প্রকৃত বিক্রয় আয়" : "মোট জমা − মোট খরচ (শুধু এই তালিকায় যা দেখাচ্ছে)। ⚠️ এটা হাতে নগদ নয় — উপরের 'নগদ ব্যালেন্স' কার্ডে হাতে অবশিষ্ট নগদ দেখুন।"} 
+        />
       </div>
 
       {/* Lower filter row */}
@@ -843,11 +878,24 @@ export default function Ledger() {
                 <div key={e.id} className="p-3 hover:bg-muted/30 transition-colors">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className={`h-8 w-8 rounded-full grid place-items-center shrink-0 ${e.entry_type === "deposit" ? "bg-emerald-500/15 text-emerald-600" : "bg-rose-500/15 text-rose-600"}`}>
-                        {e.entry_type === "deposit" ? <ArrowDownCircle className="h-4 w-4" /> : <ArrowUpCircle className="h-4 w-4" />}
+                      <span className={`h-8 w-8 rounded-full grid place-items-center shrink-0 ${
+                        isReturnEntry(e)
+                          ? "bg-amber-500/15 text-amber-600"
+                          : e.entry_type === "deposit"
+                          ? "bg-emerald-500/15 text-emerald-600"
+                          : "bg-rose-500/15 text-rose-600"
+                      }`}>
+                        {isReturnEntry(e) ? <RotateCcw className="h-4 w-4" /> : e.entry_type === "deposit" ? <ArrowDownCircle className="h-4 w-4" /> : <ArrowUpCircle className="h-4 w-4" />}
                       </span>
                       <div className="min-w-0">
-                        <div className="font-bold text-sm truncate">{e.category ?? "-"}</div>
+                        <div className="font-bold text-sm truncate flex items-center gap-1.5">
+                          <span>{e.category ?? "-"}</span>
+                          {isReturnEntry(e) && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/30">
+                              ফেরত রিফান্ড
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[11px] text-muted-foreground truncate">{fmtDateTimeBD(e.created_at || e.entry_date)}{e.party_name ? ` • ${e.party_name}` : ""}</div>
                         {(() => {
                           const c = e.created_by ? creators[e.created_by] : null;
@@ -867,7 +915,7 @@ export default function Ledger() {
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <div className={`font-black text-sm ${e.entry_type === "deposit" ? "text-emerald-600" : "text-rose-600"}`}>
+                      <div className={`font-black text-sm ${isReturnEntry(e) ? "text-amber-600" : e.entry_type === "deposit" ? "text-emerald-600" : "text-rose-600"}`}>
                         {e.entry_type === "deposit" ? "+" : "-"}{fmt(e.entry_type === "deposit" ? cr : dr)}
                       </div>
                       <div className="text-[11px] text-muted-foreground">ব্যাল: {balance === null ? "—" : fmt(balance)}</div>
@@ -920,12 +968,25 @@ export default function Ledger() {
                     <tr key={e.id} className="border-t border-border/40 hover:bg-muted/30">
                       <td className="p-3 whitespace-nowrap">{fmtDateTimeBD(e.created_at || e.entry_date)}</td>
                       <td className="p-3">
-                        {e.entry_type === "deposit"
-                          ? <span className="text-emerald-600 font-bold">জমা</span>
-                          : <span className="text-rose-600 font-bold">উত্তোলন</span>}
+                        {isReturnEntry(e) ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 border border-amber-500/30">
+                            <RotateCcw className="h-3 w-3" /> বিক্রয় ফেরত
+                          </span>
+                        ) : e.entry_type === "deposit" ? (
+                          <span className="text-emerald-600 font-bold">জমা</span>
+                        ) : (
+                          <span className="text-rose-600 font-bold">উত্তোলন</span>
+                        )}
                       </td>
                       <td className="p-3">
-                        <div className="font-medium">{e.category ?? "-"}</div>
+                        <div className="font-medium flex items-center gap-1.5">
+                          <span>{e.category ?? "-"}</span>
+                          {isReturnEntry(e) && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 border border-amber-500/30">
+                              রিফান্ড
+                            </span>
+                          )}
+                        </div>
                         {(e.party_name || e.notes) && (
                           <div className="text-xs text-muted-foreground">{[e.party_name, e.notes].filter(Boolean).join(" • ")}</div>
                         )}
@@ -941,7 +1002,7 @@ export default function Ledger() {
                           )}
                         </div>
                       </td>
-                      <td className="p-3 text-right font-bold text-rose-600">{dr > 0 ? fmt(dr) : "-"}</td>
+                      <td className={`p-3 text-right font-bold ${isReturnEntry(e) ? "text-amber-600" : "text-rose-600"}`}>{dr > 0 ? fmt(dr) : "-"}</td>
                       <td className="p-3 text-right font-bold text-emerald-600">{cr > 0 ? fmt(cr) : "-"}</td>
                       <td className="p-3 text-right font-bold">{balance === null ? "—" : fmt(balance)}</td>
                     </tr>
@@ -1022,6 +1083,7 @@ function BigStat({ label, value, icon, accent, hint }: any) {
   const accents: Record<string, { ic: string; border: string }> = {
     emerald: { ic: "text-emerald-600 bg-emerald-500/10", border: "border-emerald-500/40" },
     rose:    { ic: "text-rose-600 bg-rose-500/10",       border: "border-rose-500/40" },
+    amber:   { ic: "text-amber-600 bg-amber-500/10",     border: "border-amber-500/40" },
     indigo:  { ic: "text-primary bg-primary/10",         border: "border-primary/40" },
   };
   const a = accents[accent] ?? accents.indigo;

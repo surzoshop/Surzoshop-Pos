@@ -95,11 +95,21 @@ export default function Sales() {
         await supabase.from("installments").delete().in("id", instIds);
       }
 
-      const { data: rets } = await supabase.from("sales_returns").select("id").eq("sale_id", sale.id);
-      const retIds = (rets ?? []).map((r: any) => r.id);
-      if (retIds.length) {
-        await supabase.from("sales_return_items").delete().in("return_id", retIds);
-        await supabase.from("sales_returns").delete().in("id", retIds);
+      // 2) Keep return audit trail intact (decouple from sale) and clean up orphaned return withdrawals
+      const { data: rets } = await supabase.from("sales_returns").select("id,return_no").eq("sale_id", sale.id);
+      if (rets && rets.length) {
+        await supabase.from("sales_returns").update({ 
+          sale_id: null,
+          invoice_no: sale.invoice_no,
+          customer_name: sale.customers?.name ?? null,
+          customer_id: sale.customer_id ?? null,
+        } as any).eq("sale_id", sale.id);
+        // Also remove any cashbook return withdrawals referencing this invoice/returns so ledger balance is not orphaned
+        const returnNotes = rets.map((r: any) => r.return_no).filter(Boolean);
+        for (const retNo of returnNotes) {
+          await supabase.from("cash_book" as any).delete().ilike("notes", `%${retNo}%`);
+        }
+        await supabase.from("cash_book" as any).delete().eq("category", "বিক্রয় ফেরত").ilike("notes", `%${sale.invoice_no}%`);
       }
 
       await supabase.from("guarantors").delete().eq("sale_id", sale.id);
