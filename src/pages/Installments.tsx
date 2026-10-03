@@ -350,7 +350,7 @@ export default function Installments() {
   useEffect(() => {
     if (!managing) return;
     const fresh = plans.find(p => p.sale_id === managing.sale_id);
-    if (fresh) setManaging(fresh);
+    setManaging(fresh ?? null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plans]);
 
@@ -453,10 +453,18 @@ export default function Installments() {
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <StatusPill tone={tone}>{label}</StatusPill>
-                      <button onClick={() => setManaging(p)} title={t("managePlan")}
-                        className="p-2 rounded-lg gradient-primary text-primary-foreground hover:brightness-110 active:scale-95 transition-all shadow-sm">
-                        <Settings2 className="h-4 w-4" />
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        {isAdmin && (
+                          <button onClick={() => deletePlan(p)} title={lang === "bn" ? "সম্পূর্ণ কিস্তি মুছুন (অ্যাডমিন)" : "Delete plan (Admin)"}
+                            className="p-2 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 active:scale-95 transition-all">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                        <button onClick={() => setManaging(p)} title={t("managePlan")}
+                          className="p-2 rounded-lg gradient-primary text-primary-foreground hover:brightness-110 active:scale-95 transition-all shadow-sm">
+                          <Settings2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -586,7 +594,15 @@ export default function Installments() {
                           <div className="text-right shrink-0">
                             <div className="font-black text-lg">{fmt(Number(i.amount))}</div>
                             {fee > 0 && <div className="text-xs text-destructive font-bold">+{fmt(fee)} {t("lateFeeAccrued")}</div>}
-                            <StatusPill tone={tone}>{t(status as any)}</StatusPill>
+                            <div className="flex items-center justify-end gap-1">
+                              <StatusPill tone={tone}>{t(status as any)}</StatusPill>
+                              {isAdmin && (
+                                <button onClick={() => deleteInstallment(i, managing)}
+                                  className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive" title={lang === "bn" ? "কিস্তি মুছুন (অ্যাডমিন)" : "Delete installment (Admin)"}>
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                         {status !== "paid" && (() => {
