@@ -187,7 +187,7 @@ export default function Ledger() {
     if (currentShop) q = q.eq("shop_id", currentShop.id);
 
     let sq = supabase.from("sales")
-      .select("id,created_at,total,paid,due,payment_type,down_payment,customer_id,created_by,customers(name)")
+      .select("id,customer_id,created_at,total,paid,due,payment_type,down_payment,created_by,customers(name)")
       .order("created_at", { ascending: false });
     if (currentShop) sq = sq.eq("shop_id", currentShop.id);
 
@@ -277,6 +277,8 @@ export default function Ledger() {
         : Math.max(0, Number(s.paid || 0) - inst - baki);
       return {
         id: s.id as string,
+        customer_id: (s.customer_id ?? null) as string | null,
+        customer_name: (s.customers?.name ?? null) as string | null,
         date: toBDDate(s.created_at),
         at: String(s.created_at),
         total: Number(s.total || 0),
@@ -285,6 +287,25 @@ export default function Ledger() {
         created_by: s.created_by ?? null,
       };
     });
+
+    // ⚠ বাকি পরিশোধ (Credit Payment) একসাথে দুই জায়গায় লেখা হয়: sales.paid বাড়ে + cash_book-এ জমা।
+    // নগদ একবারই গণনা করতে হবে — পরিশোধের তারিখে (cash_book)। তাই বিক্রয়ের paid থেকে সেই অংশ বাদ।
+    const isCreditPay = (e: any) => e.entry_type === "deposit" && /বাকি পরিশোধ|credit payment/i.test(String(e.category ?? ""));
+    allEntries.filter(isCreditPay)
+      .sort((a: any, b: any) => String(a.created_at).localeCompare(String(b.created_at)))
+      .forEach((p: any) => {
+        let remaining = Number(p.amount || 0);
+        const cands = salesRows
+          .filter(s => (p.customer_id ? s.customer_id === p.customer_id : (!!p.party_name && s.customer_name === p.party_name))
+            && s.at <= String(p.created_at) && s.paid > 0)
+          .sort((a, b) => a.at.localeCompare(b.at));
+        for (const s of cands) {
+          if (remaining <= 0) break;
+          const take = Math.min(s.paid, remaining);
+          s.paid -= take;
+          remaining -= take;
+        }
+      });
 
     setSalesAgg(salesRows);
 
