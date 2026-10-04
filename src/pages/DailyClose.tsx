@@ -103,15 +103,17 @@ export default function DailyClose() {
       });
     });
     (cd ?? []).forEach((e: any) => {
+      // বাকি পরিশোধ = দিনের প্রকৃত নগদ আদায় (বিক্রয়ের পুরোনো তারিখে নয়, আজকের দিনে গণনা)
+      const isCreditPay = e.entry_type === "deposit" && /বাকি পরিশোধ|credit payment/i.test(String(e.category ?? ""));
       out.push({
         id: `cb-${e.id}`,
         at: String(e.created_at),
         kind: e.entry_type === "deposit" ? "in" : "out",
         amount: Number(e.amount || 0),
-        label: `${e.entry_type === "deposit" ? "ক্যাশবুক জমা" : "উত্তোলন"}${e.category ? ` — ${e.category}` : ""}`,
+        label: isCreditPay ? `বাকি আদায় — ${e.party_name ?? ""}` : `${e.entry_type === "deposit" ? "ক্যাশবুক জমা" : "উত্তোলন"}${e.category ? ` — ${e.category}` : ""}`,
         detail: e.party_name ?? e.notes ?? null,
         method: e.payment_method ?? "cash",
-        counts: false,
+        counts: isCreditPay,
       });
     });
     (ed ?? []).forEach((x: any) => {
