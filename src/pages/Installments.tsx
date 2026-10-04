@@ -137,34 +137,53 @@ export default function Installments() {
     toast({ title: lang === "bn" ? "পরিশোধ মুছে ফেলা হয়েছে" : "Payment deleted" });
   };
 
-  // ===== Admin-only: delete a single installment / whole plan =====
-  const deleteInstallment = async (i: any, plan: Plan) => {
-    if (!isAdmin) return;
-    const paidAmt = Number(i.paid_amount) || 0;
-    const msg = lang === "bn"
-      ? `${plan.customer_name} — কিস্তি ${i.installment_no} (${fmt(Number(i.amount))}) মুছে ফেলবেন?${paidAmt > 0 ? `\n\n⚠ এই কিস্তিতে ${fmt(paidAmt)} পরিশোধ আছে, সেটিও মুছে যাবে এবং নগদ ব্যালেন্স থেকে বাদ যাবে।` : ""}`
-      : `Delete installment #${i.installment_no} of ${plan.customer_name}?`;
-    if (!confirm(msg)) return;
-    const { error } = await supabase.rpc("admin_delete_installment" as any, { _installment_id: i.id });
-    if (error) return toast({ title: error.message, variant: "destructive" });
-    logActivity({ action: "installment.delete", entity_type: "installment", entity_id: i.id, meta: { invoice_no: plan.invoice_no, customer_name: plan.customer_name, amount: Number(i.amount) } });
-    await load();
-    toast({ title: lang === "bn" ? "কিস্তি মুছে ফেলা হয়েছে ✓" : "Installment deleted ✓" });
-  };
+  // ===== Admin-only: delete a single installment / whole plan (with impact preview + mandatory reason) =====
+  const [delTarget, setDelTarget] = useState<null | { kind: "one"; inst: any; plan: Plan } | { kind: "plan"; plan: Plan }>(null);
+  const [delReason, setDelReason] = useState("");
+  const [delBusy, setDelBusy] = useState(false);
 
-  const deletePlan = async (plan: Plan) => {
-    if (!isAdmin) return;
+  const deleteInstallment = (i: any, plan: Plan) => { if (isAdmin) { setDelReason(""); setDelTarget({ kind: "one", inst: i, plan }); } };
+  const deletePlan = (plan: Plan) => { if (isAdmin) { setDelReason(""); setDelTarget({ kind: "plan", plan }); } };
+
+  const delImpact = useMemo(() => {
+    if (!delTarget) return null;
+    const plan = delTarget.plan;
+    const dueBefore = Number(plan.due) || 0;
+    if (delTarget.kind === "one") {
+      const amt = Number(delTarget.inst.amount) || 0;
+      const paidAmt = Number(delTarget.inst.paid_amount) || 0;
+      const unpaid = Math.max(0, amt - paidAmt);
+      return { dueBefore, dueAfter: Math.max(0, dueBefore - unpaid), cashChange: -paidAmt };
+    }
     const collected = plan.installments.reduce((a, i) => a + (Number(i.paid_amount) || 0), 0);
-    const msg = lang === "bn"
-      ? `${plan.customer_name} (${plan.invoice_no})-এর সম্পূর্ণ কিস্তি মুছে ফেলবেন?\n\n• সব কিস্তি মুছে যাবে, বাকি শূন্য হবে।\n• ডাউন পেমেন্ট থেকে যাবে।${collected > 0 ? `\n• ⚠ আদায়কৃত ${fmt(collected)} কিস্তির টাকাও মুছে যাবে।` : ""}\n\nএটি আর ফেরানো যাবে না।`
-      : `Delete the entire installment plan of ${plan.customer_name} (${plan.invoice_no})? This cannot be undone.`;
-    if (!confirm(msg)) return;
-    const { error } = await supabase.rpc("admin_delete_installment_plan" as any, { _sale_id: plan.sale_id });
+    return { dueBefore, dueAfter: 0, cashChange: -collected };
+  }, [delTarget]);
+
+  const confirmDelete = async () => {
+    if (!delTarget || !isAdmin) return;
+    const reason = delReason.trim();
+    if (reason.length < 3) return toast({ title: "মোছার কারণ লিখুন (কমপক্ষে ৩ অক্ষর)", variant: "destructive" });
+    setDelBusy(true);
+    const plan = delTarget.plan;
+    const { error } = delTarget.kind === "one"
+      ? await supabase.rpc("admin_delete_installment" as any, { _installment_id: delTarget.inst.id })
+      : await supabase.rpc("admin_delete_installment_plan" as any, { _sale_id: plan.sale_id });
+    setDelBusy(false);
     if (error) return toast({ title: error.message, variant: "destructive" });
-    logActivity({ action: "installment.delete", entity_type: "sale", entity_id: plan.sale_id, meta: { invoice_no: plan.invoice_no, customer_name: plan.customer_name, amount: plan.due, note: "পুরো কিস্তি প্ল্যান মুছে ফেলা" } });
-    setManaging(null);
+    logActivity({
+      action: "installment.delete",
+      entity_type: delTarget.kind === "one" ? "installment" : "sale",
+      entity_id: delTarget.kind === "one" ? delTarget.inst.id : plan.sale_id,
+      meta: {
+        invoice_no: plan.invoice_no, customer_name: plan.customer_name,
+        amount: delTarget.kind === "one" ? Number(delTarget.inst.amount) : plan.due,
+        reason, due_before: delImpact?.dueBefore, due_after: delImpact?.dueAfter, cash_change: delImpact?.cashChange,
+      },
+    });
+    if (delTarget.kind === "plan") setManaging(null);
+    setDelTarget(null);
     await load();
-    toast({ title: lang === "bn" ? "কিস্তি প্ল্যান মুছে ফেলা হয়েছে ✓" : "Installment plan deleted ✓" });
+    toast({ title: "মুছে ফেলা হয়েছে ✓" });
   };
 
 
@@ -784,6 +803,50 @@ export default function Installments() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Admin delete: impact preview + mandatory reason */}
+      <Dialog open={!!delTarget} onOpenChange={o => !o && !delBusy && setDelTarget(null)}>
+        <DialogContent className="bg-[hsl(var(--surface-container-lowest))]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-4 w-4" />
+              {delTarget?.kind === "plan" ? "সম্পূর্ণ কিস্তি প্ল্যান মুছুন" : `কিস্তি ${delTarget?.kind === "one" ? delTarget.inst.installment_no : ""} মুছুন`}
+            </DialogTitle>
+          </DialogHeader>
+          {delTarget && delImpact && (
+            <div className="space-y-3 text-sm">
+              <p className="text-muted-foreground">{delTarget.plan.customer_name} • {delTarget.plan.invoice_no}</p>
+              <div className="rounded-xl border border-border divide-y divide-border">
+                <div className="flex justify-between p-3"><span>বর্তমান বকেয়া</span><b>{fmt(delImpact.dueBefore)}</b></div>
+                <div className="flex justify-between p-3"><span>মোছার পর বকেয়া</span><b>{fmt(delImpact.dueAfter)}</b></div>
+                <div className="flex justify-between p-3">
+                  <span>নগদ ব্যালেন্সে পরিবর্তন</span>
+                  <b className={delImpact.cashChange < 0 ? "text-destructive" : ""}>
+                    {delImpact.cashChange < 0 ? `− ${fmt(-delImpact.cashChange)}` : "কোনো পরিবর্তন নেই"}
+                  </b>
+                </div>
+              </div>
+              {delImpact.cashChange < 0 && (
+                <p className="flex items-start gap-2 text-xs text-destructive">
+                  <AlertTriangle className="h-4 w-4 shrink-0" /> আদায়কৃত টাকার রেকর্ডও মুছে যাবে। এটি আর ফেরানো যাবে না।
+                </p>
+              )}
+              <div>
+                <Label>মোছার কারণ <span className="text-destructive">*</span></Label>
+                <Input value={delReason} onChange={e => setDelReason(e.target.value)} placeholder="যেমন: পণ্য ফেরত, ভুল এন্ট্রি" />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" disabled={delBusy} onClick={() => setDelTarget(null)}>{t("cancel")}</Button>
+            <Button variant="destructive" disabled={delBusy || delReason.trim().length < 3} onClick={confirmDelete}>
+              {delBusy ? "মুছছে…" : "মুছে ফেলুন"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
 
       {/* New Installment Plan */}
       <Dialog open={openNew} onOpenChange={setOpenNew}>
