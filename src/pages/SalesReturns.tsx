@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { logActivity } from "@/lib/activityLog";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,6 +26,7 @@ export default function SalesReturns() {
   const [refund, setRefund] = useState<number | null>(null);
   const [deduction, setDeduction] = useState<number>(0);
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
 
   const load = async () => {
     try {
@@ -98,38 +99,43 @@ export default function SalesReturns() {
   const submitReturn = async () => {
     const items = saleItems.filter(it => (retQty[it.id] || 0) > 0);
     if (!items.length) return toast({ title: "কমপক্ষে একটি পণ্য নির্বাচন করুন", variant: "destructive" });
-    if (saving) return;
+    if (saving || savingRef.current) return;
     if (totalRefund > Number(sale.paid)) return toast({ title: "ফেরত টাকা গ্রাহকের পরিশোধিত টাকার বেশি হতে পারে না", variant: "destructive" });
+    savingRef.current = true;
     setSaving(true);
     
-    const fullReason = deduction > 0
-      ? (reason ? `${reason} (দোকান কর্তন: ৳${deduction})` : `পণ্য ফেরত (দোকান কর্তন: ৳${deduction})`)
-      : (reason || "গ্রাহক বিক্রয় ফেরত");
+    try {
+      const fullReason = deduction > 0
+        ? (reason ? `${reason} (দোকান কর্তন: ৳${deduction})` : `পণ্য ফেরত (দোকান কর্তন: ৳${deduction})`)
+        : (reason || "গ্রাহক বিক্রয় ফেরত");
 
-    const { data: ret, error } = await supabase.from("sales_returns").insert({
-      sale_id: sale.id, shop_id: sale.shop_id, reason: fullReason,
-      total_amount: returnValue, refund_amount: totalRefund, deduction_amount: deduction, created_by: user!.id,
-      invoice_no: sale.invoice_no,
-      customer_name: sale.customers?.name ?? null,
-      customer_id: sale.customer_id ?? null,
-    } as any).select().single();
-    if (error) { setSaving(false); return toast({ title: error.message, variant: "destructive" }); }
-    const rows = items.map(it => ({
-      return_id: ret.id, shop_id: sale.shop_id, product_id: it.product_id, product_name: it.product_name,
-      qty: retQty[it.id], unit_price: Number(it.unit_price), subtotal: retQty[it.id] * Number(it.unit_price),
-    }));
-    const { error: e2 } = await supabase.from("sales_return_items").insert(rows);
-    setSaving(false);
-    if (e2) return toast({ title: e2.message, variant: "destructive" });
-    logActivity({
-      action: "sale.return",
-      entity_type: "sales_return",
-      entity_id: ret.id,
-      shop_id: sale.shop_id ?? null,
-      meta: { invoice_no: sale.invoice_no, amount: totalRefund, note: fullReason || undefined },
-    });
-    toast({ title: "ফেরত সংরক্ষিত ✓" });
-    setOpen(false); setSale(null); setSaleItems([]); setInvSearch(""); setReason(""); setDeduction(0); load();
+      const { data: ret, error } = await supabase.from("sales_returns").insert({
+        sale_id: sale.id, shop_id: sale.shop_id, reason: fullReason,
+        total_amount: returnValue, refund_amount: totalRefund, deduction_amount: deduction, created_by: user!.id,
+        invoice_no: sale.invoice_no,
+        customer_name: sale.customers?.name ?? null,
+        customer_id: sale.customer_id ?? null,
+      } as any).select().single();
+      if (error) { return toast({ title: error.message, variant: "destructive" }); }
+      const rows = items.map(it => ({
+        return_id: ret.id, shop_id: sale.shop_id, product_id: it.product_id, product_name: it.product_name,
+        qty: retQty[it.id], unit_price: Number(it.unit_price), subtotal: retQty[it.id] * Number(it.unit_price),
+      }));
+      const { error: e2 } = await supabase.from("sales_return_items").insert(rows);
+      if (e2) return toast({ title: e2.message, variant: "destructive" });
+      logActivity({
+        action: "sale.return",
+        entity_type: "sales_return",
+        entity_id: ret.id,
+        shop_id: sale.shop_id ?? null,
+        meta: { invoice_no: sale.invoice_no, amount: totalRefund, note: fullReason || undefined },
+      });
+      toast({ title: "ফেরত সংরক্ষিত ✓" });
+      setOpen(false); setSale(null); setSaleItems([]); setInvSearch(""); setReason(""); setDeduction(0); load();
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
   };
 
   return (

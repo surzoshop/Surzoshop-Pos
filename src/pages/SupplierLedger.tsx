@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useT } from "@/i18n/LanguageContext";
@@ -21,6 +21,8 @@ export default function SupplierLedger() {
   const [payments, setPayments] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [pay, setPay] = useState({ purchase_id: "", amount: 0, payment_method: "cash", note: "" });
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
 
   const loadList = () =>
     supabase.from("suppliers").select("id,name,phone,opening_balance").order("name").then(({ data }) => {
@@ -58,15 +60,23 @@ export default function SupplierLedger() {
   const dueBills = purchases.filter(p => Number(p.due) > 0);
 
   const savePayment = async () => {
+    if (saving || savingRef.current) return;
     if (!pay.purchase_id || pay.amount <= 0) return toast({ title: "Bill ও amount দিন", variant: "destructive" });
-    const { error } = await supabase.from("purchase_payments").insert({
-      purchase_id: pay.purchase_id, amount: pay.amount, payment_method: pay.payment_method,
-      note: pay.note, created_by: user!.id,
-    });
-    if (error) return toast({ title: error.message, variant: "destructive" });
-    toast({ title: "পেমেন্ট সংরক্ষিত ✓" });
-    setOpen(false); setPay({ purchase_id: "", amount: 0, payment_method: "cash", note: "" });
-    loadDetail(); loadList();
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("purchase_payments").insert({
+        purchase_id: pay.purchase_id, amount: pay.amount, payment_method: pay.payment_method,
+        note: pay.note, created_by: user!.id,
+      });
+      if (error) return toast({ title: error.message, variant: "destructive" });
+      toast({ title: "পেমেন্ট সংরক্ষিত ✓" });
+      setOpen(false); setPay({ purchase_id: "", amount: 0, payment_method: "cash", note: "" });
+      loadDetail(); loadList();
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
   };
 
   const filtered = suppliers.filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase()) || (s.phone ?? "").includes(search));
@@ -158,8 +168,10 @@ export default function SupplierLedger() {
             <div><Label>নোট</Label><Input value={pay.note} onChange={e => setPay({ ...pay, note: e.target.value })} /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>{t("cancel")}</Button>
-            <Button onClick={savePayment} className="gradient-primary">{t("save")}</Button>
+            <Button variant="outline" disabled={saving} onClick={() => setOpen(false)}>{t("cancel")}</Button>
+            <Button onClick={savePayment} disabled={saving} className="gradient-primary">
+              {saving ? "সংরক্ষণ হচ্ছে..." : t("save")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { logActivity } from "@/lib/activityLog";
 import { useT } from "@/i18n/LanguageContext";
@@ -22,6 +22,7 @@ export default function StockAdjustments() {
   const [newStock, setNewStock] = useState<number>(0);
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [showHistory, setShowHistory] = useState(false);
 
   const load = async () => {
@@ -41,30 +42,35 @@ export default function StockAdjustments() {
   };
 
   const save = async () => {
-    if (!editing) return;
+    if (!editing || saving || savingRef.current) return;
     const qty = Number(newStock);
     if (Number.isNaN(qty) || qty < 0) return toast({ title: "সঠিক পরিমাণ দিন", variant: "destructive" });
+    savingRef.current = true;
     setSaving(true);
-    // type='count' trigger sets products.stock = qty (everywhere)
-    const { error } = await supabase.from("stock_adjustments").insert({
-      product_id: editing.id,
-      product_name: editing.name,
-      type: "count" as any,
-      qty,
-      reason: reason || `স্টক সংশোধন: ${editing.stock} → ${qty}`,
-      created_by: user!.id,
-    } as any);
-    setSaving(false);
-    if (error) return toast({ title: error.message, variant: "destructive" });
-    logActivity({
-      action: "stock.adjustment",
-      entity_type: "product",
-      entity_id: editing.id,
-      meta: { product_name: editing.name, qty, type: "count", note: reason || `${editing.stock} → ${qty}` },
-    });
-    toast({ title: "স্টক আপডেট হয়েছে" });
-    setEditing(null);
-    load();
+    try {
+      // type='count' trigger sets products.stock = qty (everywhere)
+      const { error } = await supabase.from("stock_adjustments").insert({
+        product_id: editing.id,
+        product_name: editing.name,
+        type: "count" as any,
+        qty,
+        reason: reason || `স্টক সংশোধন: ${editing.stock} → ${qty}`,
+        created_by: user!.id,
+      } as any);
+      if (error) return toast({ title: error.message, variant: "destructive" });
+      logActivity({
+        action: "stock.adjustment",
+        entity_type: "product",
+        entity_id: editing.id,
+        meta: { product_name: editing.name, qty, type: "count", note: reason || `${editing.stock} → ${qty}` },
+      });
+      toast({ title: "স্টক আপডেট হয়েছে" });
+      setEditing(null);
+      load();
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
   };
 
   const filtered = useMemo(() =>

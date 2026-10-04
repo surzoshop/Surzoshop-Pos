@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { toBDDate } from "@/lib/datetime";
 import { supabase } from "@/integrations/supabase/client";
 import { logActivity } from "@/lib/activityLog";
@@ -73,6 +73,8 @@ export default function Expenses() {
     payment_method: "cash", notes: "",
   };
   const [form, setForm] = useState<any>(empty);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
 
   const load = async () => {
     const [e, c] = await Promise.all([
@@ -107,30 +109,38 @@ export default function Expenses() {
   }, []);
 
   const save = async () => {
+    if (saving || savingRef.current) return;
     if (!form.title.trim() || Number(form.amount) <= 0) {
       return toast({ title: "শিরোনাম ও পরিমাণ দিন", variant: "destructive" });
     }
-    const payload = {
-      title: form.title.trim(),
-      amount: Number(form.amount),
-      category_id: form.category_id || null,
-      expense_date: form.expense_date,
-      payment_method: form.payment_method,
-      notes: form.notes || null,
-    };
-    const { error } = editing
-      ? await supabase.from("expenses").update(payload).eq("id", editing.id)
-      : await supabase.from("expenses").insert({ ...payload, created_by: user!.id });
-    if (error) return toast({ title: error.message, variant: "destructive" });
-    if (!editing) {
-      logActivity({
-        action: "expense.create",
-        entity_type: "expense",
-        meta: { title: payload.title, amount: Number(payload.amount), payment_method: payload.payment_method },
-      });
+    savingRef.current = true;
+    setSaving(true);
+    try {
+      const payload = {
+        title: form.title.trim(),
+        amount: Number(form.amount),
+        category_id: form.category_id || null,
+        expense_date: form.expense_date,
+        payment_method: form.payment_method,
+        notes: form.notes || null,
+      };
+      const { error } = editing
+        ? await supabase.from("expenses").update(payload).eq("id", editing.id)
+        : await supabase.from("expenses").insert({ ...payload, created_by: user!.id });
+      if (error) return toast({ title: error.message, variant: "destructive" });
+      if (!editing) {
+        logActivity({
+          action: "expense.create",
+          entity_type: "expense",
+          meta: { title: payload.title, amount: Number(payload.amount), payment_method: payload.payment_method },
+        });
+      }
+      toast({ title: editing ? "খরচ আপডেট হয়েছে" : "খরচ যোগ হয়েছে" });
+      setEditing(null); setForm(empty); setOpen(false); load();
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
     }
-    toast({ title: editing ? "খরচ আপডেট হয়েছে" : "খরচ যোগ হয়েছে" });
-    setEditing(null); setForm(empty); setOpen(false); load();
   };
 
   const startEdit = (i: any) => {
@@ -554,8 +564,8 @@ export default function Expenses() {
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto">{t("cancel")}</Button>
-            <Button onClick={save} className="w-full sm:w-auto bg-gradient-to-br from-destructive to-destructive/80 text-destructive-foreground hover:brightness-110 font-extrabold">
-              {editing ? "আপডেট করুন" : "সংরক্ষণ করুন"}
+            <Button onClick={save} disabled={saving} className="w-full sm:w-auto bg-gradient-to-br from-destructive to-destructive/80 text-destructive-foreground hover:brightness-110 font-extrabold">
+              {saving ? "সংরক্ষণ হচ্ছে..." : editing ? "আপডেট করুন" : "সংরক্ষণ করুন"}
             </Button>
           </DialogFooter>
         </DialogContent>

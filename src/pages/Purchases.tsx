@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { todayBD } from "@/lib/datetime";
 import { supabase } from "@/integrations/supabase/client";
 import { logActivity } from "@/lib/activityLog";
@@ -33,6 +33,10 @@ export default function Purchases() {
   const [payOpen, setPayOpen] = useState(false);
   const [payTarget, setPayTarget] = useState<any>(null);
   const [payAmt, setPayAmt] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [paying, setPaying] = useState(false);
+  const payingRef = useRef(false);
   const [supplierFocus, setSupplierFocus] = useState(false);
   const [productFocusIdx, setProductFocusIdx] = useState<number | null>(null);
 
@@ -135,10 +139,13 @@ export default function Purchases() {
   const validItems = () => items.filter(i => (i.product_id || (i.search && i.search.trim())) && i.qty > 0);
 
   const save = async (alsoPrint = false) => {
+    if (saving || savingRef.current) return;
     const rowsToSave = validItems();
     if (rowsToSave.length === 0) return toast({ title: "কমপক্ষে একটি পণ্য নির্বাচন বা লিখুন", variant: "destructive" });
 
-    // Step 1: Create new products on the fly (so POS / Products list automatically gets them)
+    savingRef.current = true;
+    setSaving(true);
+    try {
     const prepared: any[] = [];
     for (const it of rowsToSave) {
       let pid = it.product_id;
@@ -227,6 +234,10 @@ export default function Purchases() {
       });
     }
     setOpen(false); resetForm(); load();
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
   };
 
   const printExisting = async (p: any) => {
@@ -456,20 +467,27 @@ export default function Purchases() {
   };
 
   const submitPayment = async () => {
-    if (!payTarget || payAmt <= 0) return;
-    const { error } = await supabase.from("purchase_payments").insert({
-      purchase_id: payTarget.id, amount: payAmt, payment_method: paymentMethod,
-      created_by: user!.id, shop_id: currentShop?.id ?? null,
-    });
-    if (error) return toast({ title: error.message, variant: "destructive" });
-    logActivity({
-      action: "purchase.pay",
-      entity_type: "purchase",
-      entity_id: payTarget.id,
-      meta: { amount: payAmt, invoice_no: payTarget.bill_no, payment_method: paymentMethod },
-    });
-    toast({ title: "পরিশোধ সংরক্ষিত ✓" });
-    setPayOpen(false); setPayTarget(null); setPayAmt(0); load();
+    if (paying || payingRef.current || !payTarget || payAmt <= 0) return;
+    payingRef.current = true;
+    setPaying(true);
+    try {
+      const { error } = await supabase.from("purchase_payments").insert({
+        purchase_id: payTarget.id, amount: payAmt, payment_method: paymentMethod,
+        created_by: user!.id, shop_id: currentShop?.id ?? null,
+      });
+      if (error) return toast({ title: error.message, variant: "destructive" });
+      logActivity({
+        action: "purchase.pay",
+        entity_type: "purchase",
+        entity_id: payTarget.id,
+        meta: { amount: payAmt, invoice_no: payTarget.bill_no, payment_method: paymentMethod },
+      });
+      toast({ title: "পরিশোধ সংরক্ষিত ✓" });
+      setPayOpen(false); setPayTarget(null); setPayAmt(0); load();
+    } finally {
+      payingRef.current = false;
+      setPaying(false);
+    }
   };
 
   const filtered = purchases.filter(p =>
@@ -951,21 +969,29 @@ export default function Purchases() {
           {/* Sticky footer — mobile responsive */}
           <div className="border-t border-[hsl(var(--surface-container-high))]/60 px-3 sm:px-5 py-3 bg-[hsl(var(--surface-container-lowest))] shrink-0">
             <div className="hidden sm:flex items-center justify-between">
-              <button onClick={() => { setOpen(false); resetForm(); }} className="text-sm text-muted-foreground hover:text-foreground px-3 py-2">বাতিল</button>
+              <button disabled={saving} onClick={() => { setOpen(false); resetForm(); }} className="text-sm text-muted-foreground hover:text-foreground px-3 py-2">বাতিল</button>
               <div className="flex items-center gap-2">
                 <span className="px-3 py-2 rounded-lg bg-[hsl(var(--surface-container-low))] text-sm font-bold">মোট ৳{fmt(total)}</span>
-                <Button variant="outline" onClick={() => save(true)} className="gap-2"><Printer className="h-4 w-4" />সেভ ও প্রিন্ট (A4)</Button>
-                <Button onClick={() => save(false)} className="gradient-primary gap-2"><Save className="h-4 w-4" />পারচেজ সেভ</Button>
+                <Button variant="outline" disabled={saving} onClick={() => save(true)} className="gap-2">
+                  <Printer className="h-4 w-4" />{saving ? "সংরক্ষণ হচ্ছে..." : "সেভ ও প্রিন্ট (A4)"}
+                </Button>
+                <Button onClick={() => save(false)} disabled={saving} className="gradient-primary gap-2">
+                  <Save className="h-4 w-4" />{saving ? "সংরক্ষণ হচ্ছে..." : "পারচেজ সেভ"}
+                </Button>
               </div>
             </div>
             <div className="sm:hidden space-y-2">
               <div className="flex items-center justify-between">
-                <button onClick={() => { setOpen(false); resetForm(); }} className="text-xs text-muted-foreground px-2">বাতিল</button>
+                <button disabled={saving} onClick={() => { setOpen(false); resetForm(); }} className="text-xs text-muted-foreground px-2">বাতিল</button>
                 <span className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-black">মোট ৳{fmt(total)}</span>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" onClick={() => save(true)} className="gap-1 h-11 text-xs"><Printer className="h-4 w-4" />সেভ + প্রিন্ট</Button>
-                <Button onClick={() => save(false)} className="gradient-primary gap-1 h-11 text-xs"><Save className="h-4 w-4" />সেভ</Button>
+                <Button variant="outline" disabled={saving} onClick={() => save(true)} className="gap-1 h-11 text-xs">
+                  <Printer className="h-4 w-4" />{saving ? "সংরক্ষণ..." : "সেভ + প্রিন্ট"}
+                </Button>
+                <Button onClick={() => save(false)} disabled={saving} className="gradient-primary gap-1 h-11 text-xs">
+                  <Save className="h-4 w-4" />{saving ? "সংরক্ষণ..." : "সেভ"}
+                </Button>
               </div>
             </div>
           </div>
@@ -1023,8 +1049,10 @@ export default function Purchases() {
             <div><Label>পরিশোধ পরিমাণ</Label><Input type="number" value={payAmt} onChange={e => setPayAmt(+e.target.value)} /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPayOpen(false)}>{t("cancel")}</Button>
-            <Button onClick={submitPayment} className="gradient-primary">{t("save")}</Button>
+            <Button variant="outline" disabled={paying} onClick={() => setPayOpen(false)}>{t("cancel")}</Button>
+            <Button onClick={submitPayment} disabled={paying} className="gradient-primary">
+              {paying ? "সংরক্ষণ হচ্ছে..." : t("save")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
