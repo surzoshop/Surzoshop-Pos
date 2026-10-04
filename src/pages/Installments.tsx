@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Wallet, Calendar, AlertTriangle, CheckCircle2, Plus, Trash2, Settings2, User, Phone, CalendarDays, Percent, Banknote, Clock, Search, X } from "lucide-react";
 import { PageHeader, StatusPill, SurfaceCard, PrimaryButton } from "@/components/PageHeader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useShop } from "@/hooks/useShop";
 
 type Inst = any;
 type Plan = {
@@ -50,6 +51,7 @@ const addMonthsToDateStr = (dateStr: string, monthsToAdd: number) => {
 export default function Installments() {
   const { t, fmt, lang } = useT();
   const { user, role } = useAuth();
+  const { currentShop } = useShop();
   const isAdmin = role === "admin" || role === "super_admin";
   const { toast } = useToast();
   const [items, setItems] = useState<Inst[]>([]);
@@ -335,6 +337,7 @@ export default function Installments() {
     const { error } = await supabase.from("installment_payments").insert({
       installment_id: paying.id, amount: finalAmount, received_by: user!.id,
       remark: payRemark || null, rating: payRating,
+      shop_id: paying.shop_id || currentShop?.id || null,
     } as any);
     if (error) return toast({ title: error.message, variant: "destructive" });
     logActivity({ action: "installment.pay", entity_type: "installment", entity_id: paying.id, meta: { amount: finalAmount, invoice_no: managing?.invoice_no, customer_name: managing?.customer_name, rating: payRating, remark: payRemark } });

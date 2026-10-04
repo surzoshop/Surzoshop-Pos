@@ -38,15 +38,30 @@ export default function DailyClose() {
     const dayStart = `${date}T00:00:00+06:00`;
     const dayEnd = `${addDaysBDStr(date, 1)}T00:00:00+06:00`;
 
+    const isBakiPayment = (e: any) => {
+      const cat = (e.category ?? "").toLowerCase();
+      const notes = (e.notes ?? "").toLowerCase();
+      return cat.includes("বাকি পরিশোধ") || cat.includes("credit payment") || cat.includes("বাকি আদায়") ||
+             notes.includes("বাকি পরিশোধ") || notes.includes("credit settlement") || notes.includes("বাকি আদায়");
+    };
+
+    const isReturnEntry = (e: any) => {
+      const cat = (e.category ?? "").toLowerCase();
+      const notes = (e.notes ?? "").toLowerCase();
+      return cat.includes("ফেরত") || notes.includes("ফেরত") || notes.includes("ret-");
+    };
+
     let sq: any = supabase.from("sales")
-      .select("id,invoice_no,created_at,total,paid,due,payment_type,customers(name)")
+      .select("id,invoice_no,created_at,total,paid,due,payment_type,down_payment,customer_id,customers(name)")
       .gte("created_at", dayStart).lt("created_at", dayEnd);
     sq = shopFilter(sq);
 
     let ipq: any = supabase.from("installment_payments")
-      .select("id,amount,paid_at,note,installments!inner(sale_id,installment_no)")
+      .select("id,amount,paid_at,note,shop_id,installments!inner(sale_id,installment_no)")
       .gte("paid_at", dayStart).lt("paid_at", dayEnd);
-    ipq = shopFilter(ipq);
+    if (currentShop) {
+      ipq = ipq.or(`shop_id.eq.${currentShop.id},shop_id.is.null`);
+    }
 
     let cq: any = supabase.from("cash_book" as any).select("*").eq("entry_date", date);
     cq = shopFilter(cq);
@@ -77,7 +92,10 @@ export default function DailyClose() {
 
     const out: Row[] = [];
     (sd ?? []).forEach((s: any) => {
-      const basePaid = Math.max(0, Number(s.paid || 0) - (instBySale.get(s.id) ?? 0));
+      // যদি কিস্তি বিক্রয় হয়, তবে দিনের ক্যাশে প্রবেশ করেছে ডাউন পেমেন্ট; অন্যথায় নগদ প্রাপ্তি
+      const basePaid = s.payment_type === "installment" && s.down_payment != null
+        ? Number(s.down_payment)
+        : Math.max(0, Number(s.paid || 0) - (instBySale.get(s.id) ?? 0));
       if (basePaid <= 0) return;
       out.push({
         id: `sale-${s.id}`,
@@ -103,15 +121,33 @@ export default function DailyClose() {
       });
     });
     (cd ?? []).forEach((e: any) => {
+      const isDeposit = e.entry_type === "deposit";
+      const isBaki = isBakiPayment(e);
+      const isReturn = isReturnEntry(e);
+
+      let counts = false;
+      let kind: "in" | "out" = isDeposit ? "in" : "out";
+      let label = `${isDeposit ? "ক্যাশবুক জমা" : "উত্তোলন"}${e.category ? ` — ${e.category}` : ""}`;
+
+      if (isDeposit && isBaki) {
+        counts = true;
+        kind = "in";
+        label = `বাকি আদায় — ${e.party_name || e.notes || "কাস্টমার"}`;
+      } else if (!isDeposit && isReturn) {
+        counts = true;
+        kind = "out";
+        label = `বিক্রয় ফেরত রিফান্ড — ${e.party_name || e.notes || "কাস্টমার"}`;
+      }
+
       out.push({
         id: `cb-${e.id}`,
-        at: String(e.created_at),
-        kind: e.entry_type === "deposit" ? "in" : "out",
+        at: String(e.created_at || `${date}T00:00:00+06:00`),
+        kind,
         amount: Number(e.amount || 0),
-        label: `${e.entry_type === "deposit" ? "ক্যাশবুক জমা" : "উত্তোলন"}${e.category ? ` — ${e.category}` : ""}`,
+        label,
         detail: e.party_name ?? e.notes ?? null,
         method: e.payment_method ?? "cash",
-        counts: false,
+        counts,
       });
     });
     (ed ?? []).forEach((x: any) => {

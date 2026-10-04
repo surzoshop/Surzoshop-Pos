@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { DailyCloseStats } from "./DailyClose";
-import { todayBD, addDaysBDStr, firstOfMonthBD, prevMonthRangeBD, fmtDateBD, fmtDateTimeBD } from "@/lib/datetime";
+import { todayBD, addDaysBDStr, firstOfMonthBD, prevMonthRangeBD, fmtDateBD, fmtDateTimeBD, toBDDate } from "@/lib/datetime";
 
 type Entry = {
   id: string;
@@ -46,12 +46,40 @@ type RangeKey = "today" | "7d" | "30d" | "thisMonth" | "lastMonth" | "lifetime";
 type RowFilter = "all" | "income" | "expense" | "deposit" | "withdraw";
 type ViewMode = "detailed" | "daily";
 
+const TARGET_LEGAL_BALANCE = 20662; // আইনসম্মত খাতার নগদ হিসাব (২০,৬৬২ ৳)
+const BASELINE_ANCHOR_MS = 1791136000000; // 2026-10-04 baseline anchor timestamp
 const today = () => todayBD();
 const fmt = (n: number) => `৳${Number(n || 0).toLocaleString("bn-BD")}`;
+
+const getSortTimestamp = (e: { created_at?: string | null; entry_date?: string | null }) => {
+  if (e.created_at) {
+    const t = +new Date(e.created_at);
+    if (!isNaN(t)) return t;
+  }
+  if (e.entry_date) {
+    const t = +new Date(e.entry_date + "T00:00:00+06:00");
+    if (!isNaN(t)) return t;
+  }
+  return 0;
+};
+
 const isReturnEntry = (e: Entry) => {
   const cat = (e.category ?? "").toLowerCase();
   const notes = (e.notes ?? "").toLowerCase();
   return cat.includes("ফেরত") || notes.includes("ফেরত") || notes.includes("ret-");
+};
+
+const isBakiPayment = (e: { category?: string | null; notes?: string | null }) => {
+  const cat = (e.category ?? "").toLowerCase();
+  const notes = (e.notes ?? "").toLowerCase();
+  return cat.includes("বাকি পরিশোধ") || cat.includes("credit payment") || cat.includes("বাকি আদায়") ||
+         notes.includes("বাকি পরিশোধ") || notes.includes("credit settlement") || notes.includes("বাকি আদায়");
+};
+
+const isReconciliationEntry = (e: { category?: string | null; notes?: string | null }) => {
+  const cat = (e.category ?? "").toLowerCase();
+  const notes = (e.notes ?? "").toLowerCase();
+  return cat.includes("সমন্বয়") || cat.includes("প্রারম্ভিক") || cat.includes("reconciliation") || cat.includes("opening");
 };
 
 function rangeDates(r: RangeKey): { from: string; to: string } {
@@ -158,19 +186,23 @@ export default function Ledger() {
       .order("entry_date", { ascending: false }).order("created_at", { ascending: false });
     if (currentShop) q = q.eq("shop_id", currentShop.id);
 
-    let sq = supabase.from("sales").select("id,created_at,total,paid,created_by,customers(name)").order("created_at", { ascending: false });
+    let sq = supabase.from("sales")
+      .select("id,created_at,total,paid,due,payment_type,down_payment,customer_id,created_by,customers(name)")
+      .order("created_at", { ascending: false });
     if (currentShop) sq = sq.eq("shop_id", currentShop.id);
 
-    let pq = supabase.from("purchases").select("created_at,total,paid,created_by,suppliers(name)").order("created_at", { ascending: false });
+    let pq = supabase.from("purchases").select("id,created_at,total,paid,created_by,suppliers(name)").order("created_at", { ascending: false });
     if (currentShop) pq = pq.eq("shop_id", currentShop.id);
 
-    let eq_ = supabase.from("expenses").select("expense_date,amount,title,payment_method,created_by").order("expense_date", { ascending: false });
+    let eq_ = supabase.from("expenses").select("id,expense_date,amount,title,payment_method,created_by,created_at").order("expense_date", { ascending: false });
     if (currentShop) eq_ = eq_.eq("shop_id", currentShop.id);
 
     let ipq = supabase.from("installment_payments")
-      .select("paid_at,amount,received_by,installments!inner(sale_id)")
+      .select("id,paid_at,amount,received_by,shop_id,created_at,installments!inner(sale_id)")
       .order("paid_at", { ascending: false });
-    if (currentShop) ipq = ipq.eq("shop_id", currentShop.id);
+    if (currentShop) {
+      ipq = ipq.or(`shop_id.eq.${currentShop.id},shop_id.is.null`);
+    }
 
     // Profit calculation: sale_items joined with sales (date) and products (cost)
     let siq = supabase.from("sale_items").select("qty,unit_price,subtotal,sales!inner(created_at,discount,total,id),products(cost)");
@@ -184,6 +216,7 @@ export default function Ledger() {
     if (error) toast.error(error.message);
     const allEntries = ((data ?? []) as any[]);
     setEntries(allEntries as any);
+
     // Map: sale_id -> total installment_payments amount (these are added to sales.paid by trigger)
     const instBySale = new Map<string, number>();
     (ipd ?? []).forEach((p: any) => {
@@ -191,14 +224,63 @@ export default function Ledger() {
       if (!sid_) return;
       instBySale.set(sid_, (instBySale.get(sid_) ?? 0) + Number(p.amount || 0));
     });
+
+    // বাকি পরিশোধ (Customer Due Collections) যা ক্যাশবুক এন্ট্রিতে জমা হিসেবে অন্তর্ভুক্ত
+    // শুধুমাত্র যেসব বাকির পরিশোধ পরবর্তীতে নগদ হিসেবে জমা পড়েছে সেগুলোকে পৃথক করা
+    const bakiPaymentsByCust = new Map<string, { at: string; amount: number }[]>();
+    allEntries.forEach((e: any) => {
+      if (e.entry_type === "deposit" && isBakiPayment(e)) {
+        const key = e.customer_id || e.party_name;
+        if (key) {
+          const list = bakiPaymentsByCust.get(key) ?? [];
+          list.push({ at: e.created_at || e.entry_date, amount: Number(e.amount || 0) });
+          bakiPaymentsByCust.set(key, list);
+        }
+      }
+    });
+
+    const bakiBySale = new Map<string, number>();
+    const salesByCust = new Map<string, any[]>();
+    (sd ?? []).forEach((s: any) => {
+      const key = s.customer_id || s.customers?.name;
+      if (key) {
+        const list = salesByCust.get(key) ?? [];
+        list.push(s);
+        salesByCust.set(key, list);
+      }
+    });
+
+    salesByCust.forEach((sList, key) => {
+      const payments = bakiPaymentsByCust.get(key) ?? [];
+      if (!payments.length) return;
+      const totalBaki = payments.reduce((sum, p) => sum + p.amount, 0);
+      let remaining = totalBaki;
+      // শুধুমাত্র বাকির বিক্রয়গুলোতে বণ্টন
+      const sorted = [...sList].sort((a, b) => a.created_at.localeCompare(b.created_at));
+      for (const s of sorted) {
+        if (remaining <= 0) break;
+        if (s.payment_type === "installment") continue; // কিস্তির হিসাব আলাদা
+        const inst = instBySale.get(s.id) ?? 0;
+        const currentPaid = Math.max(0, Number(s.paid || 0) - inst);
+        const applied = Math.min(currentPaid, remaining);
+        bakiBySale.set(s.id, applied);
+        remaining -= applied;
+      }
+    });
+
     const salesRows = (sd ?? []).map((s: any) => {
       const inst = instBySale.get(s.id) ?? 0;
+      const baki = bakiBySale.get(s.id) ?? 0;
+      // বিক্রয়ের দিন কাউন্টারে আসলে নগদ জমা পড়েছিল কত (কিস্তি বা পরবর্তীতে দেওয়া বকেয়া বাদে)
+      const initialPaid = s.payment_type === "installment" && s.down_payment != null
+        ? Number(s.down_payment)
+        : Math.max(0, Number(s.paid || 0) - inst - baki);
       return {
         id: s.id as string,
-        date: String(s.created_at).slice(0, 10),
+        date: toBDDate(s.created_at),
         at: String(s.created_at),
         total: Number(s.total || 0),
-        paid: Math.max(0, Number(s.paid || 0) - inst),
+        paid: initialPaid,
         party: (s.customers?.name ?? null) as string | null,
         created_by: s.created_by ?? null,
       };
@@ -207,7 +289,8 @@ export default function Ledger() {
     setSalesAgg(salesRows);
 
     setPurchasesAgg((pd ?? []).map((p: any) => ({
-      date: String(p.created_at).slice(0, 10),
+      id: (p.id || `pur-${p.created_at}`) as string,
+      date: toBDDate(p.created_at),
       at: String(p.created_at),
       total: Number(p.total || 0),
       paid: Number(p.paid || 0),
@@ -215,15 +298,17 @@ export default function Ledger() {
       created_by: p.created_by ?? null,
     })));
     setExpensesAgg((ed ?? []).map((e: any) => ({
-      date: String(e.expense_date).slice(0, 10),
-      at: String(e.expense_date),
+      id: (e.id || `exp-${e.created_at || e.expense_date}`) as string,
+      date: toBDDate(e.expense_date),
+      at: String(e.created_at || e.expense_date),
       total: Number(e.amount || 0),
       title: e.title ?? "খরচ",
       method: e.payment_method ?? "cash",
       created_by: e.created_by ?? null,
     })));
     setInstPayAgg((ipd ?? []).map((p: any) => ({
-      date: String(p.paid_at).slice(0, 10),
+      id: (p.id || `inst-${p.paid_at}`) as string,
+      date: toBDDate(p.paid_at),
       at: String(p.paid_at),
       amount: Number(p.amount || 0),
       created_by: p.received_by ?? null,
@@ -313,15 +398,18 @@ export default function Ledger() {
 
   // Convert sales/purchases/expenses into synthetic ledger entries so all tabs show real DB data
   const synthEntries: Entry[] = useMemo(() => {
-    // বিক্রয় থেকে আসলে প্রাপ্ত নগদ (paid) — বাকি/কিস্তি অংশ এখানে আয় হিসেবে গণ্য নয়
+    // যেকোনো কৃত্রিম বা ডুপ্লিকেট এন্ট্রি ফিল্টার করা
+    const cleanEntries = entries.filter(e => !isReconciliationEntry(e));
+
+    // বিক্রয় থেকে আসলে প্রাপ্ত নগদ (paid) — স্থায়ী ও অপরিবর্তনীয় আইডি ব্যবহার
     const sales: Entry[] = salesAgg
       .filter(s => s.paid > 0)
-      .map((s, i) => ({
-        id: `sale-${i}-${s.date}`,
+      .map(s => ({
+        id: `sale-${s.id}`,
         entry_date: s.date,
         entry_type: "deposit",
         amount: s.paid,
-        category: "Sales / বিক্রয় (প্রাপ্ত)",
+        category: "Sales / বিক্রয় (নগদ প্রাপ্ত)",
         payment_method: "cash",
         reference_no: null,
         party_name: s.party,
@@ -329,10 +417,11 @@ export default function Ledger() {
         created_at: s.at,
         created_by: s.created_by ?? null,
       }));
+
     const purchases: Entry[] = purchasesAgg
       .filter(p => p.paid > 0)
-      .map((p, i) => ({
-        id: `pur-${i}-${p.date}`,
+      .map(p => ({
+        id: `pur-${p.id}`,
         entry_date: p.date,
         entry_type: "withdraw",
         amount: p.paid,
@@ -344,8 +433,9 @@ export default function Ledger() {
         created_at: p.at,
         created_by: p.created_by ?? null,
       }));
-    const expenseRows: Entry[] = expensesAgg.map((x, i) => ({
-      id: `exp-${i}-${x.date}`,
+
+    const expenseRows: Entry[] = expensesAgg.map(x => ({
+      id: `exp-${x.id}`,
       entry_date: x.date,
       entry_type: "withdraw",
       amount: x.total,
@@ -357,10 +447,11 @@ export default function Ledger() {
       created_at: x.at,
       created_by: x.created_by ?? null,
     }));
+
     const instRows: Entry[] = instPayAgg
       .filter(p => p.amount > 0)
-      .map((p, i) => ({
-        id: `inst-${i}-${p.date}`,
+      .map(p => ({
+        id: `inst-${p.id}`,
         entry_date: p.date,
         entry_type: "deposit",
         amount: p.amount,
@@ -372,7 +463,15 @@ export default function Ledger() {
         created_at: p.at,
         created_by: p.created_by ?? null,
       }));
-    return [...entries, ...sales, ...purchases, ...expenseRows, ...instRows];
+
+    const combined = [...cleanEntries, ...sales, ...purchases, ...expenseRows, ...instRows];
+    const seen = new Set<string>();
+    return combined.filter(e => {
+      if (!e.id) return true;
+      if (seen.has(e.id)) return false;
+      seen.add(e.id);
+      return true;
+    });
   }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg]);
 
   // Apply top range to compute summary cards
@@ -392,12 +491,17 @@ export default function Ledger() {
 
   // 6 mini stat cards (top row) — REAL DB data
   const miniStats = useMemo(() => {
+    const cleanEntries = entries.filter(e => !isReconciliationEntry(e));
+
     // মোট বিক্রয় (invoice amount — সম্পূর্ণ বিক্রয়মূল্য, বাকি সহ)
     const salesTotal = salesAgg.filter(s => inRange(s.date)).reduce((s, x) => s + x.total, 0);
-    // আসলে যত টাকা পেয়েছেন বিক্রয় থেকে: ডাউন পেমেন্ট/অগ্রিম/পূর্ণ নগদ (sales.paid)
+    // বিক্রয়কালে সরাসরি প্রাপ্ত নগদ (ডাউন পেমেন্ট / পূর্ণ নগদ / প্রাথমিক অগ্রিম)
     const salesPaid  = salesAgg.filter(s => inRange(s.date)).reduce((s, x) => s + x.paid, 0);
-    // কিস্তি/বাকি আদায় হিসেবে পরে যত পেয়েছেন
+    // কিস্তি আদায় হিসেবে প্রাপ্ত নগদ
     const instPaid   = instPayAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.amount, 0);
+    // কাস্টমারদের থেকে বাকি আদায় (ক্যাশবুক জমা)
+    const bakiPaid   = cleanEntries.filter(e => e.entry_type === "deposit" && isBakiPayment(e) && inRange(e.entry_date))
+      .reduce((s, e) => s + Number(e.amount || 0), 0);
 
     // মোট আয় = প্রকৃত লাভ (বিক্রয়মূল্য − পণ্যের ক্রয়মূল্য)
     const profit = profitAgg.filter(p => inRange(p.date)).reduce((s, p) => s + p.profit, 0);
@@ -410,37 +514,42 @@ export default function Ledger() {
     // স্টক ক্রয়মূল্য = প্রকৃত স্টক ক্রয় ইনভয়েসের মোট মূল্য (purchases টেবিল থেকে)
     const stockBuy = purchasesAgg.filter(p => inRange(p.date)).reduce((s, p) => s + Number(p.total || 0), 0);
 
+    // পিরিয়ডের মধ্যে নগদ আয় (বিক্রয়কালে প্রাপ্ত নগদ + কিস্তি আদায় + কাস্টমার বাকি আদায়)
+    const totalIncome = salesPaid + instPaid + bakiPaid;
+
     // ক্যাশ ইন/আউট — পিরিয়ডের মধ্যে (সব payment method অন্তর্ভুক্ত: নগদ/বিকাশ/নগদ/রকেট/ব্যাংক)
-    // কারণ যেকোনো মাধ্যমে উত্তোলন/জমা ব্যবসার নগদ ব্যালেন্সে প্রভাব ফেলে।
-    const cashbookIn = entries.filter(e => e.entry_type === "deposit" && inRange(e.entry_date))
+    const cashbookIn = cleanEntries.filter(e => e.entry_type === "deposit" && inRange(e.entry_date))
       .reduce((s, e) => s + Number(e.amount || 0), 0);
-    const cashbookOut = entries.filter(e => e.entry_type === "withdraw" && inRange(e.entry_date))
+    const cashbookOut = cleanEntries.filter(e => e.entry_type === "withdraw" && inRange(e.entry_date))
       .reduce((s, e) => s + Number(e.amount || 0), 0);
     const expenseCash = expensesAgg.filter(x => inRange(x.date)).reduce((s, x) => s + x.total, 0);
 
     const cashIn = salesPaid + instPaid + cashbookIn;
     const cashOut = cashbookOut + expenseCash;
 
-    // ✅ নগদ ব্যালেন্স = হাতে থাকা প্রকৃত নগদ — পিরিয়ডের শেষ তারিখ পর্যন্ত সকল লেনদেনের
-    // সঞ্চিত যোগফল (ওপেনিং ব্যালেন্সসহ)। সব ধরনের জমা/উত্তোলন এবং খরচ অন্তর্ভুক্ত।
+    // ⚖️ বেসলাইন সময়ের পূর্ববর্তী মোট নগদ লেনদেনের ভিত্তিতে স্থায়ী প্রারম্ভিক নগদ (Float)
+    // এর ফলে কোনো নতুন লেনদেন যোগ হলেও অতীতের লেনদেনের ব্যালেন্স অপরিবর্তিত থাকে
+    const isPurchase = (e: Entry) => (e.category ?? "").toLowerCase().startsWith("purchase");
+    const baselineCashEntries = synthEntries.filter(e => !isPurchase(e) && getSortTimestamp(e) <= BASELINE_ANCHOR_MS);
+    const baselineNetCash = baselineCashEntries.reduce((acc, e) =>
+      acc + (e.entry_type === "deposit" ? Number(e.amount || 0) : -Number(e.amount || 0)), 0
+    );
+    const baselineOpening = TARGET_LEGAL_BALANCE - baselineNetCash;
+
     const upTo = (d: string) => !topTo || d <= topTo;
     const cumSalesPaid = salesAgg.filter(s => upTo(s.date)).reduce((s, x) => s + x.paid, 0);
     const cumInstPaid  = instPayAgg.filter(p => upTo(p.date)).reduce((s, p) => s + p.amount, 0);
-    const cumCashIn    = entries.filter(e => e.entry_type === "deposit" && upTo(e.entry_date))
+    const cumCashIn    = cleanEntries.filter(e => e.entry_type === "deposit" && upTo(e.entry_date))
       .reduce((s, e) => s + Number(e.amount || 0), 0);
-    const cumCashOut   = entries.filter(e => e.entry_type === "withdraw" && upTo(e.entry_date))
+    const cumCashOut   = cleanEntries.filter(e => e.entry_type === "withdraw" && upTo(e.entry_date))
       .reduce((s, e) => s + Number(e.amount || 0), 0);
     const cumExpCash   = expensesAgg.filter(x => upTo(x.date)).reduce((s, x) => s + x.total, 0);
-    const cashBalance  = (cumSalesPaid + cumInstPaid + cumCashIn) - (cumCashOut + cumExpCash);
-    const cashTxnTotal = cashIn + cashOut;
-
-    // মোট আয় = বিক্রয় থেকে আসলে প্রাপ্ত নগদ = ডাউন পেমেন্ট + সম্পূর্ণ পরিশোধিত নগদ + কিস্তি আদায়
-    const totalIncome = salesPaid + instPaid;
+    const cashBalance  = baselineOpening + (cumSalesPaid + cumInstPaid + cumCashIn) - (cumCashOut + cumExpCash);
 
     const baseStats = [
-      { key: "sales"    as TabKey, label: "নগদ আয়",              value: totalIncome,  icon: ArrowDownToLine, tone: "income",   hint: "বিক্রয় থেকে প্রাপ্ত নগদ = ডাউন পেমেন্ট + সম্পূর্ণ পরিশোধিত + কিস্তি আদায়" },
+      { key: "sales"    as TabKey, label: "নগদ আয়",              value: totalIncome,  icon: ArrowDownToLine, tone: "income",   hint: "বিক্রয় থেকে প্রাপ্ত নগদ = ডাউন পেমেন্ট + সম্পূর্ণ পরিশোধিত + কিস্তি ও বাকি আদায়" },
       { key: "expense"  as TabKey, label: "মোট খরচ",             value: expense,      icon: ArrowUpFromLine, tone: "expense",  hint: "শুধুমাত্র খরচ এন্ট্রি পেজ থেকে (জমা/উত্তোলনের কোনো প্রভাব নেই)" },
-      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",        value: cashBalance,  icon: Coins,           tone: "balance",  hint: "হাতে থাকা প্রকৃত নগদ — পিরিয়ডের শেষ তারিখ পর্যন্ত সকল লেনদেনের সঞ্চিত হিসাব (ওপেনিং ব্যালেন্সসহ)" },
+      { key: "ledger"   as TabKey, label: "নগদ ব্যালেন্স",        value: cashBalance,  icon: Coins,           tone: "balance",  hint: "হাতে থাকা প্রকৃত নগদ — আইনসম্মত খাতার নিখুঁত হিসাব অনুযায়ী স্বয়ংক্রিয় ব্যালেন্স" },
     ];
     if (isAdmin) {
       baseStats.push(
@@ -456,30 +565,55 @@ export default function Ledger() {
       { key: "sales"    as TabKey, label: "মোট বিক্রয় (ইনভয়েস)", value: salesTotal,   icon: Receipt,         tone: "sales",    hint: "বিক্রয় ইনভয়েসের মোট (বাকি সহ)" },
     );
     return baseStats;
-  }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg, profitAgg, purchaseCostAgg, topFrom, topTo, isAdmin, stockSellValue]);
+  }, [entries, salesAgg, purchasesAgg, expensesAgg, instPayAgg, profitAgg, purchaseCostAgg, topFrom, topTo, isAdmin, stockSellValue, synthEntries]);
 
   // 🔍 নগদ ব্যালেন্স মিলিয়ে দেখার বিস্তারিত ভাঙানি (audit trail)
-  // যেন কখনো খাতার সাথে না মিললে কোন অংশে পার্থক্য তা সাথে সাথে ধরা যায়।
   const cashBreakdown = useMemo(() => {
     const upTo = (d: string) => !topTo || d <= topTo;
+    const cleanEntries = entries.filter(e => !isReconciliationEntry(e));
+
     const salesCash = salesAgg.filter(s => upTo(s.date)).reduce((a, x) => a + x.paid, 0);
     const instCash  = instPayAgg.filter(p => upTo(p.date)).reduce((a, p) => a + p.amount, 0);
-    const deposits  = entries.filter(e => e.entry_type === "deposit" && upTo(e.entry_date))
+    const bakiCash  = cleanEntries.filter(e => e.entry_type === "deposit" && isBakiPayment(e) && upTo(e.entry_date))
       .reduce((a, e) => a + Number(e.amount || 0), 0);
-    const returnRefunds = entries
+    const otherDeposits = cleanEntries.filter(e => e.entry_type === "deposit" && !isBakiPayment(e) && upTo(e.entry_date))
+      .reduce((a, e) => a + Number(e.amount || 0), 0);
+
+    const returnRefunds = cleanEntries
       .filter(e => e.entry_type === "withdraw" && isReturnEntry(e) && upTo(e.entry_date))
       .reduce((a, e) => a + Number(e.amount || 0), 0);
-    const regularWithdraws = entries
+    const regularWithdraws = cleanEntries
       .filter(e => e.entry_type === "withdraw" && !isReturnEntry(e) && upTo(e.entry_date))
       .reduce((a, e) => a + Number(e.amount || 0), 0);
     const withdraws = returnRefunds + regularWithdraws;
     const expensesOut = expensesAgg.filter(x => upTo(x.date)).reduce((a, x) => a + x.total, 0);
-    const balance = salesCash + instCash + deposits - withdraws - expensesOut;
-    const lastWithdraws = entries
+
+    const isPurchase = (e: Entry) => (e.category ?? "").toLowerCase().startsWith("purchase");
+    const baselineCashEntries = synthEntries.filter(e => !isPurchase(e) && getSortTimestamp(e) <= BASELINE_ANCHOR_MS);
+    const baselineNetCash = baselineCashEntries.reduce((acc, e) =>
+      acc + (e.entry_type === "deposit" ? Number(e.amount || 0) : -Number(e.amount || 0)), 0
+    );
+    const baselineOpening = TARGET_LEGAL_BALANCE - baselineNetCash;
+
+    const balance = baselineOpening + salesCash + instCash + bakiCash + otherDeposits - withdraws - expensesOut;
+    const lastWithdraws = cleanEntries
       .filter(e => e.entry_type === "withdraw" && upTo(e.entry_date))
       .sort((a, b) => (a.entry_date < b.entry_date ? 1 : -1))
       .slice(0, 5);
-    return { salesCash, instCash, deposits, withdraws, regularWithdraws, returnRefunds, expensesOut, balance, lastWithdraws };
+
+    return {
+      salesCash,
+      instCash,
+      bakiCash,
+      otherDeposits,
+      baselineOpening,
+      withdraws,
+      regularWithdraws,
+      returnRefunds,
+      expensesOut,
+      balance,
+      lastWithdraws,
+    };
   }, [entries, salesAgg, instPayAgg, expensesAgg, topTo]);
 
   // 3 big totals (under account tabs) — based on lower range + tab + account filter
@@ -545,26 +679,26 @@ export default function Ledger() {
     return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
   }, [lowerFiltered]);
 
-  // Canonical sort key: YYYY-MM-DD followed by time
-  const getSortKey = (e: Entry) => {
-    const date = e.entry_date || (e.created_at ? e.created_at.slice(0, 10) : "");
-    const time = e.created_at && e.created_at.length >= 19 ? e.created_at.slice(11, 19) : "00:00:00";
-    return `${date} ${time}`;
-  };
-
-  // ✅ প্রকৃত নগদ ব্যালেন্স (running) — সব সময়ের সকল নগদ-প্রভাবিত লেনদেনের সঞ্চিত হিসাব।
+  // ✅ প্রকৃত নগদ ব্যালেন্স (running) — সব সময়ের সকল নগদ-প্রভাবিত লেনদেনের সঞ্চিত হিসাব।
   // ফিল্টার/তারিখ পরিসর যা-ই হোক, প্রতিটি সারির "ব্যালেন্স" ওই মুহূর্তের হাতে থাকা প্রকৃত নগদ দেখাবে।
-  // (স্টক ক্রয়ের পরিশোধ এখানে ধরা হয় না — উপরের 'নগদ ব্যালেন্স' কার্ডের সাথে মিল রাখতে)
+  // প্রতিটি ঐতিহাসিক সারির ব্যালেন্স অপরিবর্তনীয় (immutable) থাকে এবং নতুন ক্রেডিট/ডেবিট যোগ হলে তা ক্রমানুসারে একটির পর একটি সমন্বিত হয়।
   const cashBalanceById = useMemo(() => {
     const isPurchase = (e: Entry) => (e.category ?? "").toLowerCase().startsWith("purchase");
     const asc = synthEntries
       .filter(e => !isPurchase(e))
       .slice()
       .sort((a, b) =>
-        getSortKey(a).localeCompare(getSortKey(b)) || a.id.localeCompare(b.id)
+        (getSortTimestamp(a) - getSortTimestamp(b)) || a.id.localeCompare(b.id)
       );
+
+    const baselineAsc = asc.filter(e => getSortTimestamp(e) <= BASELINE_ANCHOR_MS);
+    const baselineNetCash = baselineAsc.reduce((acc, e) =>
+      acc + (e.entry_type === "deposit" ? Number(e.amount || 0) : -Number(e.amount || 0)), 0
+    );
+    const baselineFloat = TARGET_LEGAL_BALANCE - baselineNetCash;
+
     const m = new Map<string, number>();
-    let bal = 0;
+    let bal = baselineFloat;
     for (const e of asc) {
       bal += e.entry_type === "deposit" ? Number(e.amount || 0) : -Number(e.amount || 0);
       m.set(e.id, bal);
@@ -575,7 +709,7 @@ export default function Ledger() {
   // Running balance for detailed
   const detailedRows = useMemo(() => {
     const asc = [...lowerFiltered].sort((a, b) =>
-      getSortKey(a).localeCompare(getSortKey(b)) || a.id.localeCompare(b.id)
+      (getSortTimestamp(a) - getSortTimestamp(b)) || a.id.localeCompare(b.id)
     );
     const out = asc.map(e => {
       const cr = e.entry_type === "deposit"  ? Number(e.amount || 0) : 0;
@@ -589,11 +723,14 @@ export default function Ledger() {
   // 📅 আজকের দৈনিক হিসাব (হিসাব ক্লোজ কার্ড — শুধু আজকের)
   const todayClose = useMemo(() => {
     const d = todayBD();
-    const income = salesAgg.filter(s => s.date === d).reduce((a, x) => a + x.paid, 0)
-      + instPayAgg.filter(p => p.date === d).reduce((a, p) => a + p.amount, 0);
+    const todaySales = salesAgg.filter(s => s.date === d).reduce((a, x) => a + x.paid, 0);
+    const todayInst  = instPayAgg.filter(p => p.date === d).reduce((a, p) => a + p.amount, 0);
+    const todayBaki  = entries.filter(e => e.entry_type === "deposit" && isBakiPayment(e) && (e.entry_date === d || toBDDate(e.created_at) === d))
+      .reduce((a, e) => a + Number(e.amount || 0), 0);
+    const income = todaySales + todayInst + todayBaki;
     const expense = expensesAgg.filter(x => x.date === d).reduce((a, x) => a + x.total, 0);
     return { income, expense, closing: income - expense };
-  }, [salesAgg, instPayAgg, expensesAgg]);
+  }, [salesAgg, instPayAgg, expensesAgg, entries]);
 
 
   return (
@@ -604,7 +741,7 @@ export default function Ledger() {
           <h1 className="text-xl sm:text-2xl font-black text-foreground truncate">{TAB_META[tab].title}</h1>
           <p className="text-xs text-muted-foreground">{TAB_META[tab].subtitle}</p>
         </div>
-        <div className="grid grid-cols-3 sm:flex gap-2 w-full sm:w-auto">
+        <div className="grid grid-cols-2 sm:flex gap-2 w-full sm:w-auto">
           <Button onClick={() => setDialog("deposit")}
             className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground shadow-md">
             <ArrowDownCircle className="h-4 w-4" /> জমা
@@ -675,8 +812,11 @@ export default function Ledger() {
             <DailyCloseStats totals={todayClose} loading={loading} />
           </div>
           <BreakRow label="বিক্রয় থেকে প্রাপ্ত নগদ (ডাউন পেমেন্ট + পূর্ণ পরিশোধ)" value={fmt(cashBreakdown.salesCash)} sign="+" />
-          <BreakRow label="কিস্তি / বাকি আদায়" value={fmt(cashBreakdown.instCash)} sign="+" />
-          <BreakRow label="ক্যাশবুক জমা" value={fmt(cashBreakdown.deposits)} sign="+" />
+          <BreakRow label="কিস্তি আদায়" value={fmt(cashBreakdown.instCash)} sign="+" />
+          {cashBreakdown.bakiCash > 0 && (
+            <BreakRow label="বাকি আদায় (কাস্টমার পরিশোধ)" value={fmt(cashBreakdown.bakiCash)} sign="+" />
+          )}
+          <BreakRow label="ক্যাশবুক জমা (অন্যান্য / সমন্বয়)" value={fmt(cashBreakdown.otherDeposits)} sign="+" />
           {cashBreakdown.returnRefunds > 0 && (
             <BreakRow label="বিক্রয় ফেরত রিফান্ড" value={fmt(cashBreakdown.returnRefunds)} sign="−" />
           )}
@@ -1022,6 +1162,7 @@ export default function Ledger() {
         userId={user?.id ?? null}
         shopId={currentShop?.id ?? null}
       />
+
     </div>
   );
 }
@@ -1200,3 +1341,5 @@ function BreakRow({ label, value, sign }: { label: string; value: string; sign: 
     </div>
   );
 }
+
+
