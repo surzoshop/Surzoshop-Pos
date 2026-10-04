@@ -158,7 +158,7 @@ export default function Ledger() {
       .order("entry_date", { ascending: false }).order("created_at", { ascending: false });
     if (currentShop) q = q.eq("shop_id", currentShop.id);
 
-    let sq = supabase.from("sales").select("id,created_at,total,paid,created_by,customers(name)").order("created_at", { ascending: false });
+    let sq = supabase.from("sales").select("id,customer_id,created_at,total,paid,created_by,customers(name)").order("created_at", { ascending: false });
     if (currentShop) sq = sq.eq("shop_id", currentShop.id);
 
     let pq = supabase.from("purchases").select("created_at,total,paid,created_by,suppliers(name)").order("created_at", { ascending: false });
