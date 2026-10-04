@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -40,6 +40,7 @@ export default function CustomerLedger() {
   const [payAmount, setPayAmount] = useState<number>(0);
   const [payNote, setPayNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
 
   const load = async () => {
     const [{ data: c }, { data: s }] = await Promise.all([
@@ -102,7 +103,7 @@ export default function CustomerLedger() {
   };
 
   const submitPayment = async () => {
-    if (!payTarget || !user) return;
+    if (busyRef.current || busy || !payTarget || !user) return;
     const amt = Number(payAmount);
     if (!amt || amt <= 0) {
       toast({ title: lang === "bn" ? "সঠিক পরিমাণ দিন" : "Enter valid amount", variant: "destructive" });
@@ -112,6 +113,7 @@ export default function CustomerLedger() {
       toast({ title: lang === "bn" ? "বকেয়ার চেয়ে বেশি দেওয়া যাবে না" : "Cannot exceed due", variant: "destructive" });
       return;
     }
+    busyRef.current = true;
     setBusy(true);
     try {
       // Distribute across open sales (oldest first)
@@ -171,6 +173,7 @@ export default function CustomerLedger() {
     } catch (e: any) {
       toast({ title: e.message ?? "Error", variant: "destructive" });
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   };

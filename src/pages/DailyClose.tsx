@@ -72,7 +72,7 @@ export default function DailyClose() {
 
     const [{ data: sd }, { data: ipd }, { data: cd }, { data: ed }] = await Promise.all([sq, ipq, cq, eq]);
 
-    // দিনের বিক্রয়ের সাথে যুক্ত কিস্তি পেমেন্ট বাদ দিয়ে ডাউন পেমেন্ট বের করা (double count রোধ)
+    // দিনের বিক্রয়ের সাথে যুক্ত কিস্তি পেমেন্ট ও পরবর্তীতে পরিশোধিত বকেয়া বাদ দিয়ে ডাউন পেমেন্ট / প্রাথমিক নগদ বের করা
     const saleIds = (sd ?? []).map((s: any) => s.id);
     const instBySale = new Map<string, number>();
     if (saleIds.length) {
@@ -90,12 +90,67 @@ export default function DailyClose() {
       }
     }
 
+    const bakiBySale = new Map<string, number>();
+    const custIds = (sd ?? []).map((s: any) => s.customer_id).filter(Boolean);
+    if (custIds.length) {
+      const { data: bakiEntries } = await supabase.from("cash_book" as any)
+        .select("amount,customer_id,party_name,created_at,entry_date")
+        .eq("entry_type", "deposit")
+        .in("customer_id", custIds);
+
+      const bakiPaymentsByCust = new Map<string, { at: string; amount: number }[]>();
+      (bakiEntries ?? []).forEach((e: any) => {
+        if (isBakiPayment(e)) {
+          const key = e.customer_id || e.party_name;
+          if (key) {
+            const list = bakiPaymentsByCust.get(key) ?? [];
+            list.push({ at: e.created_at || e.entry_date, amount: Number(e.amount || 0) });
+            bakiPaymentsByCust.set(key, list);
+          }
+        }
+      });
+
+      const salesByCust = new Map<string, any[]>();
+      (sd ?? []).forEach((s: any) => {
+        const key = s.customer_id || s.customers?.name;
+        if (key) {
+          const list = salesByCust.get(key) ?? [];
+          list.push(s);
+          salesByCust.set(key, list);
+        }
+      });
+
+      salesByCust.forEach((sList, key) => {
+        const payments = bakiPaymentsByCust.get(key) ?? [];
+        if (!payments.length) return;
+        const sortedPayments = [...payments].sort((a, b) => a.at.localeCompare(b.at));
+        const sortedSales = [...sList].sort((a, b) => a.created_at.localeCompare(b.created_at));
+
+        for (const p of sortedPayments) {
+          let remaining = p.amount;
+          for (const s of sortedSales) {
+            if (remaining <= 0) break;
+            if (s.payment_type === "installment") continue;
+            if (String(s.created_at) > p.at) continue;
+
+            const currentBaki = bakiBySale.get(s.id) ?? 0;
+            const maxDeductible = Math.max(0, Number(s.paid || 0) - currentBaki);
+            const take = Math.min(maxDeductible, remaining);
+            if (take > 0) {
+              bakiBySale.set(s.id, currentBaki + take);
+              remaining -= take;
+            }
+          }
+        }
+      });
+    }
+
     const out: Row[] = [];
     (sd ?? []).forEach((s: any) => {
-      // যদি কিস্তি বিক্রয় হয়, তবে দিনের ক্যাশে প্রবেশ করেছে ডাউন পেমেন্ট; অন্যথায় নগদ প্রাপ্তি
+      // যদি কিস্তি বিক্রয় হয়, তবে দিনের ক্যাশে প্রবেশ করেছে ডাউন পেমেন্ট; অন্যথায় নগদ প্রাপ্তি (বকেয়া পরিশোধ ক্যাশবুক থেকে পৃথক আসবে)
       const basePaid = s.payment_type === "installment" && s.down_payment != null
         ? Number(s.down_payment)
-        : Math.max(0, Number(s.paid || 0) - (instBySale.get(s.id) ?? 0));
+        : Math.max(0, Number(s.paid || 0) - (instBySale.get(s.id) ?? 0) - (bakiBySale.get(s.id) ?? 0));
       if (basePaid <= 0) return;
       out.push({
         id: `sale-${s.id}`,

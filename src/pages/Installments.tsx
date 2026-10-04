@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { todayBD, bdDateAddMonths, addDaysBDStr } from "@/lib/datetime";
 import { supabase } from "@/integrations/supabase/client";
 import { logActivity } from "@/lib/activityLog";
@@ -66,22 +66,14 @@ export default function Installments() {
   const [paymentsByInst, setPaymentsByInst] = useState<Record<string, any[]>>({});
   const [extraBySale, setExtraBySale] = useState<Record<string, number>>({});
   const [itemsBySale, setItemsBySale] = useState<Record<string, string[]>>({});
-  const [editPay, setEditPay] = useState<any>(null);
-  const [editPayAmount, setEditPayAmount] = useState(0);
+  // ===== Double-submit & concurrency guards =====
+  const [payBusy, setPayBusy] = useState(false);
+  const payBusyRef = useRef(false);
+  const [savePlanBusy, setSavePlanBusy] = useState(false);
+  const savePlanBusyRef = useRef(false);
+  const [editPayBusy, setEditPayBusy] = useState(false);
+  const editPayBusyRef = useRef(false);
 
-  // ===== New Installment Plan Modal =====
-  const [openNew, setOpenNew] = useState(false);
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
-  const [guarantors, setGuarantors] = useState<any[]>([]);
-  const [showG, setShowG] = useState(false);
-  const [gForm, setGForm] = useState<any>({ name: "", phone: "", nid: "", address: "", relation: "" });
-  const [plan, setPlan] = useState<any>({
-    customer_id: "", guarantor_id: "",
-    items: [] as any[], pid: "", qty: 1, price: 0,
-    down_payment: 2000, interest_rate: 0, tenure_months: 5, late_fee_per_day: 5, notes: "",
-    first_due: bdDateAddMonths(1, INSTALLMENT_DUE_DAY),
-  });
 
   const load = async () => {
     const [{ data: insts }, { data: salesData }, c, p, g, { data: pays }, { data: siExtras }] = await Promise.all([
@@ -121,13 +113,20 @@ export default function Installments() {
   useEffect(() => { load(); }, []);
 
   const saveEditPay = async () => {
-    if (!editPay || editPayAmount < 0) return;
-    const { error } = await supabase.from("installment_payments")
-      .update({ amount: editPayAmount }).eq("id", editPay.id);
-    if (error) return toast({ title: error.message, variant: "destructive" });
-    logActivity({ action: "installment.edit", entity_type: "installment_payment", entity_id: editPay.id, meta: { amount: editPayAmount } });
-    setEditPay(null); setEditPayAmount(0); await load();
-    toast({ title: lang === "bn" ? "পরিশোধ আপডেট হয়েছে ✓" : "Payment updated ✓" });
+    if (!editPay || editPayAmount < 0 || editPayBusyRef.current || editPayBusy) return;
+    editPayBusyRef.current = true;
+    setEditPayBusy(true);
+    try {
+      const { error } = await supabase.from("installment_payments")
+        .update({ amount: editPayAmount }).eq("id", editPay.id);
+      if (error) return toast({ title: error.message, variant: "destructive" });
+      logActivity({ action: "installment.edit", entity_type: "installment_payment", entity_id: editPay.id, meta: { amount: editPayAmount } });
+      setEditPay(null); setEditPayAmount(0); await load();
+      toast({ title: lang === "bn" ? "পরিশোধ আপডেট হয়েছে ✓" : "Payment updated ✓" });
+    } finally {
+      editPayBusyRef.current = false;
+      setEditPayBusy(false);
+    }
   };
 
   const deletePay = async (p: any) => {
@@ -293,45 +292,53 @@ export default function Installments() {
   };
 
   const savePlan = async () => {
+    if (savePlanBusyRef.current || savePlanBusy) return;
     if (!plan.customer_id) return toast({ title: lang === "bn" ? "ক্রেতা নির্বাচন করুন" : "Select customer", variant: "destructive" });
     if (plan.items.length === 0) return toast({ title: lang === "bn" ? "পণ্য যোগ করুন" : "Add items", variant: "destructive" });
     if (!plan.guarantor_id) return toast({ title: lang === "bn" ? "জামিনদার নির্বাচন করুন" : "Select guarantor", variant: "destructive" });
     if (plan.tenure_months <= 0) return toast({ title: "Invalid tenure", variant: "destructive" });
 
-    const { data: sale, error } = await supabase.from("sales").insert({
-      customer_id: plan.customer_id,
-      subtotal: planSubtotal, discount: 0, total: planTotal,
-      paid: plan.down_payment, due: financed,
-      payment_type: "installment" as any,
-      status: financed > 0 ? "partial" : "completed" as any,
-      created_by: user!.id,
-      down_payment: plan.down_payment, interest_rate: plan.interest_rate,
-      tenure_months: plan.tenure_months, emi_amount: emi,
-      late_fee_per_day: plan.late_fee_per_day, guarantor_id: plan.guarantor_id,
-      notes: plan.notes,
-    } as any).select().single();
-    if (error) return toast({ title: error.message, variant: "destructive" });
+    savePlanBusyRef.current = true;
+    setSavePlanBusy(true);
+    try {
+      const { data: sale, error } = await supabase.from("sales").insert({
+        customer_id: plan.customer_id,
+        subtotal: planSubtotal, discount: 0, total: planTotal,
+        paid: plan.down_payment, due: financed,
+        payment_type: "installment" as any,
+        status: financed > 0 ? "partial" : "completed" as any,
+        created_by: user!.id,
+        down_payment: plan.down_payment, interest_rate: plan.interest_rate,
+        tenure_months: plan.tenure_months, emi_amount: emi,
+        late_fee_per_day: plan.late_fee_per_day, guarantor_id: plan.guarantor_id,
+        notes: plan.notes,
+      } as any).select().single();
+      if (error) return toast({ title: error.message, variant: "destructive" });
 
-    const saleItems = plan.items.map((i: any) => ({ ...i, sale_id: sale.id }));
-    await supabase.from("sale_items").insert(saleItems);
+      const saleItems = plan.items.map((i: any) => ({ ...i, sale_id: sale.id }));
+      await supabase.from("sale_items").insert(saleItems);
 
-    const per = Math.round((financed / plan.tenure_months) * 100) / 100;
-    const schedule = Array.from({ length: plan.tenure_months }).map((_, idx) => {
-      return {
-        sale_id: sale.id, installment_no: idx + 1,
-        due_date: addMonthsToDateStr(plan.first_due || bdDateAddMonths(1, INSTALLMENT_DUE_DAY), idx),
-        amount: idx === plan.tenure_months - 1 ? financed - per * (plan.tenure_months - 1) : per,
-      };
-    });
-    await supabase.from("installments").insert(schedule);
+      const per = Math.round((financed / plan.tenure_months) * 100) / 100;
+      const schedule = Array.from({ length: plan.tenure_months }).map((_, idx) => {
+        return {
+          sale_id: sale.id, installment_no: idx + 1,
+          due_date: addMonthsToDateStr(plan.first_due || bdDateAddMonths(1, INSTALLMENT_DUE_DAY), idx),
+          amount: idx === plan.tenure_months - 1 ? financed - per * (plan.tenure_months - 1) : per,
+        };
+      });
+      await supabase.from("installments").insert(schedule);
 
-    logActivity({ action: "installment.create", entity_type: "sale", entity_id: sale.id, meta: { amount: Number(planTotal), tenure_months: plan.tenure_months } });
-    toast({ title: lang === "bn" ? "কিস্তি প্ল্যান তৈরি হয়েছে" : "Installment plan created" });
-    setOpenNew(false);
-    setPlan({ customer_id: "", guarantor_id: "", items: [], pid: "", qty: 1, price: 0,
-      down_payment: 2000, interest_rate: 0, tenure_months: 5, late_fee_per_day: 5, notes: "",
-      first_due: bdDateAddMonths(1, INSTALLMENT_DUE_DAY) });
-    load();
+      logActivity({ action: "installment.create", entity_type: "sale", entity_id: sale.id, meta: { amount: Number(planTotal), tenure_months: plan.tenure_months } });
+      toast({ title: lang === "bn" ? "কিস্তি প্ল্যান তৈরি হয়েছে" : "Installment plan created" });
+      setOpenNew(false);
+      setPlan({ customer_id: "", guarantor_id: "", items: [], pid: "", qty: 1, price: 0,
+        down_payment: 2000, interest_rate: 0, tenure_months: 5, late_fee_per_day: 5, notes: "",
+        first_due: bdDateAddMonths(1, INSTALLMENT_DUE_DAY) });
+      await load();
+    } finally {
+      savePlanBusyRef.current = false;
+      setSavePlanBusy(false);
+    }
   };
 
   const computeLateFee = (i: Inst, pct: number) => {
@@ -344,7 +351,7 @@ export default function Installments() {
   };
 
   const pay = async () => {
-    if (!paying) return;
+    if (!paying || payBusyRef.current || payBusy) return;
     const remaining = Math.max(0, Number(paying.amount) - Number(paying.paid_amount));
     const fee = computeLateFee(paying, managing?.late_fee_pct ?? 0);
     const maxPayable = remaining + fee;
@@ -353,18 +360,25 @@ export default function Installments() {
       toast({ title: lang === "bn" ? "সঠিক পরিমাণ দিন" : "Enter valid amount", variant: "destructive" });
       return;
     }
-    const { error } = await supabase.from("installment_payments").insert({
-      installment_id: paying.id, amount: finalAmount, received_by: user!.id,
-      remark: payRemark || null, rating: payRating,
-      shop_id: paying.shop_id || currentShop?.id || null,
-    } as any);
-    if (error) return toast({ title: error.message, variant: "destructive" });
-    logActivity({ action: "installment.pay", entity_type: "installment", entity_id: paying.id, meta: { amount: finalAmount, invoice_no: managing?.invoice_no, customer_name: managing?.customer_name, rating: payRating, remark: payRemark } });
-    setPaying(null); setAmount(0); setPayRemark(""); setPayRating("good"); await load();
-    toast({ title: t("paid") });
-    if (managing) {
-      const fresh = plans.find(p => p.sale_id === managing.sale_id);
-      if (fresh) setManaging(fresh);
+    payBusyRef.current = true;
+    setPayBusy(true);
+    try {
+      const { error } = await supabase.from("installment_payments").insert({
+        installment_id: paying.id, amount: finalAmount, received_by: user!.id,
+        remark: payRemark || null, rating: payRating,
+        shop_id: paying.shop_id || currentShop?.id || null,
+      } as any);
+      if (error) return toast({ title: error.message, variant: "destructive" });
+      logActivity({ action: "installment.pay", entity_type: "installment", entity_id: paying.id, meta: { amount: finalAmount, invoice_no: managing?.invoice_no, customer_name: managing?.customer_name, rating: payRating, remark: payRemark } });
+      setPaying(null); setAmount(0); setPayRemark(""); setPayRating("good"); await load();
+      toast({ title: t("paid") });
+      if (managing) {
+        const fresh = plans.find(p => p.sale_id === managing.sale_id);
+        if (fresh) setManaging(fresh);
+      }
+    } finally {
+      payBusyRef.current = false;
+      setPayBusy(false);
     }
   };
 
@@ -773,8 +787,10 @@ export default function Installments() {
             );
           })()}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPaying(null)}>{t("cancel")}</Button>
-            <Button onClick={pay} className="gradient-primary">{t("pay")}</Button>
+            <Button variant="outline" disabled={payBusy} onClick={() => setPaying(null)}>{t("cancel")}</Button>
+            <Button onClick={pay} disabled={payBusy} className="gradient-primary">
+              {payBusy ? (lang === "bn" ? "পরিশোধ হচ্ছে..." : "Paying...") : t("pay")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -801,8 +817,10 @@ export default function Installments() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditPay(null)}>{t("cancel")}</Button>
-            <Button onClick={saveEditPay} className="gradient-primary">{t("save")}</Button>
+            <Button variant="outline" disabled={editPayBusy} onClick={() => setEditPay(null)}>{t("cancel")}</Button>
+            <Button onClick={saveEditPay} disabled={editPayBusy} className="gradient-primary">
+              {editPayBusy ? (lang === "bn" ? "সংরক্ষণ হচ্ছে..." : "Saving...") : t("save")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -930,8 +948,10 @@ export default function Installments() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenNew(false)}>{t("cancel")}</Button>
-            <Button onClick={savePlan} className="gradient-primary">{t("save")}</Button>
+            <Button variant="outline" disabled={savePlanBusy} onClick={() => setOpenNew(false)}>{t("cancel")}</Button>
+            <Button onClick={savePlan} disabled={savePlanBusy} className="gradient-primary">
+              {savePlanBusy ? (lang === "bn" ? "তৈরি হচ্ছে..." : "Saving...") : t("save")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

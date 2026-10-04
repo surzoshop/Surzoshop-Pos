@@ -253,18 +253,25 @@ export default function Ledger() {
     salesByCust.forEach((sList, key) => {
       const payments = bakiPaymentsByCust.get(key) ?? [];
       if (!payments.length) return;
-      const totalBaki = payments.reduce((sum, p) => sum + p.amount, 0);
-      let remaining = totalBaki;
-      // শুধুমাত্র বাকির বিক্রয়গুলোতে বণ্টন
-      const sorted = [...sList].sort((a, b) => a.created_at.localeCompare(b.created_at));
-      for (const s of sorted) {
-        if (remaining <= 0) break;
-        if (s.payment_type === "installment") continue; // কিস্তির হিসাব আলাদা
-        const inst = instBySale.get(s.id) ?? 0;
-        const currentPaid = Math.max(0, Number(s.paid || 0) - inst);
-        const applied = Math.min(currentPaid, remaining);
-        bakiBySale.set(s.id, applied);
-        remaining -= applied;
+      // তারিখ অনুযায়ী সাজিয়ে কেবল বিক্রয়ের সময় বা পরবর্তী পরিশোধ বণ্টন
+      const sortedPayments = [...payments].sort((a, b) => a.at.localeCompare(b.at));
+      const sortedSales = [...sList].sort((a, b) => a.created_at.localeCompare(b.created_at));
+
+      for (const p of sortedPayments) {
+        let remaining = p.amount;
+        for (const s of sortedSales) {
+          if (remaining <= 0) break;
+          if (s.payment_type === "installment") continue; // কিস্তির হিসাব আলাদা
+          if (String(s.created_at) > p.at) continue; // বিক্রয়ের পরের পরিশোধ কেবল প্রযোজ্য
+
+          const currentBaki = bakiBySale.get(s.id) ?? 0;
+          const maxDeductible = Math.max(0, Number(s.paid || 0) - currentBaki);
+          const take = Math.min(maxDeductible, remaining);
+          if (take > 0) {
+            bakiBySale.set(s.id, currentBaki + take);
+            remaining -= take;
+          }
+        }
       }
     });
 
@@ -272,6 +279,7 @@ export default function Ledger() {
       const inst = instBySale.get(s.id) ?? 0;
       const baki = bakiBySale.get(s.id) ?? 0;
       // বিক্রয়ের দিন কাউন্টারে আসলে নগদ জমা পড়েছিল কত (কিস্তি বা পরবর্তীতে দেওয়া বকেয়া বাদে)
+      // এক টাকা একবারই হিসাব হবে: বিক্রয়ের দিন ডাউন/নগদ, আর বকেয়া পরিশোধের দিন ক্যাশবুক এন্ট্রিতে
       const initialPaid = s.payment_type === "installment" && s.down_payment != null
         ? Number(s.down_payment)
         : Math.max(0, Number(s.paid || 0) - inst - baki);
@@ -287,25 +295,6 @@ export default function Ledger() {
         created_by: s.created_by ?? null,
       };
     });
-
-    // ⚠ বাকি পরিশোধ (Credit Payment) একসাথে দুই জায়গায় লেখা হয়: sales.paid বাড়ে + cash_book-এ জমা।
-    // নগদ একবারই গণনা করতে হবে — পরিশোধের তারিখে (cash_book)। তাই বিক্রয়ের paid থেকে সেই অংশ বাদ।
-    const isCreditPay = (e: any) => e.entry_type === "deposit" && /বাকি পরিশোধ|credit payment/i.test(String(e.category ?? ""));
-    allEntries.filter(isCreditPay)
-      .sort((a: any, b: any) => String(a.created_at).localeCompare(String(b.created_at)))
-      .forEach((p: any) => {
-        let remaining = Number(p.amount || 0);
-        const cands = salesRows
-          .filter(s => (p.customer_id ? s.customer_id === p.customer_id : (!!p.party_name && s.customer_name === p.party_name))
-            && s.at <= String(p.created_at) && s.paid > 0)
-          .sort((a, b) => a.at.localeCompare(b.at));
-        for (const s of cands) {
-          if (remaining <= 0) break;
-          const take = Math.min(s.paid, remaining);
-          s.paid -= take;
-          remaining -= take;
-        }
-      });
 
     setSalesAgg(salesRows);
 
@@ -1255,24 +1244,31 @@ function EntryDialog({ open, type, onOpenChange, onSaved, userId, shopId }: any)
     }
   }, [open]);
 
+  const savingRef = useRef(false);
   const save = async () => {
+    if (saving || savingRef.current) return;
     if (!userId) { toast.error("লগইন প্রয়োজন"); return; }
     const amt = Number(amount);
     if (!amt || amt <= 0) { toast.error("সঠিক পরিমাণ দিন"); return; }
+    savingRef.current = true;
     setSaving(true);
-    const finalCategory = accountKind !== "general"
-      ? `${accountKind}${category ? " - " + category : ""}`
-      : (category || null);
-    const finalMethod = accountKind === "cash" ? "cash" : method;
-    const { error } = await supabase.from("cash_book" as any).insert({
-      shop_id: shopId, entry_date: date, entry_type: type, amount: amt,
-      category: finalCategory, party_name: party || null, payment_method: finalMethod,
-      reference_no: ref || null, notes: notes || null, created_by: userId,
-    });
-    setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success(type === "deposit" ? "জমা সংরক্ষিত" : "উত্তোলন সংরক্ষিত");
-    onSaved();
+    try {
+      const finalCategory = accountKind !== "general"
+        ? `${accountKind}${category ? " - " + category : ""}`
+        : (category || null);
+      const finalMethod = accountKind === "cash" ? "cash" : method;
+      const { error } = await supabase.from("cash_book" as any).insert({
+        shop_id: shopId, entry_date: date, entry_type: type, amount: amt,
+        category: finalCategory, party_name: party || null, payment_method: finalMethod,
+        reference_no: ref || null, notes: notes || null, created_by: userId,
+      });
+      if (error) { toast.error(error.message); return; }
+      toast.success(type === "deposit" ? "জমা সংরক্ষিত" : "উত্তোলন সংরক্ষিত");
+      onSaved();
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
   };
 
   const isDeposit = type === "deposit";

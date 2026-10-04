@@ -104,6 +104,7 @@ export default function POS() {
   const [gForm, setGForm] = useState<any>({ name: "", phone: "", nid: "", address: "", relation: "" });
   const [lastSale, setLastSale] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -352,7 +353,7 @@ export default function POS() {
 
   const completeSale = async () => {
     if (cart.length === 0) return;
-    if (submitting) return; // guard against double-submit
+    if (submitting || submittingRef.current) return; // guard against double-submit
     if (paymentType === "installment" && !customerId) {
       toast({ title: lang === "bn" ? "ক্রেতা নির্বাচন করুন" : "Select a customer", variant: "destructive" });
       return;
@@ -366,6 +367,7 @@ export default function POS() {
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
     try {
     // ============ EDIT MODE: update existing sale ============
@@ -496,6 +498,7 @@ export default function POS() {
     load();
     toast({ title: lang === "bn" ? "বিক্রয় সম্পন্ন" : "Sale completed" });
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
