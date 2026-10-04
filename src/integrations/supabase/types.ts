@@ -892,37 +892,57 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          customer_id: string | null
+          customer_name: string | null
+          deduction_amount: number | null
           id: string
+          invoice_no: string | null
           reason: string | null
           refund_amount: number
           return_no: string
-          sale_id: string
+          sale_id: string | null
           shop_id: string | null
           total_amount: number
         }
         Insert: {
           created_at?: string
           created_by?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          deduction_amount?: number | null
           id?: string
+          invoice_no?: string | null
           reason?: string | null
           refund_amount?: number
           return_no?: string
-          sale_id: string
+          sale_id?: string | null
           shop_id?: string | null
           total_amount?: number
         }
         Update: {
           created_at?: string
           created_by?: string | null
+          customer_id?: string | null
+          customer_name?: string | null
+          deduction_amount?: number | null
           id?: string
+          invoice_no?: string | null
           reason?: string | null
           refund_amount?: number
           return_no?: string
-          sale_id?: string
+          sale_id?: string | null
           shop_id?: string | null
           total_amount?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sales_returns_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shop_users: {
         Row: {
