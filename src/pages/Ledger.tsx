@@ -198,7 +198,7 @@ export default function Ledger() {
     if (currentShop) eq_ = eq_.eq("shop_id", currentShop.id);
 
     let ipq = supabase.from("installment_payments")
-      .select("id,paid_at,amount,received_by,shop_id,created_at,installments!inner(sale_id)")
+      .select("id,paid_at,amount,received_by,shop_id,installments!inner(sale_id)")
       .order("paid_at", { ascending: false });
     if (currentShop) {
       ipq = ipq.or(`shop_id.eq.${currentShop.id},shop_id.is.null`);
@@ -212,8 +212,16 @@ export default function Ledger() {
     let piq = supabase.from("purchase_items").select("qty,created_at,purchases!inner(created_at),products(cost)");
     if (currentShop) piq = piq.eq("shop_id", currentShop.id);
 
-    const [{ data, error }, { data: sd }, { data: pd }, { data: ed }, { data: ipd }, { data: sid }, { data: pid }] = await Promise.all([q, sq, pq, eq_, ipq, siq, piq]);
+    const results = await Promise.all([q, sq, pq, eq_, ipq, siq, piq]);
+    const [{ data, error }, { data: sd }, { data: pd }, { data: ed }, { data: ipd }, { data: sid }, { data: pid }] = results as any[];
     if (error) toast.error(error.message);
+    const qLabels = ["ক্যাশবুক", "বিক্রয়", "ক্রয়", "খরচ", "কিস্তি আদায়", "বিক্রয় আইটেম", "ক্রয় আইটেম"];
+    (results as any[]).forEach((r, i) => {
+      if (i > 0 && r?.error) {
+        console.error(`Ledger load failed: ${qLabels[i]}`, r.error);
+        toast.error(`${qLabels[i]} লোড হয়নি: ${r.error.message}`);
+      }
+    });
     const allEntries = ((data ?? []) as any[]);
     setEntries(allEntries as any);
 
