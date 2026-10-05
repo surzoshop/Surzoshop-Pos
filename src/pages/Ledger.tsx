@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -140,10 +140,10 @@ export default function Ledger() {
   const { currentShop } = useShop();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [stockSellValue, setStockSellValue] = useState(0);
-  const [salesAgg, setSalesAgg] = useState<{ date: string; at: string; total: number; paid: number; party: string | null; created_by?: string | null }[]>([]);
-  const [purchasesAgg, setPurchasesAgg] = useState<{ date: string; at: string; total: number; paid: number; party: string | null; created_by?: string | null }[]>([]);
-  const [expensesAgg, setExpensesAgg] = useState<{ date: string; at: string; total: number; title: string; method: string; created_by?: string | null }[]>([]);
-  const [instPayAgg, setInstPayAgg] = useState<{ date: string; at: string; amount: number; created_by?: string | null }[]>([]);
+  const [salesAgg, setSalesAgg] = useState<{ id: string; date: string; at: string; total: number; paid: number; party: string | null; created_by?: string | null }[]>([]);
+  const [purchasesAgg, setPurchasesAgg] = useState<{ id: string; date: string; at: string; total: number; paid: number; party: string | null; created_by?: string | null }[]>([]);
+  const [expensesAgg, setExpensesAgg] = useState<{ id: string; date: string; at: string; total: number; title: string; method: string; created_by?: string | null }[]>([]);
+  const [instPayAgg, setInstPayAgg] = useState<{ id: string; date: string; at: string; amount: number; created_by?: string | null }[]>([]);
   const [profitAgg, setProfitAgg] = useState<{ date: string; profit: number }[]>([]);
   const [purchaseCostAgg, setPurchaseCostAgg] = useState<{ date: string; total: number }[]>([]);
   const [creators, setCreators] = useState<Record<string, CreatorInfo>>({});

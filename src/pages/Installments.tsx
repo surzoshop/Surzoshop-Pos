@@ -73,7 +73,22 @@ export default function Installments() {
   const savePlanBusyRef = useRef(false);
   const [editPayBusy, setEditPayBusy] = useState(false);
   const editPayBusyRef = useRef(false);
+  const [editPay, setEditPay] = useState<any>(null);
+  const [editPayAmount, setEditPayAmount] = useState(0);
 
+  // ===== New Installment Plan Modal =====
+  const [openNew, setOpenNew] = useState(false);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [guarantors, setGuarantors] = useState<any[]>([]);
+  const [showG, setShowG] = useState(false);
+  const [gForm, setGForm] = useState<any>({ name: "", phone: "", nid: "", address: "", relation: "" });
+  const [plan, setPlan] = useState<any>({
+    customer_id: "", guarantor_id: "",
+    items: [] as any[], pid: "", qty: 1, price: 0,
+    down_payment: 2000, interest_rate: 0, tenure_months: 5, late_fee_per_day: 5, notes: "",
+    first_due: bdDateAddMonths(1, INSTALLMENT_DUE_DAY),
+  });
 
   const load = async () => {
     const [{ data: insts }, { data: salesData }, c, p, g, { data: pays }, { data: siExtras }] = await Promise.all([
