@@ -198,7 +198,7 @@ export default function Ledger() {
     if (currentShop) eq_ = eq_.eq("shop_id", currentShop.id);
 
     let ipq = supabase.from("installment_payments")
-      .select("id,paid_at,amount,received_by,shop_id,created_at,installments!inner(sale_id)")
+      .select("id,paid_at,amount,received_by,shop_id,installments!inner(sale_id)")
       .order("paid_at", { ascending: false });
     if (currentShop) {
       ipq = ipq.or(`shop_id.eq.${currentShop.id},shop_id.is.null`);
